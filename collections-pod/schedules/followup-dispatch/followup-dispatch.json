@@ -1,0 +1,7 @@
+{
+  "name": "followup-dispatch",
+  "schedule_type": "DATASTORE",
+  "config": { "table_name": "followup_queue", "operations": ["INSERT"] },
+  "workflow_name": "collections-run",
+  "is_active": true
+}

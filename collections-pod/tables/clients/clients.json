@@ -1,0 +1,17 @@
+{
+  "name": "clients",
+  "primary_key_column": "id",
+  "enable_rls": false,
+  "columns": [
+    { "name": "name", "type": "TEXT", "required": true, "max_length": 200 },
+    { "name": "email", "type": "TEXT", "required": true, "max_length": 320 },
+    { "name": "phone", "type": "TEXT", "max_length": 40 },
+    { "name": "company", "type": "TEXT", "max_length": 200 },
+    { "name": "vip", "type": "BOOLEAN", "default": false },
+    { "name": "payment_behavior", "type": "ENUM", "required": true, "default": "AVERAGE",
+      "options": ["GOOD", "AVERAGE", "RISKY"] },
+    { "name": "owner", "type": "USER" },
+    { "name": "notes", "type": "TEXT", "max_length": 2000 }
+  ],
+  "config": {}
+}

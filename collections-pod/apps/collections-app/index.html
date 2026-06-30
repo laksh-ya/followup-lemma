@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Collections Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root{color-scheme:light;--paper:#faf8f3;--card:#fffdf8;--ink:#1c1a17;--muted:#6f6658;--line:#ece6da;--gold:#c9a227;--serif:"Fraunces",ui-serif,Georgia,serif;--sans:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;--glow:#fdf6e6;--chip:#f3efe6;
+        --low:#5c7a53;--med:#b8862b;--high:#b4452f;--blue:#3b6ea5;--purple:#7a5c7e;}
+      [data-theme="dark"]{color-scheme:dark;--paper:#15130d;--card:#1e1b14;--ink:#f1ead9;--muted:#a99f8b;--line:#2e2a20;--gold:#e0bd4a;--glow:#241e10;--chip:#2c281f;}
+      *{box-sizing:border-box}
+      body{margin:0;min-height:100dvh;background:radial-gradient(120% 90% at 100% 0%,var(--glow) 0%,rgba(0,0,0,0) 55%),var(--paper);color:var(--ink);font-family:var(--sans);font-size:14.5px;line-height:1.5}
+      a{color:inherit}
+      .wrap{max-width:1180px;margin:0 auto;padding:clamp(1rem,3vw,2rem)}
+      .top{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+      .brand{display:flex;align-items:baseline;gap:.6rem}
+      .eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600}
+      h1{font-family:var(--serif);font-weight:500;font-size:clamp(1.5rem,3.5vw,2.1rem);letter-spacing:-.015em;margin:0;line-height:1.05}
+      .pill{display:inline-flex;align-items:center;gap:.45rem;font-size:.78rem;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.35rem .75rem}
+      .pip{width:8px;height:8px;border-radius:50%;background:var(--low);animation:pulse 2.4s infinite}
+      @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(92,122,83,.45)}70%{box-shadow:0 0 0 7px rgba(92,122,83,0)}100%{box-shadow:0 0 0 0 rgba(92,122,83,0)}}
+      .pill button{font:inherit;cursor:pointer;border:none;background:none;color:var(--ink);padding:0;font-size:.95rem}
+      .btn{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:.5rem .9rem;font-weight:600;font-size:.83rem;transition:.15s}
+      .btn:hover{border-color:var(--gold)}
+      .btn.gold{background:var(--gold);border-color:var(--gold);color:#1c1a17}
+      .btn.sm{padding:.32rem .6rem;font-size:.76rem;border-radius:8px}
+      .btn.ghost{background:none}
+      .btn.danger:hover{border-color:var(--high);color:var(--high)}
+      .btn:disabled{opacity:.5;cursor:default}
+      .tabs{display:flex;gap:.3rem;flex-wrap:wrap;margin:1.4rem 0 1.1rem;border-bottom:1px solid var(--line);padding-bottom:.2rem}
+      .tabs button{font:inherit;font-size:.86rem;font-weight:600;cursor:pointer;border:none;background:none;color:var(--muted);padding:.5rem .8rem;border-radius:9px 9px 0 0;position:relative}
+      .tabs button.on{color:var(--ink)}
+      .tabs button.on::after{content:"";position:absolute;left:.6rem;right:.6rem;bottom:-.25rem;height:2px;background:var(--gold);border-radius:2px}
+      .tabs .badge{display:inline-block;min-width:18px;text-align:center;font-size:.7rem;background:var(--chip);border-radius:999px;padding:.05rem .35rem;margin-left:.35rem;color:var(--ink)}
+      .tabs .badge.hot{background:var(--high);color:#fff}
+      .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.7rem;margin-bottom:1.1rem}
+      .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:.85rem 1rem}
+      .stat .n{font-family:var(--serif);font-size:1.7rem;line-height:1}
+      .stat .l{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:.4rem}
+      .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.1rem 1.2rem;margin-bottom:1rem;box-shadow:0 12px 32px rgba(70,55,25,.04)}
+      .panel h2{font-family:var(--serif);font-weight:500;font-size:1.05rem;margin:0 0 .8rem}
+      table{width:100%;border-collapse:collapse;font-size:.84rem}
+      th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:.4rem .5rem;border-bottom:1px solid var(--line)}
+      td{padding:.55rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+      tr.clickable{cursor:pointer}
+      tr.clickable:hover td{background:var(--glow)}
+      .num{font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:.82rem}
+      .chip{display:inline-block;font-size:.7rem;font-weight:700;padding:.12rem .5rem;border-radius:999px;letter-spacing:.02em;white-space:nowrap}
+      .muted{color:var(--muted)}
+      .row-actions{display:flex;gap:.35rem;flex-wrap:wrap}
+      .empty{text-align:center;color:var(--muted);padding:2.5rem 1rem}
+      .empty .big{font-size:1.6rem;font-family:var(--serif);color:var(--ink);margin-bottom:.3rem}
+      /* drawer */
+      .scrim{position:fixed;inset:0;background:rgba(20,16,8,.4);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.2s;z-index:40}
+      .scrim.on{opacity:1;pointer-events:auto}
+      .drawer{position:fixed;top:0;right:0;height:100dvh;width:min(560px,94vw);background:var(--paper);border-left:1px solid var(--line);transform:translateX(100%);transition:.25s;z-index:50;overflow-y:auto;box-shadow:-20px 0 60px rgba(0,0,0,.15)}
+      .drawer.on{transform:none}
+      .drawer .dh{position:sticky;top:0;background:var(--paper);border-bottom:1px solid var(--line);padding:1rem 1.2rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
+      .drawer .db{padding:1.1rem 1.2rem}
+      .x{font:inherit;cursor:pointer;border:none;background:none;font-size:1.3rem;color:var(--muted);line-height:1}
+      .kv{display:grid;grid-template-columns:auto 1fr;gap:.3rem 1rem;font-size:.84rem;margin:.4rem 0 1rem}
+      .kv .k{color:var(--muted)}
+      .mail{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;white-space:pre-wrap;font-size:.84rem;line-height:1.6}
+      .mail .subj{font-weight:700;margin-bottom:.5rem;font-family:var(--serif);font-size:1rem}
+      .timeline{position:relative;margin:.5rem 0 0;padding-left:1.1rem}
+      .timeline .ev{position:relative;padding:.4rem 0 .6rem .2rem;border-left:2px solid var(--line);margin-left:.2rem;padding-left:.9rem}
+      .timeline .ev .dot{position:absolute;left:-7px;top:.55rem;width:10px;height:10px;border-radius:50%;background:var(--gold);border:2px solid var(--paper)}
+      .timeline .ev .when{font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums}
+      .timeline .ev .what{font-size:.84rem}
+      textarea,input,select{font:inherit;font-size:.84rem;width:100%;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:.5rem .6rem}
+      textarea{min-height:120px;resize:vertical;font-family:var(--mono);font-size:.8rem;line-height:1.5}
+      label.fld{display:block;margin:.6rem 0}
+      label.fld .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.25rem;display:block}
+      .toggle{display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--line)}
+      .center{min-height:80dvh;display:grid;place-items:center;text-align:center}
+      .toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%) translateY(2rem);background:var(--ink);color:var(--paper);padding:.6rem 1.1rem;border-radius:10px;font-size:.84rem;opacity:0;transition:.25s;z-index:60}
+      .toast.on{opacity:1;transform:translateX(-50%)}
+      .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+      @keyframes sp{to{transform:rotate(360deg)}}
+    </style>
+  </head>
+  <body>
+    <div id="app"><div class="center"><p>Loading Collections Agent…</p></div></div>
+    <div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+    <div class="drawer" id="drawer"></div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+      (function(){var cfg=window.__LEMMA_CONFIG__||{};var base=(cfg.apiUrl||location.origin).replace(/\/$/,"");var s=document.createElement("script");s.src=base+"/public/sdk/lemma-client.js";s.onload=boot;s.onerror=function(){fatal("Couldn't load the Lemma SDK.")};document.head.appendChild(s);})();
+
+      var client, ME={}, STATE={clients:[],invoices:[],drafts:[],interactions:[],config:{}}, TAB="dashboard", loading=false;
+      function $(id){return document.getElementById(id)}
+      function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+      function field(r,k){return (r&&r.data&&r.data[k]!=null)?r.data[k]:(r?r[k]:undefined)}
+      function listOf(resp){return (resp&&(resp.items||resp.data))||(Array.isArray(resp)?resp:[])}
+      function fatal(m){$("app").innerHTML='<div class="center"><div><h1>⚠</h1><p>'+esc(m)+'</p></div></div>'}
+      function theme(){try{return localStorage.getItem("ca-theme")||"light"}catch(e){return "light"}}
+      function applyTheme(t){document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("ca-theme",t)}catch(e){}}
+      function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(function(){t.classList.remove("on")},2200)}
+      function money(v,cur){cur=cur||"INR";var n=Number(v||0);return (cur==="INR"?"₹":cur+" ")+n.toLocaleString("en-IN")}
+      function shortDate(s){if(!s)return"";var d=new Date(s);return isNaN(d)?String(s).slice(0,10):d.toLocaleDateString(undefined,{month:"short",day:"numeric"})}
+      function dt(s){if(!s)return"";var d=new Date(s);return isNaN(d)?String(s):d.toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}
+
+      var STAGE_C={PENDING:"--muted",STAGE_1:"--low",STAGE_2:"--med",STAGE_3:"--med",STAGE_4:"--high",ESCALATED:"--purple"};
+      var RISK_C={LOW:"--low",MEDIUM:"--med",HIGH:"--high"};
+      var STATUS_C={ACTIVE:"--blue",PAID:"--low",DISPUTED:"--med",LEGAL:"--purple",PAUSED:"--muted"};
+      function chip(text,varname){return '<span class="chip" style="background:color-mix(in srgb,var('+varname+') 16%,transparent);color:var('+varname+')">'+esc(text)+'</span>'}
+      function stageChip(s){return chip((s||"").replace("STAGE_","S"),STAGE_C[s]||"--muted")}
+      function riskChip(r){return r?chip(r,RISK_C[r]||"--muted"):'<span class="muted">—</span>'}
+      function statusChip(s){return chip(s,STATUS_C[s]||"--muted")}
+      function draftChip(s){var m={AUTO_SENT:"--low",SENT:"--low",PENDING_REVIEW:"--med",REJECTED:"--muted",FAILED:"--high",APPROVED:"--low",SUPERSEDED:"--muted"};return chip(s.replace("_"," "),m[s]||"--muted")}
+
+      async function boot(){
+        applyTheme(theme());
+        try{
+          client=new window.LemmaClient.LemmaClient();
+          var auth=await client.initialize();
+          if(auth.status!=="authenticated"){return signIn()}
+          ME=auth.user||{};
+          await loadData();
+          render();
+          subscribe();
+        }catch(e){fatal((e&&e.message)||"Something went wrong")}
+      }
+      function signIn(){
+        $("app").innerHTML='<div class="center"><div><div class="eyebrow">Collections Agent</div><h1>Welcome.</h1><p class="muted" style="margin:.6rem 0 1rem">Sign in to open the desk.</p><button class="btn gold" id="si">Sign in</button></div></div>';
+        $("si").onclick=function(){client.auth.redirectToAuth()};
+      }
+
+      async function loadData(){
+        var r=await Promise.all([
+          client.records.list("clients",{limit:500}),
+          client.records.list("invoices",{limit:500}),
+          client.records.list("drafts",{limit:1000}),
+          client.records.list("interactions",{limit:300,sort:[{field:"created_at",direction:"desc"}]}),
+          client.records.list("pod_config",{limit:1})
+        ]);
+        STATE.clients=listOf(r[0]); STATE.invoices=listOf(r[1]); STATE.drafts=listOf(r[2]);
+        STATE.interactions=listOf(r[3]); STATE.config=(listOf(r[4])[0])||{};
+      }
+      function clientOf(id){return STATE.clients.find(function(c){return field(c,"id")===id})||{}}
+      function invoiceOf(id){return STATE.invoices.find(function(i){return field(i,"id")===id})||{}}
+      function latestDraft(invId,statuses){
+        var ds=STATE.drafts.filter(function(d){return field(d,"invoice_id")===invId&&(!statuses||statuses.indexOf(field(d,"status"))>=0)});
+        ds.sort(function(a,b){return String(field(b,"created_at")).localeCompare(String(field(a,"created_at")))});
+        return ds[0];
+      }
+      function pendingDrafts(){return STATE.drafts.filter(function(d){return field(d,"status")==="PENDING_REVIEW"})}
+
+      // ---- live updates (no polling): re-fetch on any record change, debounced
+      var _t=null;
+      function subscribe(){
+        try{ if(client.datastore&&client.datastore.watchChanges){
+          client.datastore.watchChanges({onChange:function(){clearTimeout(_t);_t=setTimeout(async function(){await loadData();render(true)},700)}});
+        }}catch(e){}
+      }
+
+      // ---- server actions
+      async function invokeFn(name,input){
+        var cfg=window.__LEMMA_CONFIG__||{};var base=(cfg.apiUrl||location.origin).replace(/\/$/,"");
+        var tok="";try{tok=localStorage.getItem("lemma_token")||""}catch(e){}
+        var res=await fetch(base+"/pods/"+cfg.podId+"/functions/"+name+"/runs",{method:"POST",headers:{"Authorization":"Bearer "+tok,"Content-Type":"application/json"},body:JSON.stringify({input_data:input})});
+        if(!res.ok)throw new Error("action failed ("+res.status+")");
+        var j=await res.json();return j.output_data;
+      }
+      async function action(input,msg){
+        try{ var out=await invokeFn("app_action",input); await loadData(); render(true);
+          toast(msg||(out&&out.detail)||"Done"); return out;
+        }catch(e){toast("⚠ "+(e.message||"failed"))}
+      }
+      var doScan=function(){toast("Scanning…");action({action:"scan"},"Scan started")};
+      var doProcess=function(id){toast("Queued…");action({action:"process",invoice_id:id},"Queued for the agent")};
+
+      // ---- render
+      function render(keep){
+        var p=pendingDrafts().length, legal=STATE.invoices.filter(function(i){return field(i,"status")==="LEGAL"}).length;
+        var nav=[["dashboard","Overview"],["invoices","Invoices"],["approvals","Approvals",p],["legal","Legal",legal],["activity","Activity"],["settings","Settings"]];
+        $("app").innerHTML='<div class="wrap">'+
+          '<div class="top"><div class="brand"><div><div class="eyebrow">Acme Finance · AR</div><h1>Collections Agent</h1></div></div>'+
+          '<div style="display:flex;gap:.5rem;align-items:center">'+
+            '<span class="pill"><span class="pip"></span> live</span>'+
+            '<button class="btn gold sm" onclick="doScan()">Run scan</button>'+
+            '<span class="pill"><button onclick="toggleTheme()">'+(theme()==="dark"?"☀":"☾")+'</button></span>'+
+          '</div></div>'+
+          '<div class="tabs">'+nav.map(function(n){var b=n[2]?(' <span class="badge'+(n[0]==="approvals"&&n[2]?" hot":"")+'">'+n[2]+'</span>'):"";return '<button class="'+(TAB===n[0]?"on":"")+'" onclick="go(\''+n[0]+'\')">'+n[1]+b+'</button>'}).join("")+'</div>'+
+          '<div id="view"></div></div>';
+        renderView();
+      }
+      window.go=function(t){TAB=t;render()};
+      window.toggleTheme=function(){applyTheme(theme()==="dark"?"light":"dark");render()};
+      function renderView(){
+        var v=$("view");if(!v)return;
+        if(TAB==="dashboard")v.innerHTML=viewDashboard();
+        else if(TAB==="invoices")v.innerHTML=viewInvoices();
+        else if(TAB==="approvals")v.innerHTML=viewApprovals();
+        else if(TAB==="legal")v.innerHTML=viewLegal();
+        else if(TAB==="activity")v.innerHTML=viewActivity();
+        else if(TAB==="settings")v.innerHTML=viewSettings();
+      }
+
+      function kpi(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'}
+      function viewDashboard(){
+        var inv=STATE.invoices;
+        var active=inv.filter(function(i){return field(i,"status")==="ACTIVE"});
+        var outstanding=active.reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
+        var overdue=active.filter(function(i){return Number(field(i,"days_overdue")||0)>0}).length;
+        var sent=STATE.drafts.filter(function(d){return["SENT","AUTO_SENT"].indexOf(field(d,"status"))>=0}).length;
+        var pend=pendingDrafts().length;
+        var legal=inv.filter(function(i){return field(i,"status")==="LEGAL"}).length;
+        var paid=inv.filter(function(i){return field(i,"status")==="PAID"}).length;
+        // stage distribution
+        var stages=["STAGE_1","STAGE_2","STAGE_3","STAGE_4","ESCALATED"];
+        var sc={};stages.forEach(function(s){sc[s]=inv.filter(function(i){return field(i,"stage")===s}).length});
+        var maxc=Math.max(1,Math.max.apply(null,stages.map(function(s){return sc[s]})));
+        var bars=stages.map(function(s){return '<div style="display:flex;align-items:center;gap:.6rem;margin:.35rem 0"><div style="width:78px;font-size:.76rem" class="muted">'+s.replace("STAGE_","Stage ")+'</div><div style="flex:1;background:var(--chip);border-radius:6px;overflow:hidden;height:18px"><div style="height:100%;width:'+(sc[s]/maxc*100)+'%;background:color-mix(in srgb,var('+(STAGE_C[s]||"--muted")+') 70%,transparent)"></div></div><b class="num">'+sc[s]+'</b></div>'}).join("");
+        var recent=STATE.interactions.slice(0,8).map(function(e){return '<div class="rec" style="display:flex;gap:.5rem;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--line)"><span class="chip" style="background:var(--chip)">'+esc(field(e,"kind")||"")+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(field(e,"summary")||"")+'</span><span class="muted num" style="font-size:.7rem">'+shortDate(field(e,"created_at"))+'</span></div>'}).join("")||'<div class="empty">No activity yet — hit “Run scan”.</div>';
+        return '<div class="stats">'+kpi(money(outstanding),"Outstanding (active)")+kpi(overdue,"Overdue accounts")+kpi('<span style="color:var(--med)">'+pend+'</span>',"Awaiting approval")+kpi('<span style="color:var(--purple)">'+legal+'</span>',"Legal")+kpi(sent,"Follow-ups sent")+kpi(paid,"Paid")+'</div>'+
+          '<div class="panel"><h2>Escalation pipeline</h2>'+bars+'</div>'+
+          '<div class="panel"><h2>Live activity</h2>'+recent+'</div>';
+      }
+
+      function invRow(i){
+        var c=clientOf(field(i,"client_id"));var d=latestDraft(field(i,"id"),["AUTO_SENT","SENT","PENDING_REVIEW","FAILED"]);
+        var deliver=d?draftChip(field(d,"status")):'<span class="muted">—</span>';
+        return '<tr class="clickable" onclick="openInvoice(\''+field(i,"id")+'\')">'+
+          '<td><b>'+esc(field(i,"invoice_no"))+'</b><div class="muted" style="font-size:.76rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' ★':'')+'</div></td>'+
+          '<td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td>'+
+          '<td class="num">'+(Number(field(i,"days_overdue")||0))+'d</td>'+
+          '<td>'+stageChip(field(i,"stage"))+'</td>'+
+          '<td>'+riskChip(field(i,"risk_level"))+'</td>'+
+          '<td>'+statusChip(field(i,"status"))+'</td>'+
+          '<td>'+deliver+'</td></tr>';
+      }
+      function viewInvoices(){
+        var inv=STATE.invoices.slice().sort(function(a,b){return Number(field(b,"days_overdue")||0)-Number(field(a,"days_overdue")||0)});
+        if(!inv.length)return '<div class="panel"><div class="empty"><div class="big">No invoices yet</div>Seed the pod, then hit “Run scan”.</div></div>';
+        return '<div class="panel"><h2>Invoices <span class="muted" style="font-size:.8rem">· '+inv.length+'</span></h2>'+
+          '<table><thead><tr><th>Invoice / Client</th><th>Amount</th><th>Overdue</th><th>Stage</th><th>Risk</th><th>Status</th><th>Last follow-up</th></tr></thead><tbody>'+
+          inv.map(invRow).join("")+'</tbody></table></div>';
+      }
+
+      function viewApprovals(){
+        var ds=pendingDrafts();
+        if(!ds.length)return '<div class="panel"><div class="empty"><div class="big">Inbox zero ✓</div>No drafts waiting for approval.</div></div>';
+        return ds.map(function(d){
+          var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));
+          return '<div class="panel"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">'+
+            '<div><h2 style="margin-bottom:.2rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2>'+
+            '<div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+' days overdue · '+stageChip(field(i,"stage"))+' '+riskChip(field(d,"risk_level"))+(field(d,"fallback_used")?' <span class="chip" style="background:var(--chip)">template</span>':'')+'</div></div>'+
+            '<div class="row-actions"><button class="btn gold sm" onclick="approve(\''+field(d,"id")+'\')">Approve &amp; send</button>'+
+            '<button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Edit</button>'+
+            '<button class="btn sm danger" onclick="reject(\''+field(d,"id")+'\')">Reject</button>'+
+            '<button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\')">Legal</button></div></div>'+
+            '<div class="mail" style="margin-top:.8rem"><div class="subj">'+esc(field(d,"subject"))+'</div>'+esc(field(d,"body"))+'</div></div>';
+        }).join("");
+      }
+      window.approve=function(id){action({action:"approve",draft_id:id},"Approved & sent")};
+      window.reject=function(id){action({action:"reject",draft_id:id,note:"Rejected by reviewer"},"Draft rejected")};
+      window.flag=function(id){action({action:"flag",draft_id:id,note:"Escalated to legal"},"Flagged to legal")};
+
+      function viewLegal(){
+        var inv=STATE.invoices.filter(function(i){return field(i,"status")==="LEGAL"});
+        if(!inv.length)return '<div class="panel"><div class="empty"><div class="big">Nothing in legal</div>30+ day accounts and flagged invoices land here.</div></div>';
+        return '<div class="panel"><h2>Legal queue <span class="muted" style="font-size:.8rem">· '+inv.length+'</span></h2><table><thead><tr><th>Invoice / Client</th><th>Amount</th><th>Overdue</th></tr></thead><tbody>'+
+          inv.map(function(i){var c=clientOf(field(i,"client_id"));return '<tr class="clickable" onclick="openInvoice(\''+field(i,"id")+'\')"><td><b>'+esc(field(i,"invoice_no"))+'</b><div class="muted" style="font-size:.76rem">'+esc(field(c,"name")||"")+'</div></td><td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td><td class="num">'+(Number(field(i,"days_overdue")||0))+'d</td></tr>'}).join("")+'</tbody></table></div>';
+      }
+
+      function viewActivity(){
+        var ev=STATE.interactions;
+        if(!ev.length)return '<div class="panel"><div class="empty">No activity yet.</div></div>';
+        var lc={INFO:"--muted",SUCCESS:"--low",WARN:"--med",ERROR:"--high"};
+        return '<div class="panel"><h2>Activity &amp; audit</h2><div class="timeline">'+
+          ev.map(function(e){return '<div class="ev"><span class="dot" style="background:var('+(lc[field(e,"level")]||"--gold")+')"></span><div class="when">'+dt(field(e,"created_at"))+' · '+esc(field(e,"kind")||"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join("")+
+          '</div></div>';
+      }
+
+      function viewSettings(){
+        var c=STATE.config;
+        function tg(k,l,d){return '<div class="toggle"><div><b>'+l+'</b><div class="muted" style="font-size:.76rem">'+d+'</div></div><label style="position:relative;display:inline-block;width:42px;height:24px"><input type="checkbox" id="cfg_'+k+'" '+(field(c,k)?"checked":"")+' style="opacity:0;width:0;height:0" onchange="saveCfg()"><span style="position:absolute;inset:0;background:'+(field(c,k)?"var(--gold)":"var(--line)")+';border-radius:999px;transition:.2s"></span><span style="position:absolute;top:3px;left:'+(field(c,k)?"21px":"3px")+';width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s"></span></label></div>'}
+        return '<div class="panel"><h2>Runtime settings</h2>'+
+          tg("auto_dispatch","Auto-dispatch","Auto-send low-risk follow-ups (off → everything needs approval)")+
+          tg("human_in_loop","Human-in-the-loop","Route high-risk & stage-4 to approval")+
+          tg("review_high_risk","Review high risk","Always approve HIGH-risk drafts")+
+          tg("review_stage4","Review stage 4","Always approve final notices")+
+          tg("email_enabled","Send real email","Off = in-app only (safe demo). On = send via Gmail connector")+
+          '<label class="fld"><span class="lbl">Notify channel</span><select id="cfg_notify_channel" onchange="saveCfg()"><option '+(field(c,"notify_channel")==="NONE"?"selected":"")+'>NONE</option><option '+(field(c,"notify_channel")==="SLACK"?"selected":"")+'>SLACK</option><option '+(field(c,"notify_channel")==="WHATSAPP"?"selected":"")+'>WHATSAPP</option></select></label>'+
+          '<label class="fld"><span class="lbl">Company name</span><input id="cfg_company_name" value="'+esc(field(c,"company_name")||"")+'" onchange="saveCfg()"></label>'+
+          '<label class="fld"><span class="lbl">Sender identity</span><input id="cfg_sender_identity" value="'+esc(field(c,"sender_identity")||"")+'" onchange="saveCfg()"></label>'+
+          '</div>';
+      }
+      window.saveCfg=function(){
+        var cfg={auto_dispatch:$("cfg_auto_dispatch").checked,human_in_loop:$("cfg_human_in_loop").checked,review_high_risk:$("cfg_review_high_risk").checked,review_stage4:$("cfg_review_stage4").checked,email_enabled:$("cfg_email_enabled").checked,notify_channel:$("cfg_notify_channel").value,company_name:$("cfg_company_name").value,sender_identity:$("cfg_sender_identity").value};
+        action({action:"save_config",config:cfg},"Settings saved");
+      };
+
+      // ---- invoice drawer
+      window.openInvoice=function(id){
+        var i=invoiceOf(id),c=clientOf(field(i,"client_id"));
+        var d=latestDraft(id,["PENDING_REVIEW","AUTO_SENT","SENT","FAILED","REJECTED"]);
+        var evs=STATE.interactions.filter(function(e){return field(e,"invoice_id")===id});
+        var pending=d&&field(d,"status")==="PENDING_REVIEW";
+        var mailHtml=d?('<div class="mail"><div class="subj">'+esc(field(d,"subject"))+'</div>'+(pending?'<textarea id="edit_body">'+esc(field(d,"body"))+'</textarea>':esc(field(d,"body")))+'</div>'):'<div class="muted">No draft yet.</div>';
+        var actions=pending?('<div class="row-actions" style="margin-top:.7rem"><button class="btn gold sm" onclick="approveEdited(\''+field(d,"id")+'\')">Approve &amp; send</button><button class="btn sm danger" onclick="reject(\''+field(d,"id")+'\');closeDrawer()">Reject</button><button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\');closeDrawer()">Legal</button></div>'):'';
+        var procBtn=(field(i,"status")==="ACTIVE")?'<button class="btn sm" onclick="doProcess(\''+id+'\')">Process now</button>':'';
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">'+esc(field(i,"invoice_no"))+'</div><h1 style="font-size:1.3rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' <span style="color:var(--gold)">★ VIP</span>':'')+'</h1></div><button class="x" onclick="closeDrawer()">×</button></div>'+
+          '<div class="db">'+
+          '<div class="kv"><span class="k">Amount</span><span class="num">'+money(field(i,"amount"),field(i,"currency"))+'</span>'+
+          '<span class="k">Due</span><span>'+esc(String(field(i,"due_date")||"").slice(0,10))+' · '+(Number(field(i,"days_overdue")||0))+' days overdue</span>'+
+          '<span class="k">Stage</span><span>'+stageChip(field(i,"stage"))+' '+riskChip(field(i,"risk_level"))+'</span>'+
+          '<span class="k">Status</span><span>'+statusChip(field(i,"status"))+'</span>'+
+          '<span class="k">Follow-ups</span><span>'+(field(i,"followup_count")||0)+'</span>'+
+          (field(c,"email")?'<span class="k">Email</span><span class="muted">'+esc(field(c,"email"))+'</span>':'')+
+          '</div>'+
+          '<div style="display:flex;gap:.4rem;margin-bottom:.8rem">'+procBtn+'</div>'+
+          '<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:.2rem 0 .5rem">Latest draft</h2>'+mailHtml+actions+
+          '<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:1.2rem 0 .3rem">History</h2>'+
+          '<div class="timeline">'+(evs.length?evs.map(function(e){return '<div class="ev"><span class="dot"></span><div class="when">'+dt(field(e,"created_at"))+' · '+esc(field(e,"kind")||"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join(""):'<div class="muted">No history yet.</div>')+'</div>'+
+          '</div>';
+        $("scrim").classList.add("on");$("drawer").classList.add("on");
+      };
+      window.closeDrawer=function(){$("scrim").classList.remove("on");$("drawer").classList.remove("on")};
+      window.approveEdited=function(id){var t=$("edit_body");var body=t?t.value:null;action(body?{action:"approve",draft_id:id,edited_body:body}:{action:"approve",draft_id:id},"Approved & sent");closeDrawer()};
+    </script>
+  </body>
+</html>

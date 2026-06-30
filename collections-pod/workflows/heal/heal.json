@@ -1,0 +1,15 @@
+{
+  "name": "heal",
+  "description": "Scheduled self-healing: re-enqueue collections runs that failed transiently, falling back to a deterministic draft after bounded retries so every invoice converges.",
+  "start": { "type": "MANUAL" },
+  "nodes": [
+    {
+      "id": "requeue", "type": "FUNCTION", "label": "Requeue stuck",
+      "config": { "function_name": "requeue_stuck", "input_mapping": {} }
+    },
+    { "id": "end", "type": "END", "label": "Done" }
+  ],
+  "edges": [
+    { "id": "e_requeue_end", "source": "requeue", "target": "end" }
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "name": "collections-run",
+  "description": "Per-invoice collections pipeline: classify + score, draft (RAG-grounded), validate (anti-hallucination), then auto-send low-risk or route stage-4/high-risk/escalated to human approval. Triggered per followup_queue row.",
+  "start": {
+    "type": "DATASTORE_EVENT",
+    "config": { "table_name": "followup_queue", "operations": ["INSERT"] }
+  },
+  "nodes": [
+    {
+      "id": "classify", "type": "FUNCTION", "label": "Classify & score",
+      "config": {
+        "function_name": "classify_and_score",
+        "input_mapping": {
+          "invoice_id": { "type": "expression", "value": "start.payload.invoice_id" }
+        }
+      }
+    },
+    {
+      "id": "route_classified", "type": "DECISION", "label": "Escalated or inactive?",
+      "config": {
+        "rules": [
+          { "condition": "classify.status != 'ACTIVE'", "next_node_id": "complete" },
+          { "condition": "classify.is_escalated == `true`", "next_node_id": "do_flag_legal" }
+        ]
+      }
+    },
+    {
+      "id": "drafter", "type": "AGENT", "label": "Draft follow-up",
+      "config": {
+        "agent_name": "collections-drafter",
+        "input_mapping": {
+          "invoice_no": { "type": "expression", "value": "classify.invoice_no" },
+          "client_name": { "type": "expression", "value": "classify.client_name" },
+          "amount": { "type": "expression", "value": "classify.amount" },
+          "currency": { "type": "expression", "value": "classify.currency" },
+          "due_date": { "type": "expression", "value": "classify.due_date" },
+          "days_overdue": { "type": "expression", "value": "classify.days_overdue" },
+          "stage": { "type": "expression", "value": "classify.stage" },
+          "payment_link": { "type": "expression", "value": "classify.payment_link", "optional": true },
+          "vip": { "type": "expression", "value": "classify.vip", "optional": true },
+          "payment_behavior": { "type": "expression", "value": "classify.payment_behavior", "optional": true },
+          "client_notes": { "type": "expression", "value": "classify.client_notes", "optional": true },
+          "risk_level": { "type": "expression", "value": "classify.risk_level", "optional": true }
+        }
+      }
+    },
+    {
+      "id": "validate", "type": "FUNCTION", "label": "Validate (anti-hallucination)",
+      "config": {
+        "function_name": "validate_draft",
+        "input_mapping": {
+          "invoice_id": { "type": "expression", "value": "classify.invoice_id" },
+          "client_id": { "type": "expression", "value": "classify.client_id" },
+          "stage": { "type": "expression", "value": "classify.stage" },
+          "risk_level": { "type": "expression", "value": "classify.risk_level" },
+          "review_reason": { "type": "expression", "value": "classify.review_reason" },
+          "needs_review": { "type": "expression", "value": "classify.needs_review" },
+          "subject": { "type": "expression", "value": "drafter.subject" },
+          "body": { "type": "expression", "value": "drafter.body" },
+          "tone": { "type": "expression", "value": "drafter.tone" },
+          "confidence_score": { "type": "expression", "value": "drafter.confidence_score", "optional": true },
+          "invoice_id_used": { "type": "expression", "value": "drafter.invoice_id_used" },
+          "client_name_used": { "type": "expression", "value": "drafter.client_name_used" },
+          "amount_used": { "type": "expression", "value": "drafter.amount_used" },
+          "days_overdue_used": { "type": "expression", "value": "drafter.days_overdue_used" },
+          "model_used": { "type": "literal", "value": "groq/llama-3.3-70b-versatile" }
+        }
+      }
+    },
+    {
+      "id": "route_validated", "type": "DECISION", "label": "Validation passed?",
+      "config": {
+        "rules": [
+          { "condition": "validate.passed == `true`", "next_node_id": "route_dispatch" }
+        ]
+      }
+    },
+    {
+      "id": "do_fallback", "type": "FUNCTION", "label": "Deterministic fallback draft",
+      "config": {
+        "function_name": "make_fallback_draft",
+        "input_mapping": {
+          "invoice_id": { "type": "expression", "value": "classify.invoice_id" },
+          "stage": { "type": "expression", "value": "classify.stage" },
+          "reason": { "type": "literal", "value": "validation_failed" },
+          "risk_level": { "type": "expression", "value": "classify.risk_level", "optional": true }
+        }
+      }
+    },
+    {
+      "id": "route_dispatch", "type": "DECISION", "label": "Needs human review?",
+      "config": {
+        "rules": [
+          { "condition": "classify.needs_review == `true`", "next_node_id": "complete" }
+        ]
+      }
+    },
+    {
+      "id": "auto_dispatch", "type": "FUNCTION", "label": "Auto-send",
+      "config": {
+        "function_name": "dispatch_followup",
+        "input_mapping": {
+          "draft_id": { "type": "expression", "value": "validate.draft_id" },
+          "auto": { "type": "literal", "value": true }
+        }
+      }
+    },
+    {
+      "id": "do_flag_legal", "type": "FUNCTION", "label": "Flag legal",
+      "config": {
+        "function_name": "flag_legal",
+        "input_mapping": {
+          "invoice_id": { "type": "expression", "value": "classify.invoice_id" },
+          "reason": { "type": "literal", "value": "legal_escalation" }
+        }
+      }
+    },
+    {
+      "id": "complete", "type": "FUNCTION", "label": "Complete queue item",
+      "config": {
+        "function_name": "complete_queue_item",
+        "input_mapping": {
+          "queue_id": { "type": "expression", "value": "start.metadata.record_id" },
+          "status": { "type": "literal", "value": "DONE" }
+        }
+      }
+    },
+    { "id": "end", "type": "END", "label": "Done" }
+  ],
+  "edges": [
+    { "id": "e_classify_route", "source": "classify", "target": "route_classified" },
+    { "id": "e_rc_default", "source": "route_classified", "target": "drafter", "label": "active, not escalated (default)" },
+    { "id": "e_rc_legal", "source": "route_classified", "target": "do_flag_legal", "label": "escalated" },
+    { "id": "e_rc_skip", "source": "route_classified", "target": "complete", "label": "not active" },
+    { "id": "e_drafter_validate", "source": "drafter", "target": "validate" },
+    { "id": "e_validate_route", "source": "validate", "target": "route_validated" },
+    { "id": "e_rv_default", "source": "route_validated", "target": "do_fallback", "label": "failed (default)" },
+    { "id": "e_rv_pass", "source": "route_validated", "target": "route_dispatch", "label": "passed" },
+    { "id": "e_fallback_complete", "source": "do_fallback", "target": "complete" },
+    { "id": "e_rd_default", "source": "route_dispatch", "target": "auto_dispatch", "label": "auto (default)" },
+    { "id": "e_rd_review", "source": "route_dispatch", "target": "complete", "label": "needs review (draft stays PENDING_REVIEW)" },
+    { "id": "e_auto_complete", "source": "auto_dispatch", "target": "complete" },
+    { "id": "e_legal_complete", "source": "do_flag_legal", "target": "complete" },
+    { "id": "e_complete_end", "source": "complete", "target": "end" }
+  ]
+}

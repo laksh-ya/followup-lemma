@@ -1,0 +1,18 @@
+{
+  "name": "scan_overdue",
+  "description": "Refresh days/stage on ACTIVE invoices and enqueue overdue ones into followup_queue for processing.",
+  "type": "API",
+  "code": { "$file": "code.py" },
+  "permissions": {
+    "grants": [
+      { "resource_type": "datastore_table", "resource_name": "invoices",
+        "permission_ids": ["datastore.table.read", "datastore.record.read", "datastore.record.write"] },
+      { "resource_type": "datastore_table", "resource_name": "drafts",
+        "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "datastore_table", "resource_name": "followup_queue",
+        "permission_ids": ["datastore.table.read", "datastore.record.read", "datastore.record.write"] },
+      { "resource_type": "datastore_table", "resource_name": "interactions",
+        "permission_ids": ["datastore.table.read", "datastore.record.write"] }
+    ]
+  }
+}

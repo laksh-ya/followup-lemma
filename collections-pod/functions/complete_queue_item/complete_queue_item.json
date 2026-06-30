@@ -1,0 +1,12 @@
+{
+  "name": "complete_queue_item",
+  "description": "Mark a followup_queue row DONE/ERROR at the end of a collections-run.",
+  "type": "API",
+  "code": { "$file": "code.py" },
+  "permissions": {
+    "grants": [
+      { "resource_type": "datastore_table", "resource_name": "followup_queue",
+        "permission_ids": ["datastore.table.read", "datastore.record.read", "datastore.record.write"] }
+    ]
+  }
+}

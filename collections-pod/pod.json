@@ -1,0 +1,5 @@
+{
+  "name": "collections-agent",
+  "description": "AI accounts-receivable follow-up agent: escalation-aware drafting with anti-hallucination validation, human approval, client history, team roles, and multi-channel notifications.",
+  "format_version": 1
+}

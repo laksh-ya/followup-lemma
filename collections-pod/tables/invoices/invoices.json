@@ -1,0 +1,27 @@
+{
+  "name": "invoices",
+  "primary_key_column": "id",
+  "enable_rls": false,
+  "columns": [
+    { "name": "invoice_no", "type": "TEXT", "required": true, "max_length": 40,
+      "description": "Human-facing invoice number, e.g. INV-2025-001" },
+    { "name": "client_id", "type": "UUID", "required": true,
+      "foreign_key": { "references": "clients.id" } },
+    { "name": "amount", "type": "FLOAT", "required": true },
+    { "name": "currency", "type": "TEXT", "default": "INR", "max_length": 3 },
+    { "name": "due_date", "type": "DATE", "required": true },
+    { "name": "days_overdue", "type": "INTEGER", "default": 0,
+      "description": "Derived from due_date; recomputed each scan, never trusted from import" },
+    { "name": "stage", "type": "ENUM", "required": true, "default": "PENDING",
+      "options": ["PENDING", "STAGE_1", "STAGE_2", "STAGE_3", "STAGE_4", "ESCALATED"] },
+    { "name": "status", "type": "ENUM", "required": true, "default": "ACTIVE",
+      "options": ["ACTIVE", "PAID", "DISPUTED", "LEGAL", "PAUSED"] },
+    { "name": "risk_level", "type": "ENUM", "options": ["LOW", "MEDIUM", "HIGH"] },
+    { "name": "payment_link", "type": "TEXT", "max_length": 500 },
+    { "name": "followup_count", "type": "INTEGER", "default": 0 },
+    { "name": "last_followup_at", "type": "DATETIME" },
+    { "name": "last_processed_at", "type": "DATETIME" },
+    { "name": "notes", "type": "TEXT", "max_length": 2000 }
+  ],
+  "config": {}
+}

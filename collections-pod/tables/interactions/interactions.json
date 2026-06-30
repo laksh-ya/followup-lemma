@@ -1,0 +1,23 @@
+{
+  "name": "interactions",
+  "primary_key_column": "id",
+  "enable_rls": false,
+  "columns": [
+    { "name": "invoice_id", "type": "UUID", "foreign_key": { "references": "invoices.id" } },
+    { "name": "client_id", "type": "UUID", "foreign_key": { "references": "clients.id" } },
+    { "name": "draft_id", "type": "UUID", "foreign_key": { "references": "drafts.id" } },
+    { "name": "kind", "type": "ENUM", "required": true,
+      "options": ["INVOICE_INGESTED", "DRAFT_GENERATED", "EMAIL_SENT", "EMAIL_FAILED",
+        "REPLY_RECEIVED", "STATUS_CHANGE", "STAGE_ESCALATED", "HUMAN_APPROVED",
+        "HUMAN_REJECTED", "FALLBACK_USED", "LEGAL_FLAGGED", "NOTIFICATION_SENT",
+        "PROMISE_MADE", "PROMISE_BROKEN", "NOTE"] },
+    { "name": "channel", "type": "ENUM", "options": ["EMAIL", "WHATSAPP", "SLACK", "SYSTEM"] },
+    { "name": "direction", "type": "ENUM", "options": ["OUTBOUND", "INBOUND", "INTERNAL"] },
+    { "name": "summary", "type": "TEXT", "required": true, "max_length": 1000 },
+    { "name": "detail", "type": "JSON" },
+    { "name": "actor_user", "type": "USER" },
+    { "name": "actor_label", "type": "TEXT", "max_length": 120 },
+    { "name": "level", "type": "ENUM", "default": "INFO", "options": ["INFO", "SUCCESS", "WARN", "ERROR"] }
+  ],
+  "config": {}
+}

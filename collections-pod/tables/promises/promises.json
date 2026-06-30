@@ -1,0 +1,16 @@
+{
+  "name": "promises",
+  "primary_key_column": "id",
+  "enable_rls": false,
+  "columns": [
+    { "name": "invoice_id", "type": "UUID", "required": true,
+      "foreign_key": { "references": "invoices.id" } },
+    { "name": "client_id", "type": "UUID", "foreign_key": { "references": "clients.id" } },
+    { "name": "promised_date", "type": "DATE", "required": true },
+    { "name": "promised_amount", "type": "FLOAT" },
+    { "name": "status", "type": "ENUM", "required": true, "default": "OPEN",
+      "options": ["OPEN", "KEPT", "BROKEN", "CANCELLED"] },
+    { "name": "source", "type": "TEXT", "default": "reply", "max_length": 40 }
+  ],
+  "config": {}
+}

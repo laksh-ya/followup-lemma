@@ -1,0 +1,57 @@
+{
+  "name": "collections-drafter",
+  "description": "Drafts a stage-appropriate, policy-grounded follow-up email for one overdue invoice, echoing source fields for anti-hallucination validation.",
+  "instruction": { "$file": "instruction.md" },
+  "toolsets": ["POD"],
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "invoice_no": { "type": "string" },
+      "client_name": { "type": "string" },
+      "amount": { "type": "number" },
+      "currency": { "type": "string" },
+      "due_date": { "type": "string" },
+      "days_overdue": { "type": "integer" },
+      "stage": { "type": "string" },
+      "payment_link": { "type": "string" },
+      "vip": { "type": "boolean" },
+      "payment_behavior": { "type": "string" },
+      "client_notes": { "type": "string" },
+      "risk_level": { "type": "string" },
+      "tone_override": { "type": "string" },
+      "company_name": { "type": "string" },
+      "sender_identity": { "type": "string" }
+    },
+    "required": ["invoice_no", "client_name", "amount", "currency", "due_date", "days_overdue", "stage"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "subject": { "type": "string" },
+      "body": { "type": "string" },
+      "tone": { "type": "string", "enum": ["WARM_FRIENDLY", "POLITE_FIRM", "FORMAL_SERIOUS", "STERN_URGENT"] },
+      "escalation_stage": { "type": "integer" },
+      "confidence_score": { "type": "number" },
+      "invoice_id_used": { "type": "string" },
+      "client_name_used": { "type": "string" },
+      "amount_used": { "type": "number" },
+      "days_overdue_used": { "type": "integer" },
+      "reasoning": { "type": "string" },
+      "policy_citations": { "type": "array", "items": { "type": "string" } }
+    },
+    "required": ["subject", "body", "tone", "escalation_stage", "confidence_score",
+      "invoice_id_used", "client_name_used", "amount_used", "days_overdue_used"]
+  },
+  "permissions": {
+    "grants": [
+      { "resource_type": "datastore_table", "resource_name": "invoices",
+        "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "datastore_table", "resource_name": "clients",
+        "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "datastore_table", "resource_name": "interactions",
+        "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "folder", "resource_name": "/knowledge",
+        "permission_ids": ["folder.read"] }
+    ]
+  }
+}

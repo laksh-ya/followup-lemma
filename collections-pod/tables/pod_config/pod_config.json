@@ -1,0 +1,21 @@
+{
+  "name": "pod_config",
+  "primary_key_column": "id",
+  "enable_rls": false,
+  "columns": [
+    { "name": "singleton", "type": "TEXT", "default": "main", "unique": true,
+      "description": "Always 'main' — enforces a single config row" },
+    { "name": "auto_dispatch", "type": "BOOLEAN", "default": true },
+    { "name": "human_in_loop", "type": "BOOLEAN", "default": true },
+    { "name": "review_stage4", "type": "BOOLEAN", "default": true },
+    { "name": "review_high_risk", "type": "BOOLEAN", "default": true },
+    { "name": "email_enabled", "type": "BOOLEAN", "default": false,
+      "description": "false = in-app only (safe demo); true = send via Gmail connector" },
+    { "name": "notify_channel", "type": "ENUM", "default": "NONE", "options": ["NONE", "WHATSAPP", "SLACK"] },
+    { "name": "company_name", "type": "TEXT", "default": "Acme Financial Services", "max_length": 200 },
+    { "name": "sender_identity", "type": "TEXT", "default": "Finance team", "max_length": 200 },
+    { "name": "finance_lead_member_id", "type": "TEXT", "max_length": 80 },
+    { "name": "legal_member_id", "type": "TEXT", "max_length": 80 }
+  ],
+  "config": {}
+}

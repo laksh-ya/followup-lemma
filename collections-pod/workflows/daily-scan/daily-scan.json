@@ -1,0 +1,15 @@
+{
+  "name": "daily-scan",
+  "description": "Scheduled entrypoint: scan ACTIVE invoices, refresh stages, and enqueue overdue ones (each enqueued row triggers collections-run via the followup_queue datastore schedule).",
+  "start": { "type": "MANUAL" },
+  "nodes": [
+    {
+      "id": "scan", "type": "FUNCTION", "label": "Scan overdue",
+      "config": { "function_name": "scan_overdue", "input_mapping": {} }
+    },
+    { "id": "end", "type": "END", "label": "Done" }
+  ],
+  "edges": [
+    { "id": "e_scan_end", "source": "scan", "target": "end" }
+  ]
+}

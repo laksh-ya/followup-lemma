@@ -1,0 +1,7 @@
+{
+  "name": "daily-scan",
+  "schedule_type": "TIME",
+  "config": { "cron": "0 9 * * *" },
+  "workflow_name": "daily-scan",
+  "is_active": false
+}

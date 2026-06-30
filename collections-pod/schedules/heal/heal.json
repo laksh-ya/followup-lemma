@@ -1,0 +1,7 @@
+{
+  "name": "heal",
+  "schedule_type": "TIME",
+  "config": { "cron": "*/3 * * * *" },
+  "workflow_name": "heal",
+  "is_active": false
+}
