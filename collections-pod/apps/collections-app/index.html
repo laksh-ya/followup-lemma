@@ -6,82 +6,99 @@
     <title>Collections Agent</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-      :root{color-scheme:light;--paper:#faf8f3;--card:#fffdf8;--ink:#1c1a17;--muted:#6f6658;--line:#ece6da;--gold:#c9a227;--serif:"Fraunces",ui-serif,Georgia,serif;--sans:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;--glow:#fdf6e6;--chip:#f3efe6;--low:#5c7a53;--med:#b8862b;--high:#b4452f;--blue:#3b6ea5;--purple:#7a5c7e;}
-      [data-theme="dark"]{color-scheme:dark;--paper:#15130d;--card:#1e1b14;--ink:#f1ead9;--muted:#a99f8b;--line:#2e2a20;--gold:#e0bd4a;--glow:#241e10;--chip:#2c281f;}
+      :root{color-scheme:light;--paper:#f6f7f9;--card:#ffffff;--card2:#fbfcfe;--ink:#0f172a;--muted:#64748b;--line:#e6e9ef;--line2:#eef1f5;--accent:#4f46e5;--accent-ink:#ffffff;--accent-soft:#eef0fe;--sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;--chip:#f1f3f8;--low:#16a34a;--med:#d97706;--high:#dc2626;--blue:#2563eb;--purple:#7c3aed;--shadow:0 1px 2px rgba(15,23,42,.04),0 2px 8px rgba(15,23,42,.05);--shadow-lg:0 10px 30px rgba(15,23,42,.12);--serif:var(--sans);--gold:var(--accent);--glow:var(--card2);}
+      [data-theme="dark"]{color-scheme:dark;--paper:#0b0f17;--card:#141a24;--card2:#111722;--ink:#e6eaf2;--muted:#93a1b5;--line:#232c3a;--line2:#1c2431;--accent:#818cf8;--accent-ink:#0b0f17;--accent-soft:#1b2137;--chip:#1b232f;--shadow:0 1px 2px rgba(0,0,0,.3);--shadow-lg:0 12px 34px rgba(0,0,0,.5);}
       *{box-sizing:border-box}
-      body{margin:0;min-height:100dvh;background:radial-gradient(120% 90% at 100% 0%,var(--glow) 0%,rgba(0,0,0,0) 55%),var(--paper);color:var(--ink);font-family:var(--sans);font-size:14.5px;line-height:1.5}
-      .wrap{max-width:1200px;margin:0 auto;padding:clamp(1rem,3vw,2rem)}
+      body{margin:0;min-height:100dvh;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+      .wrap{max-width:1240px;margin:0 auto;padding:clamp(1rem,3vw,1.75rem)}
+      svg.ic{width:1em;height:1em;display:inline-block;vertical-align:-.14em;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
       .top{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-      .eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600}
-      h1{font-family:var(--serif);font-weight:500;font-size:clamp(1.5rem,3.5vw,2.1rem);letter-spacing:-.015em;margin:0;line-height:1.05}
-      .pill{display:inline-flex;align-items:center;gap:.45rem;font-size:.78rem;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.35rem .75rem}
-      .pip{width:8px;height:8px;border-radius:50%;background:var(--low);animation:pulse 2.4s infinite}
-      @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(92,122,83,.45)}70%{box-shadow:0 0 0 7px rgba(92,122,83,0)}100%{box-shadow:0 0 0 0 rgba(92,122,83,0)}}
-      .pill button{font:inherit;cursor:pointer;border:none;background:none;color:var(--ink);padding:0;font-size:.95rem}
-      .btn{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:.5rem .9rem;font-weight:600;font-size:.83rem;transition:.15s}
-      .btn:hover{border-color:var(--gold)} .btn.gold{background:var(--gold);border-color:var(--gold);color:#1c1a17}
-      .btn.sm{padding:.32rem .6rem;font-size:.76rem;border-radius:8px} .btn.ghost{background:none}
-      .btn.danger:hover{border-color:var(--high);color:var(--high)} .btn:disabled{opacity:.5;cursor:default}
+      .brand{display:flex;align-items:center;gap:.7rem}
+      .brand .logo{width:38px;height:38px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:1.1rem;box-shadow:var(--shadow)}
+      .eyebrow{font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+      h1{font-weight:700;font-size:clamp(1.15rem,2.4vw,1.4rem);letter-spacing:-.02em;margin:0;line-height:1.1}
+      .pill{display:inline-flex;align-items:center;gap:.4rem;font-size:.75rem;font-weight:500;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.34rem .7rem}
+      .pip{width:7px;height:7px;border-radius:50%;background:var(--low);box-shadow:0 0 0 3px color-mix(in srgb,var(--low) 22%,transparent)}
+      .btn{display:inline-flex;align-items:center;gap:.4rem;font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:.5rem .85rem;font-weight:600;font-size:.82rem;transition:.14s;box-shadow:var(--shadow);white-space:nowrap}
+      .btn:hover{border-color:color-mix(in srgb,var(--accent) 40%,var(--line));background:var(--card2)}
+      .btn.gold{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 1px 2px rgba(79,70,229,.25)} .btn.gold:hover{background:color-mix(in srgb,var(--accent) 88%,#000);border-color:transparent}
+      .btn.sm{padding:.34rem .6rem;font-size:.76rem;border-radius:8px} .btn.ghost{background:none;box-shadow:none;border-color:transparent} .btn.ghost:hover{background:var(--chip);border-color:transparent}
+      .btn.danger{color:var(--high)} .btn.danger:hover{border-color:var(--high);background:color-mix(in srgb,var(--high) 8%,transparent)}
+      .btn.good{color:var(--low)} .btn.good:hover{border-color:var(--low);background:color-mix(in srgb,var(--low) 9%,transparent)}
+      .btn:disabled{opacity:.5;cursor:default}
+      .iconbtn{display:inline-grid;place-items:center;width:34px;height:34px;padding:0;font-size:.98rem}
+      .iconbtn.on{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,var(--line));color:var(--accent)}
       .menu{position:relative;display:inline-block}
-      .menu .items{position:absolute;right:0;top:110%;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.12);padding:.4rem;min-width:200px;z-index:20;display:none}
+      .menu .items{position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:.4rem;min-width:220px;z-index:20;display:none}
       .menu.open .items{display:block}
-      .menu .items button{display:block;width:100%;text-align:left;font:inherit;font-size:.84rem;background:none;border:none;color:var(--ink);padding:.5rem .6rem;border-radius:8px;cursor:pointer}
-      .menu .items button:hover{background:var(--glow)} .menu .items hr{border:none;border-top:1px solid var(--line);margin:.3rem 0}
-      .tabs{display:flex;gap:.3rem;flex-wrap:wrap;margin:1.2rem 0 1rem;border-bottom:1px solid var(--line);padding-bottom:.2rem}
-      .tabs button{font:inherit;font-size:.86rem;font-weight:600;cursor:pointer;border:none;background:none;color:var(--muted);padding:.5rem .8rem;border-radius:9px 9px 0 0;position:relative}
-      .tabs button.on{color:var(--ink)} .tabs button.on::after{content:"";position:absolute;left:.6rem;right:.6rem;bottom:-.25rem;height:2px;background:var(--gold);border-radius:2px}
-      .tabs .badge{display:inline-block;min-width:18px;text-align:center;font-size:.7rem;background:var(--chip);border-radius:999px;padding:.05rem .35rem;margin-left:.35rem;color:var(--ink)}
+      .menu .items button{display:flex;align-items:center;gap:.55rem;width:100%;text-align:left;font:inherit;font-weight:500;font-size:.83rem;background:none;border:none;color:var(--ink);padding:.5rem .55rem;border-radius:8px;cursor:pointer}
+      .menu .items button:hover{background:var(--chip)} .menu .items button svg.ic{color:var(--muted)} .menu .items hr{border:none;border-top:1px solid var(--line);margin:.3rem 0}
+      .tabs{display:flex;gap:.15rem;flex-wrap:wrap;margin:1.25rem 0 1.1rem;border-bottom:1px solid var(--line)}
+      .tabs button{display:inline-flex;align-items:center;gap:.45rem;font:inherit;font-size:.84rem;font-weight:600;cursor:pointer;border:none;background:none;color:var(--muted);padding:.55rem .8rem;position:relative;border-radius:8px 8px 0 0}
+      .tabs button svg.ic{opacity:.8}
+      .tabs button:hover{color:var(--ink);background:var(--card2)}
+      .tabs button.on{color:var(--accent)} .tabs button.on::after{content:"";position:absolute;left:.5rem;right:.5rem;bottom:-1px;height:2px;background:var(--accent);border-radius:2px}
+      .tabs .badge{display:inline-block;min-width:18px;text-align:center;font-size:.68rem;font-weight:700;background:var(--chip);border-radius:999px;padding:.05rem .4rem;color:var(--muted)}
+      .tabs button.on .badge{background:var(--accent-soft);color:var(--accent)}
       .tabs .badge.hot{background:var(--high);color:#fff}
-      .usecase{display:flex;gap:.6rem;align-items:flex-start;background:color-mix(in srgb,var(--gold) 8%,transparent);border:1px solid color-mix(in srgb,var(--gold) 28%,transparent);border-radius:12px;padding:.6rem .85rem;margin-bottom:1rem;font-size:.82rem}
-      .usecase .who{font-weight:700;color:var(--gold-ink,var(--ink))}
-      .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.7rem;margin-bottom:1.1rem}
-      .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:.85rem 1rem}
-      .stat .n{font-family:var(--serif);font-size:1.6rem;line-height:1} .stat .l{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:.4rem}
-      .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.1rem 1.2rem;margin-bottom:1rem}
-      .panel h2{font-family:var(--serif);font-weight:500;font-size:1.05rem;margin:0 0 .8rem}
-      table{width:100%;border-collapse:collapse;font-size:.84rem} th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:.4rem .5rem;border-bottom:1px solid var(--line)}
-      td{padding:.55rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
-      tr.clickable{cursor:pointer} tr.clickable:hover td{background:var(--glow)}
-      .num{font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:.82rem}
-      .chip{display:inline-block;font-size:.7rem;font-weight:700;padding:.12rem .5rem;border-radius:999px;white-space:nowrap}
-      .muted{color:var(--muted)} .row-actions{display:flex;gap:.35rem;flex-wrap:wrap}
-      .empty{text-align:center;color:var(--muted);padding:2rem 1rem} .empty .big{font-size:1.4rem;font-family:var(--serif);color:var(--ink);margin-bottom:.3rem}
-      .scrim{position:fixed;inset:0;background:rgba(20,16,8,.4);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.2s;z-index:40} .scrim.on{opacity:1;pointer-events:auto}
-      .drawer{position:fixed;top:0;right:0;height:100dvh;width:min(580px,95vw);background:var(--paper);border-left:1px solid var(--line);transform:translateX(100%);transition:.25s;z-index:50;overflow-y:auto} .drawer.on{transform:none}
-      .drawer .dh{position:sticky;top:0;background:var(--paper);border-bottom:1px solid var(--line);padding:1rem 1.2rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem} .drawer .db{padding:1.1rem 1.2rem}
-      .x{font:inherit;cursor:pointer;border:none;background:none;font-size:1.3rem;color:var(--muted);line-height:1}
-      .kv{display:grid;grid-template-columns:auto 1fr;gap:.3rem 1rem;font-size:.84rem;margin:.4rem 0 1rem} .kv .k{color:var(--muted)}
-      .mail{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;white-space:pre-wrap;font-size:.84rem;line-height:1.6} .mail .subj{font-weight:700;margin-bottom:.5rem;font-family:var(--serif);font-size:1rem}
-      .timeline{margin:.5rem 0 0;padding-left:.2rem} .timeline .ev{position:relative;padding:.4rem 0 .6rem .9rem;border-left:2px solid var(--line);margin-left:.2rem} .timeline .ev .dot{position:absolute;left:-7px;top:.55rem;width:10px;height:10px;border-radius:50%;background:var(--gold);border:2px solid var(--paper)} .timeline .ev .when{font-size:.7rem;color:var(--muted)} .timeline .ev .what{font-size:.84rem}
-      textarea,input,select{font:inherit;font-size:.84rem;width:100%;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:.5rem .6rem}
-      textarea{min-height:120px;resize:vertical;font-family:var(--mono);font-size:.8rem;line-height:1.5}
-      label.fld{display:block;margin:.6rem 0} label.fld .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.25rem;display:block}
-      .toggle{display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--line);font-size:.86rem}
+      .usecase{display:flex;gap:.55rem;align-items:center;color:var(--muted);border-radius:10px;padding:.1rem .1rem .9rem;margin-bottom:.4rem;font-size:.82rem}
+      .usecase svg.ic{color:var(--accent);font-size:1rem}
+      .usecase .who{font-weight:700;color:var(--ink)}
+      .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;margin-bottom:1.1rem}
+      .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;box-shadow:var(--shadow)}
+      .stat .n{font-size:1.55rem;font-weight:700;line-height:1;letter-spacing:-.02em} .stat .l{font-size:.72rem;color:var(--muted);margin-top:.4rem;font-weight:500}
+      .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.1rem 1.2rem;margin-bottom:1rem;box-shadow:var(--shadow)}
+      .panel h2{font-weight:700;font-size:.98rem;letter-spacing:-.01em;margin:0 0 .8rem;display:flex;align-items:center;gap:.5rem} .panel h2 svg.ic{color:var(--muted);font-size:1rem}
+      table{width:100%;border-collapse:collapse;font-size:.84rem} th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:.5rem .55rem;border-bottom:1px solid var(--line)}
+      td{padding:.6rem .55rem;border-bottom:1px solid var(--line2);vertical-align:middle}
+      tbody tr:last-child td{border-bottom:none}
+      tr.clickable{cursor:pointer;transition:background .12s} tr.clickable:hover td{background:var(--card2)}
+      .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+      .chip{display:inline-flex;align-items:center;gap:.25rem;font-size:.68rem;font-weight:600;padding:.16rem .5rem;border-radius:6px;white-space:nowrap;line-height:1.2}
+      .muted{color:var(--muted)} .row-actions{display:flex;gap:.35rem;flex-wrap:wrap;align-items:center}
+      .empty{text-align:center;color:var(--muted);padding:2.4rem 1rem} .empty .big{font-size:1.15rem;font-weight:700;color:var(--ink);margin-bottom:.35rem;letter-spacing:-.01em}
+      .empty svg.ic{font-size:1.9rem;color:var(--line);margin-bottom:.4rem;stroke-width:1.6}
+      .scrim{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.2s;z-index:40} .scrim.on{opacity:1;pointer-events:auto}
+      .drawer{position:fixed;top:0;right:0;height:100dvh;width:min(600px,96vw);background:var(--paper);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .24s cubic-bezier(.4,0,.2,1);z-index:50;overflow-y:auto} .drawer.on{transform:none}
+      .drawer .dh{position:sticky;top:0;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:1rem 1.2rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;z-index:2} .drawer .db{padding:1.1rem 1.2rem}
+      .x{display:grid;place-items:center;width:32px;height:32px;font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:8px;font-size:1.1rem;color:var(--muted);line-height:1} .x:hover{color:var(--ink);border-color:var(--muted)}
+      .kv{display:grid;grid-template-columns:auto 1fr;gap:.45rem 1rem;font-size:.84rem;margin:.4rem 0 1rem} .kv .k{color:var(--muted)}
+      .mail{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;white-space:pre-wrap;font-size:.85rem;line-height:1.6} .mail .subj{font-weight:700;margin-bottom:.5rem;font-size:.95rem}
+      .timeline{margin:.5rem 0 0;padding-left:.2rem} .timeline .ev{position:relative;padding:.35rem 0 .7rem .95rem;border-left:2px solid var(--line);margin-left:.2rem} .timeline .ev:last-child{border-color:transparent} .timeline .ev .dot{position:absolute;left:-6px;top:.5rem;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--paper)} .timeline .ev .when{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums} .timeline .ev .what{font-size:.85rem}
+      textarea,input,select{font:inherit;font-size:.85rem;width:100%;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:.5rem .65rem;transition:.12s} textarea:focus,input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+      textarea{min-height:120px;resize:vertical;line-height:1.55}
+      label.fld{display:block;margin:.7rem 0} label.fld .lbl{font-size:.74rem;font-weight:600;color:var(--muted);margin-bottom:.3rem;display:block}
+      .toggle{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.6rem 0;border-bottom:1px solid var(--line2);font-size:.86rem} .toggle:last-child{border-bottom:none}
+      .sw{position:relative;display:inline-block;width:40px;height:23px;flex:none;cursor:pointer} .sw input{opacity:0;width:0;height:0} .sw .tk{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.16s} .sw .tk::before{content:"";position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.16s;box-shadow:0 1px 2px rgba(0,0,0,.2)} .sw input:checked+.tk{background:var(--accent)} .sw input:checked+.tk::before{transform:translateX(17px)}
       .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem} @media(max-width:680px){.grid2{grid-template-columns:1fr}}
-      .guide{background:var(--chip);border-radius:10px;padding:.7rem .85rem;font-size:.8rem;line-height:1.55;margin-top:.5rem} .guide code{font-family:var(--mono);background:var(--card);padding:.05rem .35rem;border-radius:5px} .guide ol{margin:.3rem 0 0 1rem;padding:0}
+      .guide{background:var(--card2);border:1px solid var(--line2);border-radius:10px;padding:.75rem .9rem;font-size:.8rem;line-height:1.6;margin-top:.5rem} .guide code{font-family:var(--mono);font-size:.92em;background:var(--chip);padding:.08rem .35rem;border-radius:5px} .guide ol{margin:.3rem 0 0 1rem;padding:0}
       .center{min-height:80dvh;display:grid;place-items:center;text-align:center}
-      .toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%) translateY(2rem);background:var(--ink);color:var(--paper);padding:.6rem 1.1rem;border-radius:10px;font-size:.84rem;opacity:0;transition:.25s;z-index:80} .toast.on{opacity:1;transform:translateX(-50%)}
-      .busy{position:fixed;inset:0;background:rgba(20,16,8,.35);backdrop-filter:blur(3px);display:none;place-items:center;z-index:90} .busy.on{display:grid}
-      .busy .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.4rem 1.8rem;text-align:center;min-width:220px}
-      .spin{display:inline-block;width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite} @keyframes sp{to{transform:rotate(360deg)}}
-      .working{display:flex;align-items:center;gap:.5rem;background:color-mix(in srgb,var(--blue) 10%,transparent);border:1px solid color-mix(in srgb,var(--blue) 30%,transparent);border-radius:10px;padding:.5rem .8rem;margin-bottom:1rem;font-size:.83rem}
-      .hero{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1.2rem;background:linear-gradient(135deg,var(--card),var(--glow));border:1px solid var(--line);border-radius:18px;padding:1.2rem 1.4rem;margin-bottom:1rem}
-      .hero .big{font-family:var(--serif);font-size:clamp(2rem,5.5vw,2.9rem);line-height:1;letter-spacing:-.02em}
-      .hero .sub{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.45rem}
-      .hero .minis{display:flex;gap:1.5rem}
-      .hero .mini .n{font-family:var(--serif);font-size:1.5rem;line-height:1}
-      .hero .mini .l{font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:.3rem}
-      .needs{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:.7rem;margin-bottom:1rem}
-      .acard{cursor:pointer;text-align:left;font:inherit;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ac,var(--gold));border-radius:14px;padding:.8rem .95rem;transition:.15s}
-      .acard:hover{border-color:var(--ac,var(--gold));transform:translateY(-1px)}
-      .acard .acn{font-family:var(--serif);font-size:1.75rem;line-height:1;color:var(--ac,var(--ink))}
-      .acard .acl{font-weight:700;font-size:.84rem;margin-top:.3rem}
-      .acard .acs{font-size:.73rem;color:var(--muted);margin-top:.15rem}
-      .allclear{display:flex;align-items:center;gap:.7rem;background:color-mix(in srgb,var(--low) 11%,transparent);border:1px solid color-mix(in srgb,var(--low) 32%,transparent);border-radius:14px;padding:.85rem 1.1rem;margin-bottom:1rem;font-size:.86rem}
+      .toast{position:fixed;bottom:1.3rem;left:50%;transform:translateX(-50%) translateY(2rem);background:var(--ink);color:var(--paper);padding:.65rem 1.1rem;border-radius:10px;font-size:.84rem;font-weight:500;opacity:0;transition:.24s;z-index:80;box-shadow:var(--shadow-lg)} .toast.on{opacity:1;transform:translateX(-50%)}
+      .busy{position:fixed;inset:0;background:rgba(15,23,42,.4);backdrop-filter:blur(3px);display:none;place-items:center;z-index:90} .busy.on{display:grid}
+      .busy .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.4rem 1.8rem;text-align:center;min-width:220px;box-shadow:var(--shadow-lg)}
+      .spin{display:inline-block;width:22px;height:22px;border:2.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite} @keyframes sp{to{transform:rotate(360deg)}}
+      .working{display:flex;align-items:center;gap:.55rem;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);color:color-mix(in srgb,var(--accent) 80%,var(--ink));border-radius:10px;padding:.55rem .85rem;margin-bottom:1rem;font-size:.83rem;font-weight:500}
+      .hero{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1.2rem;background:linear-gradient(120deg,var(--accent) 0%,color-mix(in srgb,var(--accent) 78%,var(--purple)) 100%);color:#fff;border-radius:16px;padding:1.3rem 1.5rem;margin-bottom:1rem;box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 28%,transparent)}
+      .hero .big{font-size:clamp(1.8rem,4.5vw,2.5rem);font-weight:800;line-height:1;letter-spacing:-.025em}
+      .hero .sub{font-size:.78rem;opacity:.85;margin-top:.5rem;font-weight:500}
+      .hero .minis{display:flex;gap:1.6rem}
+      .hero .mini .n{font-size:1.5rem;line-height:1;font-weight:700}
+      .hero .mini .l{font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;opacity:.8;margin-top:.35rem;font-weight:600}
+      .needs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.75rem;margin-bottom:1rem}
+      .acard{cursor:pointer;text-align:left;font:inherit;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;transition:.14s;box-shadow:var(--shadow);position:relative;overflow:hidden}
+      .acard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac,var(--accent))}
+      .acard:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+      .acard .acn{font-size:1.6rem;line-height:1;font-weight:700;color:var(--ac,var(--ink));letter-spacing:-.02em}
+      .acard .acl{font-weight:700;font-size:.85rem;margin-top:.35rem;display:flex;align-items:center;gap:.4rem} .acard .acl svg.ic{color:var(--ac,var(--muted))}
+      .acard .acs{font-size:.74rem;color:var(--muted);margin-top:.15rem}
+      .allclear{display:flex;align-items:center;gap:.7rem;background:color-mix(in srgb,var(--low) 9%,transparent);border:1px solid color-mix(in srgb,var(--low) 28%,transparent);border-radius:12px;padding:.9rem 1.1rem;margin-bottom:1rem;font-size:.86rem} .allclear svg.ic{color:var(--low);font-size:1.2rem}
       .split{display:grid;grid-template-columns:1fr 1fr;gap:1rem}@media(max-width:760px){.split{grid-template-columns:1fr}}
+      .seg{display:inline-flex;background:var(--chip);border-radius:9px;padding:3px;gap:2px} .seg button{border:none;background:none;font:inherit;font-weight:600;font-size:.8rem;color:var(--muted);padding:.35rem .7rem;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem} .seg button.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+      .field-in{width:auto;display:inline-flex;align-items:center;gap:.4rem;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem}
+      .conn{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:600;padding:.2rem .5rem;border-radius:6px} .conn.ok{background:color-mix(in srgb,var(--low) 12%,transparent);color:var(--low)} .conn.no{background:var(--chip);color:var(--muted)}
     </style>
   </head>
   <body>
@@ -99,14 +116,58 @@
       function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
       function field(r,k){return (r&&r.data&&r.data[k]!=null)?r.data[k]:(r?r[k]:undefined)}
       function listOf(r){return (r&&(r.items||r.data))||(Array.isArray(r)?r:[])}
-      function fatal(m){$("app").innerHTML='<div class="center"><div><h1>⚠</h1><p>'+esc(m)+'</p></div></div>'}
+      function fatal(m){$("app").innerHTML='<div class="center"><div><div style="font-size:2rem;color:var(--high)">'+ic("alert")+'</div><p>'+esc(m)+'</p></div></div>'}
       function theme(){try{return localStorage.getItem("ca-theme")||"light"}catch(e){return "light"}}
       function applyTheme(t){document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("ca-theme",t)}catch(e){}}
       function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(function(){t.classList.remove("on")},2600)}
       function setBusy(on,msg){$("busy").classList.toggle("on",!!on);if(msg)$("busymsg").textContent=msg}
       function money(v,cur){cur=cur||"INR";return (cur==="INR"?"₹":cur+" ")+Number(v||0).toLocaleString("en-IN")}
-      function shortDate(s){if(!s)return"";var d=new Date(s);return isNaN(d)?String(s).slice(0,10):d.toLocaleDateString(undefined,{month:"short",day:"numeric"})}
-      function dt(s){if(!s)return"";var d=new Date(s);return isNaN(d)?String(s):d.toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}
+      // Full timestamp everywhere (date + time). ts = long, dt = same (kept for call-sites).
+      function ts(s){if(!s)return"—";var d=new Date(s);return isNaN(d)?String(s):d.toLocaleString(undefined,{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}
+      function dt(s){return ts(s)}
+      function shortDate(s){return ts(s)}
+      // ---- inline SVG icons (Lucide-style). ic("name") → <svg…>. No emojis anywhere.
+      var ICONS={
+        dashboard:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+        file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/>',
+        inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.5 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.4-6.5A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/>',
+        reply:'<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 5 5v3"/>',
+        users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>',
+        calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+        book:'<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+        chat:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',
+        settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+        moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>',
+        sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+        send:'<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
+        check:'<path d="M20 6 9 17l-5-5"/>',
+        checkc:'<circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/>',
+        clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+        alert:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+        scale:'<path d="M12 3v18M7 21h10M5 7h14"/><path d="M5 7 2 13a3 3 0 0 0 6 0z"/><path d="M19 7l-3 6a3 3 0 0 0 6 0z"/>',
+        search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+        upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/>',
+        download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',
+        sheet:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',
+        plus:'<path d="M12 5v14M5 12h14"/>',
+        seed:'<path d="M12 22V11"/><path d="M12 11C12 7 9 5 5 5c0 4 2 7 7 6z"/><path d="M12 13c0-3 2.5-5 6-5 0 3.5-2 6-6 5z"/>',
+        reset:'<path d="M3 12a9 9 0 1 0 2.6-6.3L3 8"/><path d="M3 3v5h5"/>',
+        scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/>',
+        trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
+        edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+        play:'<path d="M6 3l14 9-14 9z"/>',
+        x:'<path d="M18 6 6 18M6 6l12 12"/>',
+        chevron:'<path d="m6 9 6 6 6-6"/>',
+        hash:'<path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>',
+        dollar:'<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+        bolt:'<path d="M13 2 3 14h7l-1 8 10-12h-7z"/>',
+        pause:'<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+        external:'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+        chart:'<path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="5"/><rect x="12" y="8" width="3" height="9"/><rect x="17" y="5" width="3" height="12"/>',
+        telegram:'<path d="M22 3 2 10.5l6 2.2M22 3l-3 16-8-6M22 3 8.7 12.7M8 15v5l3-3.5"/>'
+      };
+      function ic(n){return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||"")+'</svg>'}
+      function sw(id,on,attrs){return '<label class="sw"><input type="checkbox" id="'+id+'" '+(on?"checked":"")+' '+(attrs||"")+'><span class="tk"></span></label>'}
       var STAGE_C={PENDING:"--muted",STAGE_1:"--low",STAGE_2:"--med",STAGE_3:"--med",STAGE_4:"--high",ESCALATED:"--purple"};
       var RISK_C={LOW:"--low",MEDIUM:"--med",HIGH:"--high"};
       var STATUS_C={ACTIVE:"--blue",PAID:"--low",DISPUTED:"--med",LEGAL:"--purple",PAUSED:"--muted"};
@@ -202,45 +263,46 @@
       function render(keep){
         var p=pendingReal().length,legal=mainInvoices().filter(function(i){return field(i,"status")==="LEGAL"}).length,rep=repliesReal().length,proc=processingCount();
         var enabledChans=STATE.statsChannels.filter(function(r){return field(r,"enabled")}).length;
-        var nav=[["dashboard","Overview"],["invoices","Invoices"],["approvals","Approvals",p+legal,p>0],["replies","Replies",rep],["customers","Customers"],["schedule","Schedule",enabledChans]];
-        function uicon(tab,label,title){return '<button class="btn sm'+(TAB===tab?' gold':'')+'" title="'+title+'" onclick="go(\''+tab+'\')">'+label+'</button>'}
-        $("app").innerHTML='<div class="wrap"><div class="top"><div><div class="eyebrow">Acme Finance · Accounts Receivable</div><h1>Collections Agent</h1></div>'+
-          '<div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap"><span class="pill"><span class="pip"></span> live</span>'+
-          '<button class="btn gold sm" onclick="doScan()">Run scan</button>'+
-          '<div class="menu" id="datamenu"><button class="btn sm" onclick="document.getElementById(\'datamenu\').classList.toggle(\'open\')">Data ▾</button><div class="items">'+
-            '<button onclick="closeMenu();importSheet()">📊 Import from Google Sheets</button>'+
-            '<button onclick="closeMenu();pickCSV()">⬆ Import CSV / Excel</button>'+
-            '<button onclick="closeMenu();exportCSV()">⬇ Export CSV</button>'+
-            '<button onclick="closeMenu();addInvoice()">＋ Add invoice</button><hr>'+
-            '<button onclick="closeMenu();seedDemo()">🌱 Seed random mails</button>'+
-            '<button onclick="closeMenu();seedReplies()">💬 Seed customer replies</button><hr>'+
-            '<button onclick="closeMenu();resetData()" style="color:var(--high)">🗑 Reset all data</button>'+
+        var nav=[["dashboard","Overview","dashboard"],["invoices","Invoices","file"],["approvals","Approvals","inbox",p+legal,p>0],["replies","Replies","reply",rep],["customers","Customers","users"],["schedule","Schedule","calendar",enabledChans]];
+        function uicon(tab,icn,title){return '<button class="btn iconbtn'+(TAB===tab?' on':'')+'" title="'+title+'" onclick="go(\''+tab+'\')">'+ic(icn)+'</button>'}
+        $("app").innerHTML='<div class="wrap"><div class="top"><div class="brand"><div class="logo">'+ic("dollar")+'</div><div><div class="eyebrow">Acme Finance · Accounts Receivable</div><h1>Collections Agent</h1></div></div>'+
+          '<div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap"><span class="pill"><span class="pip"></span> Live</span>'+
+          '<button class="btn gold sm" onclick="doScan()">'+ic("scan")+' Run scan</button>'+
+          '<div class="menu" id="datamenu"><button class="btn sm" onclick="document.getElementById(\'datamenu\').classList.toggle(\'open\')">'+ic("upload")+' Data '+ic("chevron")+'</button><div class="items">'+
+            '<button onclick="closeMenu();importSheet()">'+ic("sheet")+' Import from Google Sheets</button>'+
+            '<button onclick="closeMenu();pickCSV()">'+ic("upload")+' Import CSV / Excel</button>'+
+            '<button onclick="closeMenu();exportCSV()">'+ic("download")+' Export CSV</button>'+
+            '<button onclick="closeMenu();addInvoice()">'+ic("plus")+' Add invoice</button><hr>'+
+            '<button onclick="closeMenu();seedDemo()">'+ic("seed")+' Seed sample data</button>'+
+            '<button onclick="closeMenu();seedReplies()">'+ic("reply")+' Seed customer replies</button><hr>'+
+            '<button onclick="closeMenu();resetData()" style="color:var(--high)">'+ic("trash")+' Reset all data</button>'+
           '</div></div>'+
-          '<span style="width:1px;height:22px;background:var(--line);margin:0 .1rem"></span>'+
-          '<button class="btn sm ghost" title="How to set everything up" onclick="openSetupGuide()">📖 Setup</button>'+
-          uicon("ask","💬","Ask the agent")+
-          uicon("settings","⚙","Settings")+
-          '<span class="pill"><button onclick="toggleTheme()">'+(theme()==="dark"?"☀":"☾")+'</button></span></div></div>'+
-          '<div class="tabs">'+nav.map(function(n){var b=n[2]?(' <span class="badge'+(n[3]?" hot":"")+'">'+n[2]+'</span>'):"";return '<button class="'+(TAB===n[0]?"on":"")+'" onclick="go(\''+n[0]+'\')">'+n[1]+b+'</button>'}).join("")+'</div>'+
+          '<span style="width:1px;height:24px;background:var(--line);margin:0 .15rem"></span>'+
+          uicon("ask","chat","Ask the agent")+
+          '<button class="btn iconbtn" title="Setup guide" onclick="openSetupGuide()">'+ic("book")+'</button>'+
+          uicon("settings","settings","Settings")+
+          '<button class="btn iconbtn" title="Theme" onclick="toggleTheme()">'+ic(theme()==="dark"?"sun":"moon")+'</button>'+
+          '</div></div>'+
+          '<div class="tabs">'+nav.map(function(n){var b=n[3]?(' <span class="badge'+(n[4]?" hot":"")+'">'+n[3]+'</span>'):"";return '<button class="'+(TAB===n[0]?"on":"")+'" onclick="go(\''+n[0]+'\')">'+ic(n[2])+n[1]+b+'</button>'}).join("")+'</div>'+
           (proc?'<div class="working"><span class="spin" style="width:14px;height:14px;border-width:2px"></span> The agent is processing <b>&nbsp;'+proc+'&nbsp;</b> invoice(s) — drafts appear automatically.</div>':'')+
           '<div id="view"></div></div>';
         renderView();
       }
       window.go=function(t){TAB=t;render()};window.toggleTheme=function(){applyTheme(theme()==="dark"?"light":"dark");render()};window.closeMenu=function(){var m=$("datamenu");if(m)m.classList.remove("open")};
-      function uc(who,what){return '<div class="usecase"><span>👥</span><div><span class="who">'+who+'</span> — '+what+'</div></div>'}
+      function uc(who,what){return '<div class="usecase">'+ic("users")+'<div><span class="who">'+who+'</span> — '+what+'</div></div>'}
       function renderView(){var v=$("view");if(!v)return;v.innerHTML=({dashboard:viewDashboard,invoices:viewInvoices,approvals:viewApprovals,replies:viewReplies,customers:viewCustomers,schedule:viewSchedule,ask:viewAsk,settings:viewSettings}[TAB]||viewDashboard)()}
       function kpi(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'}
-      function ncard(n,l,sub,tab,c){return '<button class="acard" onclick="go(\''+tab+'\')" style="--ac:var('+c+')"><div class="acn">'+n+'</div><div class="acl">'+l+'</div><div class="acs">'+esc(sub)+'</div></button>'}
+      function ncard(n,l,sub,tab,c,icn){return '<button class="acard" onclick="go(\''+tab+'\')" style="--ac:var('+c+')"><div class="acn">'+n+'</div><div class="acl">'+(icn?ic(icn):"")+l+'</div><div class="acs">'+esc(sub)+'</div></button>'}
 
       function realEmptyState(){
-        return '<div class="panel"><div class="empty"><div class="big">Your workspace is empty</div><p>Load your invoices to get started — the agent triages and drafts follow-ups automatically.</p>'+
-          '<div style="margin:1.2rem 0 .5rem;font-weight:600;font-size:.84rem;text-transform:uppercase;letter-spacing:.05em" class="muted">Add data</div>'+
-          '<div class="row-actions" style="justify-content:center;margin-bottom:1rem;gap:.6rem">'+
-            '<button class="btn gold sm" onclick="importSheet()">📊 Import from Google Sheets</button>'+
-            '<button class="btn sm" onclick="pickCSV()">⬆ Import CSV / Excel</button>'+
-            '<button class="btn sm" onclick="addInvoice()">＋ Add invoice</button>'+
+        return '<div class="panel"><div class="empty">'+ic("inbox")+'<div class="big">Your workspace is empty</div><p>Load your invoices to get started — the agent triages and drafts follow-ups automatically.</p>'+
+          '<div style="margin:1.2rem 0 .5rem;font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em" class="muted">Add data</div>'+
+          '<div class="row-actions" style="justify-content:center;margin-bottom:1rem;gap:.5rem">'+
+            '<button class="btn gold sm" onclick="importSheet()">'+ic("sheet")+' Import from Google Sheets</button>'+
+            '<button class="btn sm" onclick="pickCSV()">'+ic("upload")+' Import CSV / Excel</button>'+
+            '<button class="btn sm" onclick="addInvoice()">'+ic("plus")+' Add invoice</button>'+
           '</div>'+
-          '<div class="muted" style="font-size:.8rem">Just exploring? <button class="btn sm ghost" onclick="seedDemo()">🌱 Seed random mails</button> to generate a sample book of customers, invoices &amp; drafts.</div>'+
+          '<div class="muted" style="font-size:.8rem">Just exploring? <button class="btn sm ghost" onclick="seedDemo()">'+ic("seed")+' Seed sample data</button> to generate a sample book of customers, invoices &amp; drafts.</div>'+
           '</div></div>';
       }
 
@@ -262,19 +324,19 @@
         // Hero — the one number that matters, with the three counts a collector watches.
         var hero='<div class="hero"><div><div class="big">'+money(outstanding)+'</div><div class="sub">Outstanding · '+active.length+' active invoice'+(active.length===1?"":"s")+'</div></div>'+
           '<div class="minis">'+
-          '<div class="mini"><div class="n" style="color:var(--high)">'+overdue+'</div><div class="l">Overdue</div></div>'+
-          '<div class="mini"><div class="n" style="color:var(--med)">'+pending+'</div><div class="l">To approve</div></div>'+
-          '<div class="mini"><div class="n" style="color:var(--purple)">'+legalInv.length+'</div><div class="l">In legal</div></div>'+
+          '<div class="mini"><div class="n">'+overdue+'</div><div class="l">Overdue</div></div>'+
+          '<div class="mini"><div class="n">'+pending+'</div><div class="l">To approve</div></div>'+
+          '<div class="mini"><div class="n">'+legalInv.length+'</div><div class="l">In legal</div></div>'+
           '</div></div>';
 
         // Needs you now — only what requires a human, each jumping to the right tab.
         var cards=[];
-        if(pending)cards.push(ncard(pending,"Awaiting approval","Drafts to review before they send","approvals","--med"));
-        if(legalInv.length)cards.push(ncard(legalInv.length,"In legal",money(legalAmt)+" at risk","approvals","--purple"));
-        if(openProm)cards.push(ncard(openProm,"Promises to pay","Payment dates to watch","replies","--low"));
-        if(disputes)cards.push(ncard(disputes,"Disputed","Dunning paused until resolved","invoices","--high"));
+        if(pending)cards.push(ncard(pending,"Awaiting approval","Drafts to review before they send","approvals","--med","inbox"));
+        if(legalInv.length)cards.push(ncard(legalInv.length,"In legal",money(legalAmt)+" at risk","approvals","--purple","scale"));
+        if(openProm)cards.push(ncard(openProm,"Promises to pay","Payment dates to watch","replies","--low","clock"));
+        if(disputes)cards.push(ncard(disputes,"Disputed","Dunning paused until resolved","invoices","--high","bolt"));
         var needs=cards.length?'<div class="needs">'+cards.join("")+'</div>':
-          '<div class="allclear"><span style="font-size:1.15rem;color:var(--low)">✓</span><div><b>All clear.</b> <span class="muted">Nothing needs a human right now — the agent is handling the book.</span></div></div>';
+          '<div class="allclear">'+ic("checkc")+'<div><b>All clear.</b> <span class="muted">Nothing needs a human right now — the agent is handling the book.</span></div></div>';
 
         // Escalation pipeline
         var stages=["STAGE_1","STAGE_2","STAGE_3","STAGE_4","ESCALATED"],sc={};stages.forEach(function(s){sc[s]=inv.filter(function(i){return field(i,"stage")===s}).length});
@@ -300,11 +362,18 @@
       }
 
       function invRow(i){var c=clientOf(field(i,"client_id"));var d=latestDraft(field(i,"id"),["AUTO_SENT","SENT","PENDING_REVIEW","FAILED"]);
-        return '<tr class="clickable" onclick="openInvoice(\''+field(i,"id")+'\')"><td><b>'+esc(field(i,"invoice_no"))+'</b><div class="muted" style="font-size:.76rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' ★':'')+'</div></td><td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td><td class="num">'+(Number(field(i,"days_overdue")||0))+'d</td><td>'+stageChip(field(i,"stage"))+'</td><td>'+riskChip(field(i,"risk_level"))+'</td><td>'+statusChip(field(i,"status"))+'</td><td>'+(d?draftChip(field(d,"status")):'<span class="muted">—</span>')+'</td></tr>'}
+        var iid=field(i,"id"),st=field(i,"status"),last=field(i,"last_followup_at");
+        var paid = st==="ACTIVE" ? '<button class="btn sm good" title="Mark as paid" onclick="event.stopPropagation();markPaid(\''+iid+'\')">'+ic("check")+' Paid</button>' : '';
+        var lastCell = d?draftChip(field(d,"status")):'<span class="muted">—</span>';
+        if(last)lastCell+='<div class="muted num" style="font-size:.7rem;margin-top:.2rem">'+ts(last)+'</div>';
+        return '<tr class="clickable" onclick="openInvoice(\''+iid+'\')"><td><b>'+esc(field(i,"invoice_no"))+'</b><div class="muted" style="font-size:.76rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' <span class="chip" style="background:var(--accent-soft);color:var(--accent);font-size:.6rem">VIP</span>':'')+'</div></td><td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td><td class="num">'+(Number(field(i,"days_overdue")||0))+'d</td><td>'+stageChip(field(i,"stage"))+'</td><td>'+riskChip(field(i,"risk_level"))+'</td><td>'+statusChip(st)+'</td><td>'+lastCell+'</td><td class="row-actions" onclick="event.stopPropagation()">'+paid+'</td></tr>'}
+      window.markPaid=function(id){if(!confirm("Mark this invoice as PAID? This stops all follow-ups."))return;action({action:"change_status",invoice_id:id,config:{status:"PAID"}},"Invoice marked paid")};
       function viewInvoices(){
         if(!mainInvoices().length)return realEmptyState();
         var sub=STATE.invSub||"all";
-        var invToggle='<div style="display:flex;gap:.4rem;margin:.2rem 0 1rem"><button class="btn sm'+(sub==="all"?" gold":"")+'" onclick="STATE.invSub=\'all\';renderView()">📋 All invoices</button><button class="btn sm'+(sub==="sent"?" gold":"")+'" onclick="STATE.invSub=\'sent\';renderView()">✉ Sent history</button></div>';
+        var invToggle='<div class="seg" style="margin:.2rem 0 1rem">'+
+          '<button class="'+(sub==="all"?"on":"")+'" onclick="STATE.invSub=\'all\';renderView()">'+ic("file")+' All invoices</button>'+
+          '<button class="'+(sub==="sent"?"on":"")+'" onclick="STATE.invSub=\'sent\';renderView()">'+ic("send")+' Sent history</button></div>';
         if(sub==="sent")return invToggle+viewSent();
         var allInv=mainInvoices();
         var searchVal = (STATE.invoicesSearch || "").toLowerCase();
@@ -351,8 +420,8 @@
               '<select onchange="STATE.invoicesFilterStatus=this.value;renderView()" style="padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+statusOpts+'</select>'+
             '</div>'+
           '</div>'+
-          '<table><thead><tr><th>Invoice / Customer</th><th>Amount</th><th>Overdue</th><th>Stage</th><th>Risk</th><th>Status</th><th>Last follow-up</th></tr></thead><tbody>'+
-          (filtered.length ? filtered.map(invRow).join("") : '<tr><td colspan="7" class="empty">No matching invoices found.</td></tr>')+'</tbody></table></div>';
+          '<table><thead><tr><th>Invoice / Customer</th><th>Amount</th><th>Overdue</th><th>Stage</th><th>Risk</th><th>Status</th><th>Last follow-up</th><th></th></tr></thead><tbody>'+
+          (filtered.length ? filtered.map(invRow).join("") : '<tr><td colspan="8" class="empty">No matching invoices found.</td></tr>')+'</tbody></table></div>';
       }
 
       function viewSent(){
@@ -394,7 +463,7 @@
               '<input type="text" placeholder="Search sent emails..." value="'+esc(STATE.sentSearch||"")+'" oninput="STATE.sentSearch=this.value;renderView()" style="width:180px;padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+
               '<select onchange="STATE.sentFilterMethod=this.value;renderView()" style="padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+methodOpts+'</select>'+
               '<select onchange="STATE.sentFilterStage=this.value;renderView()" style="padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+stageOpts+'</select>'+
-              '<button class="btn sm" onclick="exportSentCSV()">⬇ Export Sent</button>'+
+              '<button class="btn sm" onclick="exportSentCSV()">'+ic("download")+' Export</button>'+
             '</div>'+
           '</div>'+
           '<table><thead><tr><th>Recipient / Company</th><th>Invoice</th><th>Stage</th><th>Subject</th><th>Method</th><th>Sent At</th></tr></thead><tbody>'+
@@ -446,12 +515,12 @@
       function viewApprovals(){
         var ds=pendingReal();
         var apprv = ds.length
-          ? '<div style="margin:.2rem 0 .5rem"><h2 style="font-family:var(--serif);font-weight:500;font-size:1.1rem;margin:0">📥 Awaiting approval · '+ds.length+'</h2></div>'+ds.map(function(d){var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.2rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+'d overdue · '+stageChip(field(i,"stage"))+' '+riskChip(field(d,"risk_level"))+(field(d,"fallback_used")?' '+chip("template","--muted"):'')+'</div></div><div class="row-actions"><button class="btn gold sm" onclick="approve(\''+field(d,"id")+'\')">Approve &amp; send</button><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Edit</button><button class="btn sm danger" onclick="reject(\''+field(d,"id")+'\')">Reject</button><button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\')">Legal</button></div></div><div class="mail" style="margin-top:.8rem"><div class="subj">'+esc(field(d,"subject"))+'</div>'+esc(field(d,"body"))+'</div></div>'}).join("")
-          : '<div class="panel"><h2 style="margin:0 0 .4rem">📥 Awaiting approval</h2><div class="empty" style="padding:1.2rem 1rem"><div class="big">Inbox zero ✓</div>No drafts waiting — the agent auto-sent the safe ones.</div></div>';
+          ? '<h2 style="font-size:1rem;margin:.2rem 0 .6rem;display:flex;align-items:center;gap:.5rem">'+ic("inbox")+'Awaiting approval · '+ds.length+'</h2>'+ds.map(function(d){var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.2rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+'d overdue · '+stageChip(field(i,"stage"))+' '+riskChip(field(d,"risk_level"))+(field(d,"fallback_used")?' '+chip("template","--muted"):'')+'</div></div><div class="row-actions"><button class="btn gold sm" onclick="approve(\''+field(d,"id")+'\')">'+ic("send")+' Approve &amp; send</button><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">'+ic("edit")+' Edit</button><button class="btn sm" onclick="reject(\''+field(d,"id")+'\')">Reject</button><button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\')">'+ic("scale")+' Legal</button></div></div><div class="mail" style="margin-top:.8rem"><div class="subj">'+esc(field(d,"subject"))+'</div>'+esc(field(d,"body"))+'</div></div>'}).join("")
+          : '<div class="panel"><h2 style="margin:0 0 .4rem;display:flex;align-items:center;gap:.5rem">'+ic("inbox")+'Awaiting approval</h2><div class="empty" style="padding:1.2rem 1rem">'+ic("checkc")+'<div class="big">Inbox zero</div>No drafts waiting — the agent auto-sent the safe ones.</div></div>';
         return uc("Finance &amp; legal","the two things only a human owns — approve or edit the AI drafts that never auto-send, or hit <b>Legal</b> to escalate: the account drops out of this queue into Legal &amp; recovery below and the escalation is posted to Slack <b>#legal</b>.")+apprv+legalSection();
       }
       function legalSection(){var inv=mainInvoices().filter(function(i){return field(i,"status")==="LEGAL"});
-        var head='<div style="margin:1.4rem 0 .5rem"><h2 style="font-family:var(--serif);font-weight:500;font-size:1.1rem;margin:0">⚖ Legal &amp; recovery · '+inv.length+'</h2></div>';
+        var head='<h2 style="font-size:1rem;margin:1.5rem 0 .6rem;display:flex;align-items:center;gap:.5rem">'+ic("scale")+'Legal &amp; recovery · '+inv.length+'</h2>';
         if(!inv.length)return head+'<div class="panel"><div class="empty" style="padding:1.2rem 1rem">Nothing in legal. When you hit <b>Legal</b> on a draft in Approvals, the account moves here and the escalation is posted to Slack <b>#legal</b> — these never get automated email.</div></div>';
         var total=inv.reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
         return head+'<div class="stats">'+kpi(inv.length,"Accounts in legal")+kpi(money(total),"Amount at risk")+'</div>'+
@@ -473,7 +542,7 @@
           var matchesCategory = filterCategory === "ALL" || cat === filterCategory;
           return matchesSearch && matchesCategory;
         });
-        if(!rs.length)return uc("Collector","when customers reply, the AI reads each one — promise-to-pay, dispute, paid, or question — and updates the account.")+'<div class="panel"><div class="empty"><div class="big">No replies yet</div><p>With a mailbox connected, replies land here classified. Log one manually to see it in action, or explore the sandbox in 🧪 Mock Mailbox.</p><div class="row-actions" style="justify-content:center;margin-top:.8rem"><button class="btn gold" onclick="logReply()">＋ Log a reply</button></div></div></div>';
+        if(!rs.length)return uc("Collector","when customers reply, the AI reads each one — promise-to-pay, dispute, paid, or question — and updates the account.")+'<div class="panel"><div class="empty">'+ic("reply")+'<div class="big">No replies yet</div><p>With a mailbox connected, replies land here classified. Log one manually to see it in action.</p><div class="row-actions" style="justify-content:center;margin-top:.8rem"><button class="btn gold" onclick="logReply()">'+ic("plus")+' Log a reply</button></div></div></div>';
         var catOpts = ["ALL", "PROMISE_TO_PAY", "PAID_CLAIM", "DISPUTE", "QUESTION", "OTHER"].map(function(c){
           var label = c === "ALL" ? "All Categories" : c.replace(/_/g," ").replace(/\b\w/g, function(ch){return ch.toUpperCase()});
           return '<option value="'+c+'" '+(filterCategory===c?'selected':'')+'>'+label+'</option>';
@@ -486,7 +555,7 @@
             '<div style="display:flex;gap:.5rem;align-items:center">'+
               '<input type="text" placeholder="Search..." value="'+esc(STATE.repliesSearch||"")+'" oninput="STATE.repliesSearch=this.value;renderView()" style="width:160px;padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+
               '<select onchange="STATE.repliesFilterCategory=this.value;renderView()" style="padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+catOpts+'</select>'+
-              '<button class="btn sm" onclick="logReply()">＋ Log a reply</button>'+
+              '<button class="btn sm" onclick="logReply()">'+ic("plus")+' Log a reply</button>'+
             '</div>'+
           '</div>'+
           '<table><thead><tr><th>Customer</th><th>Invoice</th><th>Type</th><th>Message</th><th>When</th></tr></thead><tbody>'+
@@ -503,39 +572,44 @@
 
       function viewAsk(){
         return uc("Anyone","ask the Collections Agent about the book — overdue accounts, a customer's status, the legal queue, what's awaiting approval. It reads live pod data. This is the same agent your finance &amp; legal team can DM on Telegram.")+
-          '<div class="panel" style="padding:.4rem .5rem"><lemma-agent-thread agent="collections-concierge" style="display:block;min-height:62vh;--lemma-bg:var(--card);--lemma-accent:var(--gold);--lemma-radius:12px"></lemma-agent-thread></div>'+
+          '<div class="panel" style="padding:.4rem .5rem"><lemma-agent-thread agent="collections-concierge" style="display:block;min-height:62vh;--lemma-bg:var(--card);--lemma-accent:var(--accent);--lemma-radius:12px"></lemma-agent-thread></div>'+
           '<p class="muted" style="font-size:.76rem;margin:.2rem .2rem 0">Try: &ldquo;biggest overdue accounts&rdquo; · &ldquo;what&rsquo;s in the legal queue?&rdquo; · &ldquo;what&rsquo;s waiting for approval?&rdquo; · &ldquo;what&rsquo;s going on with Acme Corp?&rdquo;</p>';
       }
 
       // ---- settings
-      function viewSettings(){var c=STATE.config;var mode=(field(c,"mail_mode")||"IN_APP");var ch=(field(c,"notify_channel")||"NONE");
-        function tg(k,l,d){var on=field(c,k);return '<div class="toggle"><div><b>'+l+'</b><div class="muted" style="font-size:.76rem">'+d+'</div></div><label style="position:relative;display:inline-block;width:42px;height:24px;flex:none"><input type="checkbox" id="cfg_'+k+'" '+(on?"checked":"")+' style="opacity:0;width:0;height:0"><span style="position:absolute;inset:0;background:'+(on?"var(--gold)":"var(--line)")+';border-radius:999px"></span><span style="position:absolute;top:3px;left:'+(on?"21px":"3px")+';width:18px;height:18px;background:#fff;border-radius:50%"></span></label></div>'}
+      function viewSettings(){var c=STATE.config;var mode=(field(c,"mail_mode")||"IN_APP");
+        function tg(k,l,d){return '<div class="toggle"><div><b>'+l+'</b><div class="muted" style="font-size:.76rem">'+d+'</div></div>'+sw("cfg_"+k,field(c,k))+'</div>'}
         function inp(k,l,ph){return '<label class="fld"><span class="lbl">'+l+'</span><input id="cfg_'+k+'" value="'+esc(field(c,k)||"")+'" placeholder="'+(ph||"")+'"></label>'}
-        return uc("Admin","configure behavior, real email (Gmail), and the Telegram agent — all live, no redeploy. Stats-sharing to Slack / Telegram / WhatsApp lives in the Schedule tab.")+
-        '<div class="panel"><h2>Behavior</h2>'+
+        function connRow(name,icn,on,note){return '<div class="toggle"><div style="display:flex;align-items:center;gap:.55rem">'+ic(icn)+'<div><b>'+name+'</b><div class="muted" style="font-size:.74rem">'+note+'</div></div></div>'+(on?'<span class="conn ok">'+ic("check")+'Connected</span>':'<span class="conn no">Not set up</span>')+'</div>'}
+        var gmailOn=(mode==="GMAIL"&&field(c,"email_enabled"));
+        var slackOn=!!field(c,"slack_account_id");
+        var tgOn=!!field(c,"telegram_bot_token");
+        return uc("Admin","the everyday preferences — how the agent behaves, whether email goes out for real, and your company identity. Connecting Slack, Telegram &amp; Gmail lives in the "+'<b>Setup</b> guide (no technical fields here).')+
+        '<div class="panel"><h2>'+ic("settings")+'Automation behavior</h2>'+
           tg("auto_dispatch","Auto-dispatch","Auto-send low-risk follow-ups (off → everything needs approval)")+
           tg("human_in_loop","Human-in-the-loop","Route high-risk &amp; stage-4 to the approval inbox")+
           tg("review_high_risk","Always review HIGH risk","High-risk drafts never auto-send")+
           tg("review_stage4","Always review Stage 4","Final notices always need a human")+
-          '<div style="margin-top:.8rem"><button class="btn gold sm" onclick="saveBehavior()">Save behavior</button></div></div>'+
-        '<div class="panel"><h2>Email delivery</h2><div class="toggle"><div><b>Send real email</b><div class="muted" style="font-size:.76rem">Off = record-only (safe demo, drafts shown in-app). On = deliver through the Gmail connector.</div></div><label style="position:relative;display:inline-block;width:42px;height:24px;flex:none"><input type="checkbox" id="cfg_email_enabled" '+(field(c,"email_enabled")?"checked":"")+' style="opacity:0;width:0;height:0"><span style="position:absolute;inset:0;background:'+(field(c,"email_enabled")?"var(--gold)":"var(--line)")+';border-radius:999px"></span><span style="position:absolute;top:3px;left:'+(field(c,"email_enabled")?"21px":"3px")+';width:18px;height:18px;background:#fff;border-radius:50%"></span></label></div>'+
-          '<label class="fld"><span class="lbl">Mode</span><select id="cfg_mail_mode" onchange="render(true)">'+["IN_APP","GMAIL"].map(function(m){return '<option '+(mode===m?"selected":"")+'>'+m+'</option>'}).join("")+'</select></label>'+
+          '<div style="margin-top:.9rem"><button class="btn gold sm" onclick="saveBehavior()">'+ic("check")+' Save behavior</button></div></div>'+
+        '<div class="panel"><h2>'+ic("send")+'Email delivery</h2>'+
+          '<div class="toggle"><div><b>Send real email</b><div class="muted" style="font-size:.76rem">Off = record-only (drafts shown in-app, nothing sent). On = deliver via Gmail.</div></div>'+sw("cfg_email_enabled",field(c,"email_enabled"))+'</div>'+
+          '<label class="fld"><span class="lbl">Mode</span><select id="cfg_mail_mode" onchange="render(true)">'+["IN_APP","GMAIL"].map(function(m){return '<option '+(mode===m?"selected":"")+'>'+(m==="IN_APP"?"In-app (record only)":"Gmail (send real)")+'</option>'}).join("")+'</select></label>'+
           inp("email_from","From name","Acme Finance")+
-          (mode==="GMAIL"?'<div class="guide">Gmail sends as <b>your connected Google account</b> — no passwords stored here. Connect once from the CLI:<ol><li><code>lemma connectors auth-configs create gmail --name workspace-gmail</code></li><li><code>lemma connectors connect-requests create gmail --auth-config-id &lt;id&gt;</code> → open the link, authorize Google.</li><li>Back here: flip <b>Send real email</b> on and hit <b>Send test</b>.</li></ol></div>':'<div class="guide">In-app mode: every follow-up is drafted, validated and recorded so you can demo the full pipeline safely — nothing leaves your inbox. Switch to Gmail to send for real.</div>')+
-          '<div style="margin-top:.8rem"><button class="btn gold sm" onclick="saveMail()">Save</button> <button class="btn sm" onclick="testEmail()">Send test</button></div></div>'+
-        '<div class="panel"><h2>Slack #legal (escalations)</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .6rem">Set to Slack and paste your <b>#legal</b> channel id. Every time you hit <b>Legal</b> on a draft in Approvals — and the one-click <b>Notify legal team</b> button — posts the escalation here automatically via the official Slack connector.</p>'+
-          '<label class="fld"><span class="lbl">Post escalations to</span><select id="cfg_notify_channel" onchange="render(true)">'+["NONE","SLACK"].map(function(m){return '<option '+(ch===m?"selected":"")+'>'+m+'</option>'}).join("")+'</select></label>'+
-          (ch==="SLACK"?'<div class="grid2">'+inp("slack_legal_channel","#legal channel id","C0LEGAL")+inp("slack_channel","Fallback channel id (optional)","C0123ABC")+'</div><div class="guide">Connect Slack once (same account the Schedule tab uses):<ol><li><code>lemma connectors auth-configs create slack --name slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li><li>Invite the app to <b>#legal</b>, paste its channel id above, Save, Send test.</li></ol></div>':'<div class="guide">Set to Slack to auto-post legal escalations to your #legal channel.</div>')+
-          '<div style="margin-top:.8rem"><button class="btn gold sm" onclick="saveNotify()">Save</button> '+(ch!=="NONE"?'<button class="btn sm" onclick="testNotify()">Send test</button>':'')+'</div></div>'+
-        '<div class="panel"><h2>Chat with the pod (Slack #chat + Telegram)</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .6rem">The concierge agent answers questions about the live book on <b>Slack #chat</b> and <b>Telegram</b> (and the in-app 💬 Ask tab). Telegram uses a managed bot (no token). Slack #chat is a surface — set up from the 📖 Setup guide.</p><div class="guide">Telegram (no credentials):<ol><li><code>lemma surfaces upsert telegram --agent collections-concierge</code></li><li><code>lemma surfaces setup telegram</code> → open the <b>t.me</b> link it prints and message the bot.</li></ol></div></div>'+
-        '<div class="panel"><h2>Identity &amp; model</h2>'+inp("company_name","Company name")+inp("sender_identity","Sender signature")+
-          '<div class="guide">Drafting runs on this pod&rsquo;s Lemma runtime. On lemma.work you can run on Lemma credits or pin your own provider via a runtime profile (<code>lemma runtime profiles</code>) — set per pod, no app change.</div></div>';
+          (mode==="GMAIL"&&!gmailOn?'<div class="guide">Gmail isn\'t connected yet — open the '+ic("book")+' <b>Setup</b> guide to connect a Google account, then flip <b>Send real email</b> on.</div>':'')+
+          '<div style="margin-top:.9rem"><button class="btn gold sm" onclick="saveMail()">'+ic("check")+' Save</button> <button class="btn sm" onclick="testEmail()">Send test</button></div></div>'+
+        '<div class="panel"><h2>'+ic("hash")+'Integrations</h2><p class="muted" style="font-size:.8rem;margin:.1rem 0 .3rem">Status only — connect or change these from the Setup guide.</p>'+
+          connRow("Gmail","send",gmailOn,"Sends real follow-up emails")+
+          connRow("Slack","hash",slackOn,"#legal escalations &amp; #daily-stats digest")+
+          connRow("Telegram","telegram",tgOn,"Stats digest to Telegram (chat is always on)")+
+          '<div style="margin-top:.9rem"><button class="btn sm" onclick="openSetupGuide()">'+ic("book")+' Open Setup guide</button></div></div>'+
+        '<div class="panel"><h2>'+ic("users")+'Identity</h2>'+inp("company_name","Company name")+inp("sender_identity","Sender signature")+
+          '<div style="margin-top:.9rem"><button class="btn gold sm" onclick="saveIdentity()">'+ic("check")+' Save</button></div></div>';
       }
       function cfgVal(k){var e=$("cfg_"+k);if(!e)return undefined;return e.type==="checkbox"?e.checked:e.value}
       async function saveCfg(keys,msg){var c={};keys.forEach(function(k){var v=cfgVal(k);if(v!==undefined)c[k]=v});await action({action:"save_config",config:c},msg||"Settings saved")}
       window.saveBehavior=function(){saveCfg(["auto_dispatch","human_in_loop","review_high_risk","review_stage4"],"Behavior saved")};
       window.saveMail=function(){saveCfg(["email_enabled","mail_mode","email_from"],"Mail settings saved")};
-      window.saveNotify=function(){saveCfg(["notify_channel","slack_channel","slack_legal_channel"],"Alert settings saved")};
+      window.saveIdentity=function(){saveCfg(["company_name","sender_identity"],"Identity saved")};
       window.testEmail=async function(){setBusy(true,"Sending test email…");try{var o=await invokeFn("test_channel",{kind:"email"});toast((o.ok?"✓ ":"⚠ ")+o.detail)}catch(e){toast("⚠ "+e.message)}setBusy(false)};
       window.testNotify=async function(){setBusy(true,"Sending test alert…");try{var o=await invokeFn("test_channel",{kind:"notify"});toast((o.ok?"✓ ":"⚠ ")+o.detail)}catch(e){toast("⚠ "+e.message)}setBusy(false)};
 
@@ -552,52 +626,49 @@
 
       // ---- Schedule tab: share the daily-stats digest to Slack (#daily-stats) and Telegram
       var STATS_METRICS=[["inc_outstanding","Outstanding total",true],["inc_overdue","Overdue accounts",true],["inc_sent_today","Follow-ups sent today",true],["inc_pending","Awaiting approval",true],["inc_legal","In legal",true],["inc_promises","Open promises",false],["inc_disputes","Disputed",false],["inc_top_accounts","Top overdue accounts",false]];
-      function scSwitch(ch,f,on){return '<label style="position:relative;display:inline-block;width:42px;height:24px;flex:none"><input type="checkbox" id="sc_'+ch+'_'+f+'" '+(on?"checked":"")+' style="opacity:0;width:0;height:0" onchange="this.nextElementSibling.style.background=this.checked?\'var(--gold)\':\'var(--line)\';this.nextElementSibling.nextElementSibling.style.left=this.checked?\'21px\':\'3px\'"><span style="position:absolute;inset:0;background:'+(on?"var(--gold)":"var(--line)")+';border-radius:999px"></span><span style="position:absolute;top:3px;left:'+(on?"21px":"3px")+';width:18px;height:18px;background:#fff;border-radius:50%"></span></label>'}
+      function scSwitch(ch,on){return sw("sc_"+ch+"_enabled",on)}
       function channelCard(def){
-        var ch=def.ch,row=statsChan(ch),c=STATE.config;
-        var enabled=!!field(row,"enabled"),dest=field(row,"destination")||"",freq=field(row,"freq")||"OFF";
+        var ch=def.ch,row=statsChan(ch);
+        var enabled=!!field(row,"enabled"),freq=field(row,"freq")||"OFF";
         var hour=field(row,"send_hour");if(hour==null)hour=9;
         var min=field(row,"send_minute");if(min==null)min=0;min=(min>=30?30:0);
         var dow=field(row,"weekly_dow");if(dow==null)dow=0;
-        var creds="";
-        if(ch==="TELEGRAM")creds='<label class="fld"><span class="lbl">Bot token <span class="muted" style="text-transform:none">(for stats posting — chat uses the managed surface)</span></span><input id="sc_TELEGRAM_telegram_bot_token" value="'+esc(field(c,"telegram_bot_token")||"")+'" placeholder="123456:ABC-DEF…"></label><div style="margin:-.2rem 0 .5rem"><button class="btn sm" onclick="tgFindChat(\'TELEGRAM\')">🔎 Find chat id</button> <span id="sc_TELEGRAM_chatlist"></span></div>';
-        var metrics=STATS_METRICS.map(function(m){var v=field(row,m[0]);if(v==null)v=m[2];return '<label style="display:flex;align-items:center;gap:.4rem;font-size:.82rem;padding:.2rem 0"><input type="checkbox" id="sc_'+ch+'_'+m[0]+'" '+(v?"checked":"")+' style="width:auto">'+esc(m[1])+'</label>'}).join("");
+        var status=def.connected?'<span class="conn ok">'+ic("check")+'Connected</span>':'<span class="conn no">Not connected — see '+ic("book")+' Setup</span>';
+        var metrics=STATS_METRICS.map(function(m){var v=field(row,m[0]);if(v==null)v=m[2];return '<label style="display:flex;align-items:center;gap:.45rem;font-size:.83rem;padding:.25rem 0;cursor:pointer"><input type="checkbox" id="sc_'+ch+'_'+m[0]+'" '+(v?"checked":"")+' style="width:auto;accent-color:var(--accent)">'+esc(m[1])+'</label>'}).join("");
         var hourOpts="";for(var h=0;h<24;h++)hourOpts+='<option value="'+h+'" '+(h===hour?"selected":"")+'>'+(h<10?"0":"")+h+':00</option>';
         var minOpts=[0,30].map(function(mm){return '<option value="'+mm+'" '+(mm===min?"selected":"")+'>'+(mm<10?"0":"")+mm+'</option>'}).join("");
         var dowOpts=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(function(d,idx){return '<option value="'+idx+'" '+(idx===dow?"selected":"")+'>'+d+'</option>'}).join("");
         var freqLbl={OFF:"Manual only",DAILY:"Every day",WEEKDAYS:"Weekdays",WEEKLY:"Weekly"};
         var freqOpts=["OFF","DAILY","WEEKDAYS","WEEKLY"].map(function(f){return '<option value="'+f+'" '+(freq===f?"selected":"")+'>'+freqLbl[f]+'</option>'}).join("");
-        return '<div class="panel" style="border-left:3px solid var('+def.color+')">'+
-          '<div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap"><h2 style="margin:0">'+def.icon+' '+def.name+(enabled?' <span class="chip" style="background:color-mix(in srgb,var(--low) 16%,transparent);color:var(--low)">on</span>':'')+'</h2><div style="display:flex;align-items:center;gap:.5rem"><span class="muted" style="font-size:.8rem">Enabled</span>'+scSwitch(ch,"enabled",enabled)+'</div></div>'+
-          '<label class="fld"><span class="lbl">'+def.destLabel+'</span><input id="sc_'+ch+'_destination" value="'+esc(dest)+'" placeholder="'+def.destPh+'"></label>'+
-          creds+
-          '<div class="lbl" style="margin-top:.4rem">What to send</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem">'+metrics+'</div>'+
-          '<div class="lbl" style="margin-top:.7rem">When to send</div><div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center"><select id="sc_'+ch+'_freq" style="width:auto">'+freqOpts+'</select><span class="muted" style="font-size:.8rem">at</span><select id="sc_'+ch+'_send_hour" style="width:auto">'+hourOpts+'</select><select id="sc_'+ch+'_send_minute" style="width:auto">'+minOpts+'</select><span class="muted" style="font-size:.8rem">on</span><select id="sc_'+ch+'_weekly_dow" style="width:auto">'+dowOpts+'</select><span class="muted" style="font-size:.74rem">(day = Weekly only)</span></div>'+
-          '<div style="margin-top:.9rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn gold sm" onclick="saveScheduleChannel(\''+ch+'\')">Save</button><button class="btn sm" onclick="sendStatsNow(\''+ch+'\')">Send now</button><button class="btn sm ghost" onclick="sendStatsTest(\''+ch+'\')">Send test</button></div>'+
-          '<details style="margin-top:.7rem"><summary style="cursor:pointer;font-size:.8rem;color:var(--muted)">Setup guide</summary><div class="guide">'+def.guide+'</div></details>'+
+        return '<div class="panel">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap"><h2 style="margin:0">'+ic(def.icon)+def.name+'</h2><div style="display:flex;align-items:center;gap:.7rem">'+status+scSwitch(ch,enabled)+'</div></div>'+
+          '<div class="lbl" style="margin-top:.8rem">What to send</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem">'+metrics+'</div>'+
+          '<div class="lbl" style="margin-top:.9rem">When to send</div><div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center"><select id="sc_'+ch+'_freq" style="width:auto">'+freqOpts+'</select><span class="muted" style="font-size:.8rem">at</span><select id="sc_'+ch+'_send_hour" style="width:auto">'+hourOpts+'</select><select id="sc_'+ch+'_send_minute" style="width:auto">'+minOpts+'</select><span class="muted" style="font-size:.8rem">on</span><select id="sc_'+ch+'_weekly_dow" style="width:auto">'+dowOpts+'</select><span class="muted" style="font-size:.74rem">(Weekly only)</span></div>'+
+          '<div style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn gold sm" onclick="saveScheduleChannel(\''+ch+'\')">'+ic("check")+' Save</button><button class="btn sm" onclick="sendStatsNow(\''+ch+'\')">'+ic("send")+' Send now</button><button class="btn sm ghost" onclick="sendStatsTest(\''+ch+'\')">Send test</button></div>'+
         '</div>';
       }
       function viewSchedule(){
+        var c=STATE.config;
+        var slackConn=!!(field(statsChan("SLACK"),"destination")&&field(c,"slack_account_id"));
+        var tgConn=!!(field(c,"telegram_bot_token")&&field(statsChan("TELEGRAM"),"destination"));
         var defs=[
-          {ch:"SLACK",icon:"💬",name:"Slack · #daily-stats",color:"--blue",destLabel:"#daily-stats channel id",destPh:"C0123ABC",guide:'Posts through the official <b>Lemma Slack connector</b> (<code>chat_post_message</code>) — no token here. Connect once:<ol><li><code>lemma connectors auth-configs create slack --name slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li><li>Invite the app to <b>#daily-stats</b>, copy its channel id (channel ▸ View details, the <code>C…</code> code), paste above, Save, Send test.</li></ol>'},
-          {ch:"TELEGRAM",icon:"✈",name:"Telegram",color:"--gold",destLabel:"Chat id",destPh:"-1001234567890",guide:'Telegram <b>chat</b> with the pod uses the managed surface (no token). This card is only for <b>pushing the stats digest</b> to Telegram, which needs a bot:<ol><li>DM <b>@BotFather</b> ▸ <code>/newbot</code> ▸ copy the token, paste it above.</li><li>Message your bot (or add it to a group &amp; post once), then click <b>Find chat id</b> and pick the chat.</li><li>Save, then Send test.</li></ol>'}
+          {ch:"SLACK",icon:"hash",name:"Slack · #daily-stats",connected:slackConn},
+          {ch:"TELEGRAM",icon:"telegram",name:"Telegram",connected:tgConn}
         ];
-        return uc("Finance lead","share the daily collections digest where the team already is — Slack <b>#daily-stats</b> (official connector) and Telegram. Pick what to send and when; send manually any time, or resume the schedule for hands-off delivery.")+
-          '<div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap"><div><b>📊 Daily stats digest</b><div class="muted" style="font-size:.8rem">Send the digest now to every enabled destination below.</div></div><button class="btn gold" onclick="sendAllStats()">📣 Send now to all enabled</button></div>'+
+        return uc("Finance lead","choose what goes in the daily collections digest and when it's sent. Send it manually any time, or set a day &amp; time for hands-off delivery. Channels are already wired — no tokens or IDs to manage here.")+
+          '<div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap"><div><b>Daily stats digest</b><div class="muted" style="font-size:.8rem">Sends to every enabled destination below.</div></div><button class="btn gold" onclick="sendAllStats()">'+ic("send")+' Send now to all</button></div>'+
           defs.map(channelCard).join("")+
-          '<div class="panel"><h2>Scheduled sending</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .5rem">The <code>stats-dispatch</code> schedule sweeps every 30 minutes and sends each destination whose <b>When to send</b> matches. It ships paused — resume it once from the CLI:</p><div class="guide"><code>lemma schedules resume stats-dispatch</code> &nbsp;·&nbsp; pause with <code>lemma schedules pause stats-dispatch</code>.</div></div>'+
-          '<div class="panel"><h2>💬 Chat with the pod</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 0">Two-way chat is separate from stats: ask the pod anything in <b>Slack #chat</b> or on <b>Telegram</b> (both routed to the concierge agent), or use the in-app <b>💬 Ask</b> tab. See the 📖 Setup guide to wire #chat.</p></div>';
+          '<div class="panel"><h2>'+ic("clock")+'How automatic delivery works</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 0">Set a destination to a day &amp; time above and the digest sends on that cadence automatically. Leave it on <b>Manual only</b> to send it just with the buttons. Two-way chat (Slack #chat, Telegram, or the '+ic("chat")+' Ask tab) is separate — set up from the '+ic("book")+' Setup guide.</p></div>';
       }
       function _collectChannel(ch){
+        // Destinations/tokens are wired server-side (Setup) — the tab only edits what/when/enabled.
         var gv=function(f){var e=$("sc_"+ch+"_"+f);return e?(e.type==="checkbox"?e.checked:e.value):undefined};
-        var cfg={};
-        if(ch==="TELEGRAM"){var t=gv("telegram_bot_token");if(t!=null)cfg.telegram_bot_token=t}
         var row={channel:ch};
-        ["enabled","destination","inc_outstanding","inc_overdue","inc_sent_today","inc_pending","inc_legal","inc_promises","inc_disputes","inc_top_accounts","freq"].forEach(function(f){var v=gv(f);if(v!==undefined)row[f]=v});
+        ["enabled","inc_outstanding","inc_overdue","inc_sent_today","inc_pending","inc_legal","inc_promises","inc_disputes","inc_top_accounts","freq"].forEach(function(f){var v=gv(f);if(v!==undefined)row[f]=v});
         ["send_hour","send_minute","weekly_dow"].forEach(function(f){var v=gv(f);if(v!==undefined)row[f]=parseInt(v,10)});
-        return {cfg:cfg,row:row};
+        return {row:row};
       }
-      async function _persistChannel(ch){var c=_collectChannel(ch);if(Object.keys(c.cfg).length)await invokeFn("app_action",{action:"save_config",config:c.cfg});await invokeFn("app_action",{action:"save_stats_channel",config:c.row})}
+      async function _persistChannel(ch){var c=_collectChannel(ch);await invokeFn("app_action",{action:"save_stats_channel",config:c.row})}
       window.saveScheduleChannel=async function(ch){setBusy(true,"Saving…");try{await _persistChannel(ch);await loadData();render(true);toast(ch.charAt(0)+ch.slice(1).toLowerCase()+" schedule saved")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
       window.sendStatsNow=async function(ch){setBusy(true,"Sending "+ch+" digest…");try{await _persistChannel(ch);var o=await invokeFn("stats_dispatch",{mode:"manual",channel:ch});var r=o&&o.results&&o.results[0];await loadData();render(true);toast((r&&r.delivered)?("✓ Sent to "+ch):("⚠ "+((r&&r.detail)||"recorded (not sent)")))}catch(e){toast("⚠ "+e.message)}setBusy(false)};
       window.sendStatsTest=async function(ch){setBusy(true,"Sending test to "+ch+"…");try{await _persistChannel(ch);var o=await invokeFn("stats_dispatch",{mode:"test",channel:ch});var r=o&&o.results&&o.results[0];toast((r&&r.delivered?"✓ ":"⚠ ")+((r&&r.detail)||"done"))}catch(e){toast("⚠ "+e.message)}setBusy(false)};
@@ -628,15 +699,15 @@
 
       // ---- master setup guide
       window.openSetupGuide=function(){closeMenu();
-        function sec(t,body){return '<details style="margin-bottom:.6rem;border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;background:var(--card)"><summary style="cursor:pointer;font-weight:600;font-size:.9rem">'+t+'</summary><div class="guide" style="margin-top:.5rem">'+body+'</div></details>'}
-        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Setup</div><h1 style="font-size:1.3rem">Set everything up</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db">'+
-          '<p class="muted" style="font-size:.82rem">Everything is optional — the pod runs in safe, record-only mode until you connect a channel. Run these from a terminal where the Lemma CLI is signed in to this pod.</p>'+
-          sec("📊 Google Sheets (import invoices)",'Primary way to load real data.<ol><li><code>lemma connectors auth-configs create google_sheets --name workspace-sheets</code></li><li><code>lemma connectors connect-requests create google_sheets --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Data ▾ ▸ <b>Import from Google Sheets</b>, paste the link.</li></ol>')+
-          sec("📧 Gmail (send real follow-ups)",'<ol><li><code>lemma connectors auth-configs create gmail --name workspace-gmail</code></li><li><code>lemma connectors connect-requests create gmail --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Settings ⚙ ▸ Email delivery ▸ set Mode = Gmail, flip <b>Send real email</b> on.</li></ol>')+
-          sec("💬 Slack connector (#legal + #daily-stats posts)",'One connector powers both the legal-escalation posts and the daily-stats digest.<ol><li><code>lemma connectors auth-configs create slack --name slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li><li>Invite the app to <b>#legal</b> and <b>#daily-stats</b>.</li><li>Paste <b>#legal</b>&rsquo;s channel id in Settings ⚙ ▸ Legal escalation channel, and <b>#daily-stats</b>&rsquo;s id in Schedule ▸ Slack card.</li></ol>')+
-          sec("💬 Slack #chat (chat with the pod)",'A Slack <b>surface</b> routes a channel to the concierge agent. Needs a custom Slack app + a one-time webhook paste:<ol><li>Wire the surface (already done on the pod): <code>lemma surfaces upsert slack --agent collections-concierge --account &lt;slack-account-id&gt;</code></li><li>Route the channel: <code>lemma surfaces channels slack --channel-id &lt;C…&gt; --channel-name chat --agent collections-concierge</code></li><li><code>lemma surfaces setup slack</code> → paste the webhook URL it prints into your Slack app&rsquo;s Event Subscriptions. Then message <b>#chat</b>.</li></ol>')+
-          sec("✈ Telegram (chat + stats digest)",'<b>Chat</b> uses the managed surface (no token): <code>lemma surfaces upsert telegram --agent collections-concierge</code> then <code>lemma surfaces setup telegram</code> → open the <b>t.me</b> link and message the bot.<br><br><b>Stats digest</b> to Telegram needs a bot (the connector has no send op): DM <b>@BotFather</b> ▸ <code>/newbot</code> ▸ copy the token ▸ Schedule ▸ Telegram card: paste it, <b>Find chat id</b>, Save.')+
-          sec("⏰ Resume scheduled digests",'The stats sweep ships paused.<ol><li><code>lemma schedules resume stats-dispatch</code> — sweeps every 30 min, sending destinations whose time matches.</li><li>Pause anytime: <code>lemma schedules pause stats-dispatch</code>.</li></ol>')+
+        function sec(icn,t,body){return '<details style="margin-bottom:.6rem;border:1px solid var(--line);border-radius:10px;padding:.7rem .85rem;background:var(--card)"><summary style="cursor:pointer;font-weight:600;font-size:.9rem;display:flex;align-items:center;gap:.5rem">'+ic(icn)+t+'</summary><div class="guide" style="margin-top:.5rem;border:none;background:none;padding:.2rem 0 0">'+body+'</div></details>'}
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Setup</div><h1 style="font-size:1.3rem">Set everything up</h1></div><button class="x" onclick="closeDrawer()">'+ic("x")+'</button></div><div class="db">'+
+          '<p class="muted" style="font-size:.82rem">The technical wiring lives here so the rest of the app stays clean. On this pod, Slack (#legal, #daily-stats, #chat) and Telegram chat are <b>already connected</b> — these steps are for reconnecting or setting up a fresh copy. Run them where the Lemma CLI is signed in.</p>'+
+          sec("sheet","Google Sheets — import invoices",'Load real data.<ol><li><code>lemma connectors auth-configs create google_sheets --name workspace-sheets</code></li><li><code>lemma connectors connect-requests create google_sheets --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Data menu ▸ <b>Import from Google Sheets</b>, paste the link.</li></ol>')+
+          sec("send","Gmail — send real follow-ups",'<ol><li><code>lemma connectors auth-configs create gmail --name workspace-gmail</code></li><li><code>lemma connectors connect-requests create gmail --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Settings ▸ Email delivery ▸ Mode = Gmail, flip <b>Send real email</b> on.</li></ol>')+
+          sec("hash","Slack — #legal &amp; #daily-stats posts",'One connector powers the legal escalations and the stats digest, pinned to a fixed workspace account.<ol><li><code>lemma connectors auth-configs create slack --name slack</code> → connect an account.</li><li>Invite the app to <b>#legal</b> and <b>#daily-stats</b>.</li><li>Wire the ids (admin, one-time): <code>save_config</code> → <code>slack_account_id</code>, <code>slack_legal_channel</code>; <code>save_stats_channel</code> → SLACK <code>destination</code> = #daily-stats id.</li></ol>')+
+          sec("chat","Slack #chat — chat with the pod",'A Slack <b>surface</b> routes a channel to the concierge agent.<ol><li><code>lemma surfaces upsert slack --agent collections-concierge --account &lt;slack-account-id&gt;</code></li><li><code>lemma surfaces channels slack --channel-id &lt;C…&gt; --channel-name chat --agent collections-concierge</code></li><li><code>lemma surfaces setup slack</code> → paste the webhook URL into your Slack app&rsquo;s Event Subscriptions, then message <b>#chat</b>.</li></ol>')+
+          sec("telegram","Telegram — chat &amp; stats digest",'<b>Chat</b> (no token): <code>lemma surfaces upsert telegram --agent collections-concierge</code> → <code>lemma surfaces setup telegram</code>, open the <b>t.me</b> link, message the bot.<br><br><b>Stats digest</b> needs a bot token (the connector has no send op): <b>@BotFather</b> ▸ <code>/newbot</code> ▸ store the token via <code>save_config</code> → <code>telegram_bot_token</code>, and the chat id via <code>save_stats_channel</code> → TELEGRAM <code>destination</code>.')+
+          sec("clock","Automatic digest schedule",'The Schedule tab&rsquo;s day/time drives delivery; the sweep runs every 30 min once resumed: <code>lemma schedules resume stats-dispatch</code> (pause: <code>lemma schedules pause stats-dispatch</code>).')+
         '</div>';openDrawerEl();
       };
 
@@ -694,7 +765,7 @@
             '<div class="mail"><div class="subj">'+esc(field(d,"subject"))+'</div>'+esc(field(d,"body"))+'</div>'+
             '<div style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap">'+
               '<button class="btn sm" onclick="openInvoice(\''+field(d,"invoice_id")+'\')">View invoice</button>'+
-              '<button class="btn sm gold" onclick="simulateReplyForInvoice(\''+field(d,"invoice_id")+'\')">💬 Simulate reply</button>'+
+              '<button class="btn sm gold" onclick="simulateReplyForInvoice(\''+field(d,"invoice_id")+'\')">'+ic("chat")+' Simulate reply</button>'+
               '<button class="btn sm ghost" onclick="closeDrawer()">Close</button>'+
             '</div>'+
           '</div>';
@@ -717,13 +788,13 @@
         var statusButtons = "";
         var currentStatus = field(i,"status");
         if (currentStatus === "ACTIVE") {
-          statusButtons = '<button class="btn sm" onclick="changeStatus(\''+id+'\',\'PAID\')">✓ Paid</button> '+
+          statusButtons = '<button class="btn sm good" onclick="changeStatus(\''+id+'\',\'PAID\')">'+ic("check")+' Paid</button> '+
             '<button class="btn sm" onclick="changeStatus(\''+id+'\',\'PAUSED\')">⏸ Pause</button> '+
             '<button class="btn sm" onclick="changeStatus(\''+id+'\',\'DISPUTED\')">⚡ Dispute</button> '+
-            '<button class="btn sm danger" onclick="changeStatus(\''+id+'\',\'LEGAL\')">⚖ Legal</button>';
+            '<button class="btn sm danger" onclick="changeStatus(\''+id+'\',\'LEGAL\')">'+ic("scale")+' Legal</button>';
         } else if (currentStatus === "PAUSED" || currentStatus === "DISPUTED") {
           statusButtons = '<button class="btn sm gold" onclick="changeStatus(\''+id+'\',\'ACTIVE\')">▶ Reactivate</button> '+
-            '<button class="btn sm danger" onclick="changeStatus(\''+id+'\',\'LEGAL\')">⚖ Legal</button>';
+            '<button class="btn sm danger" onclick="changeStatus(\''+id+'\',\'LEGAL\')">'+ic("scale")+' Legal</button>';
         } else if (currentStatus === "LEGAL") {
           statusButtons = '<button class="btn sm gold" onclick="changeStatus(\''+id+'\',\'ACTIVE\')">▶ Reactivate</button>';
         }
@@ -734,7 +805,7 @@
         }).sort(function(a,b){return String(field(b,"created_at")).localeCompare(String(field(a,"created_at")))});
 
         if (sentDrafts.length > 0 && field(i,"status") === "ACTIVE") {
-          drawerActions += ' <button class="btn sm gold" onclick="simulateReplyForInvoice(\''+id+'\')">💬 Simulate reply</button>';
+          drawerActions += ' <button class="btn sm gold" onclick="simulateReplyForInvoice(\''+id+'\')">'+ic("chat")+' Simulate reply</button>';
         }
         
         var sentEmailsHtml = "";

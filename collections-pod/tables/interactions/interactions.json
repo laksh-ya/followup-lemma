@@ -11,7 +11,7 @@
         "REPLY_RECEIVED", "STATUS_CHANGE", "STAGE_ESCALATED", "HUMAN_APPROVED",
         "HUMAN_REJECTED", "FALLBACK_USED", "LEGAL_FLAGGED", "NOTIFICATION_SENT",
         "PROMISE_MADE", "PROMISE_BROKEN", "NOTE"] },
-    { "name": "channel", "type": "ENUM", "options": ["EMAIL", "WHATSAPP", "SLACK", "SYSTEM"] },
+    { "name": "channel", "type": "ENUM", "options": ["EMAIL", "WHATSAPP", "SLACK", "TELEGRAM", "SYSTEM"] },
     { "name": "direction", "type": "ENUM", "options": ["OUTBOUND", "INBOUND", "INTERNAL"] },
     { "name": "summary", "type": "TEXT", "required": true, "max_length": 1000 },
     { "name": "detail", "type": "JSON" },

@@ -8,11 +8,11 @@ pick a chat id with one click instead of hand-copying it from a raw API URL.
 """
 
 from pydantic import BaseModel
-from lemma_sdk import FunctionContext
+from lemma_sdk import FunctionContext, Pod
 
 
 class TgInput(BaseModel):
-    bot_token: str
+    bot_token: str = ""   # blank → use the token already stored in pod_config
 
 
 class Chat(BaseModel):
@@ -32,7 +32,11 @@ async def telegram_get_chat(ctx: FunctionContext, data: TgInput) -> TgResult:
     import requests
     token = (data.bot_token or "").strip()
     if not token:
-        return TgResult(ok=False, bot="", chats=[], detail="Enter a bot token first.")
+        pod = Pod.from_env()
+        cfg = (pod.records.list("pod_config", limit=1).to_dict()["items"] or [{}])[0]
+        token = (cfg.get("telegram_bot_token") or "").strip()
+    if not token:
+        return TgResult(ok=False, bot="", chats=[], detail="No bot token stored yet.")
     try:
         me = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=15).json()
         if not me.get("ok"):

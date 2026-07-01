@@ -133,8 +133,10 @@ def _deliver(pod, cfg, channel, dest, msg):
 
 
 def _log(pod, channel, delivered, msg, detail):
+    # interactions.channel is a fixed enum (EMAIL/WHATSAPP/SLACK/SYSTEM); anything else → SYSTEM.
+    ch_val = channel if (delivered and channel in ("EMAIL", "WHATSAPP", "SLACK")) else "SYSTEM"
     pod.table("interactions").create({
-        "kind": "NOTIFICATION_SENT", "channel": channel if delivered else "SYSTEM",
+        "kind": "NOTIFICATION_SENT", "channel": ch_val,
         "direction": "OUTBOUND",
         "summary": f"Stats → {channel}: " + msg.replace("\n", " · ")[:220],
         "detail": {"delivered": delivered, "info": detail}, "actor_label": "stats_dispatch",
