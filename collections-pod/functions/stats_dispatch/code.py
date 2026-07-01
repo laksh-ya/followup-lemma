@@ -3,7 +3,7 @@
 #function_name: stats_dispatch
 
 """Stats-sharing dispatcher for the Schedule tab. Composes a collections digest from a
-per-channel selection of metrics and delivers it over Slack, Telegram, or WhatsApp.
+per-channel selection of metrics and delivers it to Slack (#daily-stats) and Telegram.
 
 Three modes:
   - "manual" — send one channel now (channel=…), or every enabled channel (channel=None).
@@ -11,10 +11,11 @@ Three modes:
   - "due"    — the schedule sweep: send every enabled channel whose freq/time matches now
                and that hasn't already fired this window (guarded by last_sent_at).
 
-Delivery is Lemma-native for Slack (connector) and bring-your-own-token for Telegram
-(Bot API) and WhatsApp (Meta Graph Cloud API) — the same tokens the pod already stores
-in pod_config. A channel with no destination/credentials records the digest instead of
-sending, so the pod never hard-fails a demo.
+Delivery is Lemma-native for Slack (the `slack` connector's chat_post_message) and
+bring-your-own-bot-token for Telegram (Bot API) — the Telegram connector is surface-only
+(no send operation), so proactive stats posts use the bot token stored in pod_config. A
+channel with no destination/credentials records the digest instead of sending, so the
+pod never hard-fails.
 """
 
 from datetime import date, datetime, timezone
@@ -24,7 +25,7 @@ from pydantic import BaseModel
 from lemma_sdk import FunctionContext, Pod
 
 
-CHANNELS = ("SLACK", "TELEGRAM", "WHATSAPP")
+CHANNELS = ("SLACK", "TELEGRAM")
 
 
 class DispatchInput(BaseModel):
@@ -103,8 +104,6 @@ def _dest(cfg, channel, row):
         return cfg.get("slack_channel") or ""
     if channel == "TELEGRAM":
         return cfg.get("telegram_team_chat_id") or ""
-    if channel == "WHATSAPP":
-        return cfg.get("whatsapp_to") or ""
     return ""
 
 
@@ -114,7 +113,11 @@ def _deliver(pod, cfg, channel, dest, msg):
         return (False, "no destination set (recorded only)")
     try:
         if channel == "SLACK":
-            pod.connectors.execute("slack", "chat_post_message", {"body": {"channel": dest, "text": msg}})
+            # Pin the workspace Slack account — the scheduled sweep runs unattended and
+            # #daily-stats is a shared team channel (no per-user account to delegate to).
+            acct = cfg.get("slack_account_id")
+            kw = {"account_id": acct} if acct else {}
+            pod.connectors.execute("slack", "chat_post_message", {"body": {"channel": dest, "text": msg}}, **kw)
             return (True, f"sent to Slack {dest}")
         if channel == "TELEGRAM":
             token = cfg.get("telegram_bot_token")
@@ -124,18 +127,6 @@ def _deliver(pod, cfg, channel, dest, msg):
             r = requests.post(f"https://api.telegram.org/bot{token}/sendMessage",
                               json={"chat_id": dest, "text": msg}, timeout=20)
             return (r.status_code < 300, f"telegram {r.status_code}")
-        if channel == "WHATSAPP":
-            token = cfg.get("whatsapp_token")
-            phone_id = cfg.get("whatsapp_phone_id")
-            if not token or not phone_id:
-                return (False, "WhatsApp phone id / token not set in Settings")
-            import requests
-            r = requests.post(
-                f"https://graph.facebook.com/v20.0/{phone_id}/messages",
-                headers={"Authorization": f"Bearer {token}"},
-                json={"messaging_product": "whatsapp", "to": dest, "type": "text",
-                      "text": {"body": msg}}, timeout=20)
-            return (r.status_code < 300, f"whatsapp {r.status_code}: {r.text[:120]}")
     except Exception as exc:
         return (False, str(exc)[:200])
     return (False, f"unknown channel {channel}")

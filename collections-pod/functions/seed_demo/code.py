@@ -2,12 +2,11 @@
 #output_type_name: SeedResult
 #function_name: seed_demo
 
-"""One-click SANDBOX data for the app. Creates a realistic book of customers + invoices
+"""One-click sample data for the app. Creates a realistic book of customers + invoices
 across every escalation stage (deduping customers by email), then enqueues the overdue
-ones so the pipeline runs and the Mock Mailbox fills with auto-sent follow-ups, pending
-approvals, and legal escalations. Every seeded invoice is tagged demo=true so it stays
-isolated in the Mock Mailbox and never mixes with real sends. Idempotent by
-email/invoice_no. Nothing is seeded automatically — this only runs when invoked.
+ones so the pipeline runs and the workspace fills with auto-sent follow-ups, pending
+approvals, and legal escalations. Idempotent by email/invoice_no. Nothing is seeded
+automatically — this only runs when the operator clicks "Seed random mails".
 """
 
 from datetime import date, timedelta
@@ -129,7 +128,7 @@ async def seed_demo(ctx: FunctionContext, data: SeedInput) -> SeedResult:
         fields = {
             "invoice_no": no, "client_id": cid[ck], "amount": amount, "currency": "INR",
             "due_date": (today - timedelta(days=days)).isoformat(), "status": status,
-            "payment_link": f"https://pay.acme.example/{no}", "demo": True,
+            "payment_link": f"https://pay.acme.example/{no}",
         }
         if no in by_no:
             pod.table("invoices").update(by_no[no], fields)

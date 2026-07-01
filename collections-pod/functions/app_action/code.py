@@ -62,7 +62,11 @@ def _notify(pod, cfg, audience, message):
     if not target:
         return (False, "Slack channel id not set in Settings")
     try:
-        pod.connectors.execute("slack", "chat_post_message", {"body": {"channel": target, "text": message}})
+        # Pin the workspace Slack account: #legal/#daily-stats are shared team channels, and
+        # the scheduled digest runs unattended (no per-user account to delegate to).
+        acct = cfg.get("slack_account_id")
+        kw = {"account_id": acct} if acct else {}
+        pod.connectors.execute("slack", "chat_post_message", {"body": {"channel": target, "text": message}}, **kw)
         return (True, "sent via Slack")
     except Exception as exc:
         return (False, "connect the Slack account first: " + str(exc)[:160])
@@ -146,14 +150,28 @@ async def app_action(ctx: FunctionContext, data: AppActionInput) -> AppActionRes
                  actor_user=ctx.user_id, actor_label="reviewer", level="WARN")
             return AppActionResult(ok=True, action=a, detail="rejected")
 
-        # flag legal
+        # flag legal — escalate out of Approvals into the Legal queue AND post to Slack #legal
         pod.table("invoices").update(invoice_id, {"status": "LEGAL"})
         pod.table("drafts").update(draft["id"], {"status": "REJECTED", "reviewer_note": data.note or "flagged legal"})
+        cfg = (pod.records.list("pod_config", limit=1).to_dict()["items"] or [{}])[0]
+        inv_no = (inv or {}).get("invoice_no", "")
+        cust = (client or {}).get("name", "")
+        lines = [f"⚖️ Legal escalation — {inv_no} · {cust}"]
+        if inv and inv.get("amount") is not None:
+            lines.append(f"Amount: ₹{int(inv.get('amount') or 0):,} · {inv.get('days_overdue', '?')}d overdue")
+        if (client or {}).get("email"):
+            lines.append(f"Contact: {client['email']}")
+        if data.note:
+            lines.append(f"Reviewer note: {data.note}")
+        if draft.get("subject") or draft.get("body"):
+            lines += ["", "— Escalated draft —", str(draft.get("subject") or ""), str(draft.get("body") or "")[:600]]
+        delivered, info = _notify(pod, cfg, "legal", "\n".join(lines))
         _log(pod, invoice_id=invoice_id, client_id=inv.get("client_id") if inv else None,
-             kind="LEGAL_FLAGGED", channel="SYSTEM", direction="INTERNAL",
-             summary=f"{inv.get('invoice_no') if inv else ''} flagged LEGAL by reviewer" + (f" — {data.note}" if data.note else ""),
+             kind="LEGAL_FLAGGED", channel="SLACK" if delivered else "SYSTEM",
+             direction="OUTBOUND" if delivered else "INTERNAL",
+             summary=f"{inv_no} escalated to legal by reviewer" + (f" — {data.note}" if data.note else "") + (" · posted to #legal" if delivered else f" · #legal not sent ({info})"),
              actor_user=ctx.user_id, actor_label="reviewer", level="ERROR")
-        return AppActionResult(ok=True, action=a, detail="flagged legal")
+        return AppActionResult(ok=True, action=a, detail="escalated to legal" + (" · posted to #legal" if delivered else f" · {info}"))
 
     if a == "send_custom":
         # manual email to a customer (by invoice_id or by client_id in config)
@@ -224,9 +242,8 @@ async def app_action(ctx: FunctionContext, data: AppActionInput) -> AppActionRes
         fields = data.config or {}
         allowed = {"auto_dispatch", "human_in_loop", "review_stage4", "review_high_risk",
                    "email_enabled", "mail_mode", "email_from",
-                   "notify_channel", "slack_channel", "slack_legal_channel",
+                   "notify_channel", "slack_channel", "slack_legal_channel", "slack_account_id",
                    "telegram_bot_token", "telegram_team_chat_id", "telegram_legal_chat_id",
-                   "whatsapp_phone_id", "whatsapp_token", "whatsapp_to",
                    "company_name", "sender_identity"}
         patch = {k: v for k, v in fields.items() if k in allowed}
         if rows:

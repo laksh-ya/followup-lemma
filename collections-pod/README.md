@@ -17,18 +17,17 @@ App: deployed at `lemma apps open collections-app` (cloud: `https://collections-
 ## Interface (6 tabs + utility icons)
 
 **Tabs:** Overview · Invoices · Approvals · Replies · Customers · Schedule.
-**Top-right icons:** 📖 Setup guide · 🧪 Mock Mailbox · 💬 Ask agent · ⚙ Settings · ☾ theme.
-The pod **boots empty** — load real data (Google Sheets / CSV / manual), or open the
-**Mock Mailbox** to seed an isolated, DEMO-badged sandbox that never mixes with real work.
+**Top-right icons:** 📖 Setup guide · 💬 Ask agent · ⚙ Settings · ☾ theme.
+The pod **boots empty** — load data via Google Sheets / CSV / manual, or click
+**Data ▾ → 🌱 Seed random mails** to generate a sample book of customers, invoices & drafts.
 
 | Team | Where | What they get |
 |---|---|---|
 | **Collector** | Invoices, Customers, Replies | The working queue; the AI has already triaged + drafted. |
-| **Finance lead** | Approvals | Approve/edit/reject AI drafts (final notices never auto-send) **and** the Legal & recovery queue for 30+ day accounts — both sections on one tab. |
-| **Finance lead** | Schedule | Share collections stats to Slack / Telegram / WhatsApp — pick what each channel gets and when; manual + scheduled sends. |
-| **Admin** | Settings ⚙ | Behavior, mail mode (Gmail), legal-alert channel, Telegram agent — all live. |
-| **Anyone** | Ask 💬 (app) / Telegram | Ask the concierge about the book in plain language. |
-| **Explorer** | Mock Mailbox 🧪 | Seed / clear an isolated sandbox (`demo=true` rows) to explore without touching real data. |
+| **Finance lead** | Approvals | Approve/edit/reject AI drafts (final notices never auto-send). Hit **Legal** to escalate — the account moves to the Legal & recovery section and the escalation is posted to Slack **#legal**. |
+| **Finance lead** | Schedule | Send the daily stats digest to Slack **#daily-stats** (official connector) and Telegram; pick what to send and when; manual + scheduled. |
+| **Admin** | Settings ⚙ | Behavior, mail mode (Gmail), Slack #legal channel, Telegram agent — all live. |
+| **Anyone** | Ask 💬 (app) · Slack #chat · Telegram | Chat with the concierge about the book in plain language. |
 
 ## Customer identity (the data foundation)
 
@@ -105,54 +104,70 @@ Lemma-native only — no SMTP creds or API keys stored in the app:
   `app_action`, and `test_channel`. Toggle **Send real email** on, pick GMAIL,
   **Save**, then **Send test**.
 
-## Stats sharing (Schedule tab)
+## Slack integration — three channels
 
-Share a collections digest to **Slack, Telegram, and WhatsApp** — each channel a card
-with its own *what to send* (metric checklist), *when to send* (freq + time + weekday),
-plus **Send now** / **Send test**, and a **Send to all enabled** button. Connect once:
+One `slack` connector (LEMMA provider) powers three distinct flows. **All posts pin a
+fixed workspace account** (`pod_config.slack_account_id`) rather than the invoking user —
+so shared-channel posts and the unattended scheduled digest work regardless of who (or
+what) triggers them. Connect once:
 
-- **Slack** — Lemma connector (auth-config name is **`slack`**), destination = channel id:
-  ```bash
-  lemma connectors auth-configs create slack --name slack
-  lemma connectors connect-requests create slack --auth-config-id <id>   # authorize in browser
-  ```
-- **Telegram** — bring your own bot (BotFather token stored in `pod_config`); use the
-  card's **Find chat id** button (calls `telegram_get_chat`) to pick the chat.
-- **WhatsApp** — bring your own Meta WhatsApp Business Cloud API (phone-number-id +
-  permanent token in `pod_config`); recipient must be inside the 24h window or use a template.
-
-**Scheduled sweep:** the `stats-dispatch` schedule (cron `*/30 * * * *`, ships **paused**)
-checks every channel's *when to send* and fires the due ones. Resume it to go hands-off:
 ```bash
-lemma schedules resume stats-dispatch     # pause again: lemma schedules pause stats-dispatch
+lemma connectors auth-configs create slack --name slack
+lemma connectors connect-requests create slack --auth-config-id <id>   # authorize in browser
+lemma connectors accounts list --app slack                             # copy the account id → pod_config.slack_account_id
 ```
 
-## Legal escalation alerts (Settings ⚙ → Legal escalation channel)
+| Channel | Purpose | How it's wired |
+|---|---|---|
+| **#legal** | Legal escalations. Hitting **Legal** on a draft (Approvals) posts the escalated mail here and moves the account to Legal & recovery. | `app_action` (`_notify`) → `chat_post_message`. Channel id in Settings ⚙. |
+| **#daily-stats** | The daily stats digest — manual or scheduled. | `stats_dispatch` → `chat_post_message`. Channel id in the Schedule tab. |
+| **#chat** | Two-way chat with the pod (concierge agent answers from live data). | A Slack **surface** routing `#chat` → `collections-concierge`. |
 
-The one-click **Notify legal team** button (Approvals → Legal & recovery) posts to Slack
-via the same `slack` connector. Set the alerts channel (and optional legal channel id) in
-Settings, **Save**, **Send test**. **NONE** (default) records the alert without sending.
+Invite the Slack app to each channel, then paste channel ids where noted. For **#chat**,
+the surface needs a one-time webhook paste:
 
-## Chat with the agent — Telegram surface + in-app Ask
+```bash
+lemma surfaces upsert slack --agent collections-concierge --account <slack-account-id>
+lemma surfaces channels slack --channel-id <C…> --channel-name chat --agent collections-concierge
+lemma surfaces setup slack     # prints the webhook URL to paste into the Slack app's Event Subscriptions
+```
 
-The `collections-concierge` agent answers questions about the live book (overdue
-accounts, a customer's status, the legal queue, pending approvals). One agent, two
-front doors:
+## Telegram — chat + stats
 
-- **In the app** — the **Ask agent** tab (official `lemma-agent-thread` component).
-- **On Telegram** — a Lemma **managed surface** (system bot, no token, no webhook):
+- **Chat** — a Lemma **managed surface** (`collections-concierge`), no token/webhook:
   ```bash
   lemma surfaces upsert telegram --agent collections-concierge
   lemma surfaces setup telegram      # prints the bot link to message
   ```
-  Already ACTIVE in this pod. Read-only Q&A; it reports, it doesn't act.
+  Already ACTIVE in this pod.
+- **Stats digest** — the Telegram *connector* is surface-only (no send operation), so
+  proactive stats posts use a **BotFather bot token** (stored in `pod_config`); the
+  Schedule tab's Telegram card has a **Find chat id** button (`telegram_get_chat`).
+
+## Stats digest (Schedule tab)
+
+Pick *what to send* (metric checklist) and *when to send* (freq + time + weekday) per
+destination (Slack #daily-stats, Telegram), with **Send now** / **Send test** and a
+**Send now to all enabled** button. The `stats-dispatch` schedule (cron `*/30 * * * *`,
+ships **paused**) checks each destination's window and fires the due ones:
+
+```bash
+lemma schedules resume stats-dispatch     # pause again: lemma schedules pause stats-dispatch
+```
+
+## Chat with the agent — in-app Ask, Slack #chat, Telegram
+
+The `collections-concierge` agent answers questions about the live book (overdue
+accounts, a customer's status, the legal queue, pending approvals) through three front
+doors: the in-app **💬 Ask** tab (`lemma-agent-thread`), **Slack #chat**, and **Telegram**
+(both surfaces routed to the same agent). Read-only Q&A; it reports, it doesn't act.
 
 ## Inbound replies (closing the loop)
 
 The Replies tab shows classified customer replies (promise-to-pay / dispute / paid /
 question). With a Gmail mailbox connected, a WEBHOOK schedule on new mail feeds the
 `reply-triager` agent which classifies and updates the account. For a demo without a
-mailbox, use **🧪 Mock Mailbox → Seed replies**.
+mailbox, use **Data ▾ → 💬 Seed customer replies**.
 
 ## Schedules
 
@@ -176,8 +191,13 @@ lemma pods create collections-agent
 lemma pods import ./collections-pod
 bash ./collections-pod/seed/seed.sh            # file contents + records don't bundle — re-seed
 lemma apps deploy collections-app ./collections-pod/apps/collections-app/index.html --yes
-lemma surfaces upsert telegram --agent collections-concierge   # re-enable the chat surface
+lemma surfaces upsert telegram --agent collections-concierge                       # Telegram chat surface
+lemma surfaces upsert slack --agent collections-concierge --account <slack-acct>   # Slack #chat surface
 ```
+
+After importing, reconnect connectors (Gmail `workspace-gmail`, Slack `slack`, Google
+Sheets `workspace-sheets`), then set `pod_config.slack_account_id` to the connected Slack
+account id and paste the #legal / #daily-stats channel ids in Settings / Schedule.
 
 **Model runtime (cloud).** Agents run on a runtime profile. Groq's `llama-3.3-70b`
 cannot do strict structured output through the cloud runtime, so the drafter is pinned
@@ -197,13 +217,14 @@ Re-do connector auth on cloud (Gmail `workspace-gmail`, Slack `slack`, Google Sh
 ## Verify (smoke test)
 
 ```bash
-lemma functions run seed_demo --data '{"enqueue":true}'    # → SANDBOX customers + invoices (demo=true), pipeline runs
+lemma functions run seed_demo --data '{"enqueue":true}'                          # sample customers + invoices, pipeline runs
 # wait ~1 min, then:
-lemma query run "select status,count(*) from drafts group by status"     # AUTO_SENT + PENDING_REVIEW
-lemma query run "select demo,count(*) from invoices group by demo"       # seeded rows are demo=true
-lemma functions run stats_dispatch --data '{"mode":"test","channel":"SLACK"}'   # test the Schedule wiring
+lemma query run "select status,count(*) from drafts group by status"            # AUTO_SENT + PENDING_REVIEW
+lemma functions run stats_dispatch --data '{"mode":"test","channel":"SLACK"}'    # posts a test digest to #daily-stats
+lemma functions run app_action --data '{"action":"notify","note":"legal","config":{"message":"test"}}'  # posts to #legal
 ```
 
-Seeded rows are `demo=true`, so they appear under the **🧪 Mock Mailbox** (badged DEMO),
-**not** the main Overview — the main tabs stay clean for real data. Clear the sandbox any
-time from the Mock Mailbox ("Clear mock data" → `reset_pod {demo_only:true}`).
+Both Slack posts should return `delivered: true` / `sent via Slack` once
+`pod_config.slack_account_id` is set and the channel ids are in place. Seeded rows show in
+the normal tabs (one shared workspace — no sandbox). Reset everything with
+`lemma functions run reset_pod --data '{"confirm":true}'`.

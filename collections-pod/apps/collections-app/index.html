@@ -94,7 +94,7 @@
 
     <script>
       (function(){var cfg=window.__LEMMA_CONFIG__||{};var base=(cfg.apiUrl||location.origin).replace(/\/$/,"");var c=document.createElement("script");c.src=base+"/public/sdk/lemma-client.js";c.onload=function(){var u=document.createElement("script");u.src=base+"/public/sdk/lemma-ui.js";u.onload=boot;u.onerror=boot;document.head.appendChild(u)};c.onerror=function(){fatal("Couldn't load the Lemma SDK.")};document.head.appendChild(c);})();
-      var client,ME={},STATE={clients:[],invoices:[],drafts:[],interactions:[],promises:[],config:{},statsChannels:[],demoInvIds:{}},TAB="dashboard";
+      var client,ME={},STATE={clients:[],invoices:[],drafts:[],interactions:[],promises:[],config:{},statsChannels:[]},TAB="dashboard";
       function $(id){return document.getElementById(id)}
       function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
       function field(r,k){return (r&&r.data&&r.data[k]!=null)?r.data[k]:(r?r[k]:undefined)}
@@ -122,18 +122,13 @@
       async function loadData(){
         var r=await Promise.all([client.records.list("clients",{limit:1000}),client.records.list("invoices",{limit:1000}),client.records.list("drafts",{limit:2000}),client.records.list("interactions",{limit:400,sort:[{field:"created_at",direction:"desc"}]}),client.records.list("promises",{limit:500}),client.records.list("pod_config",{limit:1}),client.records.list("followup_queue",{limit:1000}),client.records.list("stats_channels",{limit:20})]);
         STATE.clients=listOf(r[0]);STATE.invoices=listOf(r[1]);STATE.drafts=listOf(r[2]);STATE.interactions=listOf(r[3]);STATE.promises=listOf(r[4]);STATE.config=listOf(r[5])[0]||{};STATE.queue=listOf(r[6]);STATE.statsChannels=listOf(r[7]);
-        // demo/real split: a seeded invoice carries demo=true and lives only in the Mock Mailbox.
-        STATE.demoInvIds={};STATE.invoices.forEach(function(i){if(field(i,"demo"))STATE.demoInvIds[field(i,"id")]=1});
       }
-      // ---- real vs mock partitioning (main workspace shows real; Mock Mailbox shows demo)
-      function isDemoInv(i){return !!field(i,"demo")}
-      function isDemoId(id){return !!STATE.demoInvIds[id]}
-      function mainInvoices(){return STATE.invoices.filter(function(i){return !isDemoInv(i)})}
-      function mockInvoices(){return STATE.invoices.filter(function(i){return isDemoInv(i)})}
-      function realDrafts(){return STATE.drafts.filter(function(d){return !isDemoId(field(d,"invoice_id"))})}
-      function mockDrafts(){return STATE.drafts.filter(function(d){return isDemoId(field(d,"invoice_id"))})}
-      function clientHasReal(cid){return STATE.invoices.some(function(i){return field(i,"client_id")===cid&&!isDemoInv(i)})}
-      function clientHasMock(cid){return STATE.invoices.some(function(i){return field(i,"client_id")===cid&&isDemoInv(i)})}
+      // One shared workspace — every invoice/draft/reply is real and shown across the tabs.
+      // (These pass-throughs keep older call-sites working after the Mock Mailbox was removed.)
+      function isDemoId(){return false}
+      function mainInvoices(){return STATE.invoices}
+      function realDrafts(){return STATE.drafts}
+      function clientHasReal(cid){return invoicesForClient(cid).length>0}
       function statsChan(ch){return STATE.statsChannels.find(function(r){return String(field(r,"channel")).toUpperCase()===ch})||{}}
       function clientOf(id){return STATE.clients.find(function(c){return field(c,"id")===id})||{}}
       function invoiceOf(id){return STATE.invoices.find(function(i){return field(i,"id")===id})||{}}
@@ -217,11 +212,12 @@
             '<button onclick="closeMenu();pickCSV()">⬆ Import CSV / Excel</button>'+
             '<button onclick="closeMenu();exportCSV()">⬇ Export CSV</button>'+
             '<button onclick="closeMenu();addInvoice()">＋ Add invoice</button><hr>'+
-            '<button onclick="closeMenu();resetData()" style="color:var(--high)">🗑 Reset real data</button>'+
+            '<button onclick="closeMenu();seedDemo()">🌱 Seed random mails</button>'+
+            '<button onclick="closeMenu();seedReplies()">💬 Seed customer replies</button><hr>'+
+            '<button onclick="closeMenu();resetData()" style="color:var(--high)">🗑 Reset all data</button>'+
           '</div></div>'+
           '<span style="width:1px;height:22px;background:var(--line);margin:0 .1rem"></span>'+
           '<button class="btn sm ghost" title="How to set everything up" onclick="openSetupGuide()">📖 Setup</button>'+
-          uicon("mock","🧪","Mock Mailbox — sandbox demo data")+
           uicon("ask","💬","Ask the agent")+
           uicon("settings","⚙","Settings")+
           '<span class="pill"><button onclick="toggleTheme()">'+(theme()==="dark"?"☀":"☾")+'</button></span></div></div>'+
@@ -232,20 +228,19 @@
       }
       window.go=function(t){TAB=t;render()};window.toggleTheme=function(){applyTheme(theme()==="dark"?"light":"dark");render()};window.closeMenu=function(){var m=$("datamenu");if(m)m.classList.remove("open")};
       function uc(who,what){return '<div class="usecase"><span>👥</span><div><span class="who">'+who+'</span> — '+what+'</div></div>'}
-      function renderView(){var v=$("view");if(!v)return;v.innerHTML=({dashboard:viewDashboard,invoices:viewInvoices,approvals:viewApprovals,replies:viewReplies,customers:viewCustomers,schedule:viewSchedule,mock:viewMock,ask:viewAsk,settings:viewSettings}[TAB]||viewDashboard)()}
+      function renderView(){var v=$("view");if(!v)return;v.innerHTML=({dashboard:viewDashboard,invoices:viewInvoices,approvals:viewApprovals,replies:viewReplies,customers:viewCustomers,schedule:viewSchedule,ask:viewAsk,settings:viewSettings}[TAB]||viewDashboard)()}
       function kpi(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'}
       function ncard(n,l,sub,tab,c){return '<button class="acard" onclick="go(\''+tab+'\')" style="--ac:var('+c+')"><div class="acn">'+n+'</div><div class="acl">'+l+'</div><div class="acs">'+esc(sub)+'</div></button>'}
 
       function realEmptyState(){
-        var hasMock=mockInvoices().length;
-        return '<div class="panel"><div class="empty"><div class="big">Your workspace is empty</div><p>Load your real invoices to get started — the agent triages and drafts follow-ups automatically.</p>'+
+        return '<div class="panel"><div class="empty"><div class="big">Your workspace is empty</div><p>Load your invoices to get started — the agent triages and drafts follow-ups automatically.</p>'+
           '<div style="margin:1.2rem 0 .5rem;font-weight:600;font-size:.84rem;text-transform:uppercase;letter-spacing:.05em" class="muted">Add data</div>'+
           '<div class="row-actions" style="justify-content:center;margin-bottom:1rem;gap:.6rem">'+
             '<button class="btn gold sm" onclick="importSheet()">📊 Import from Google Sheets</button>'+
             '<button class="btn sm" onclick="pickCSV()">⬆ Import CSV / Excel</button>'+
             '<button class="btn sm" onclick="addInvoice()">＋ Add invoice</button>'+
           '</div>'+
-          '<div class="muted" style="font-size:.8rem">Just exploring? Open <button class="btn sm ghost" onclick="go(\'mock\')">🧪 Mock Mailbox</button> to seed a sandbox demo — kept separate from your real data'+(hasMock?' ('+hasMock+' sandbox invoices already loaded)':'')+'.</div>'+
+          '<div class="muted" style="font-size:.8rem">Just exploring? <button class="btn sm ghost" onclick="seedDemo()">🌱 Seed random mails</button> to generate a sample book of customers, invoices &amp; drafts.</div>'+
           '</div></div>';
       }
 
@@ -424,7 +419,7 @@
         var searchVal = (STATE.customersSearch || "").toLowerCase();
         var allRows=realClients.map(function(c){
           var cid=field(c,"id");
-          var invs=invoicesForClient(cid).filter(function(i){return !isDemoInv(i)});
+          var invs=invoicesForClient(cid);
           var out=invs.filter(function(i){return field(i,"status")==="ACTIVE"}).reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
           var worst=invs.map(function(i){return field(i,"days_overdue")||0}).reduce(function(a,b){return Math.max(a,b)},0);
           return {c:c,invs:invs,out:out,worst:worst};
@@ -453,16 +448,16 @@
         var apprv = ds.length
           ? '<div style="margin:.2rem 0 .5rem"><h2 style="font-family:var(--serif);font-weight:500;font-size:1.1rem;margin:0">📥 Awaiting approval · '+ds.length+'</h2></div>'+ds.map(function(d){var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.2rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+'d overdue · '+stageChip(field(i,"stage"))+' '+riskChip(field(d,"risk_level"))+(field(d,"fallback_used")?' '+chip("template","--muted"):'')+'</div></div><div class="row-actions"><button class="btn gold sm" onclick="approve(\''+field(d,"id")+'\')">Approve &amp; send</button><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Edit</button><button class="btn sm danger" onclick="reject(\''+field(d,"id")+'\')">Reject</button><button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\')">Legal</button></div></div><div class="mail" style="margin-top:.8rem"><div class="subj">'+esc(field(d,"subject"))+'</div>'+esc(field(d,"body"))+'</div></div>'}).join("")
           : '<div class="panel"><h2 style="margin:0 0 .4rem">📥 Awaiting approval</h2><div class="empty" style="padding:1.2rem 1rem"><div class="big">Inbox zero ✓</div>No drafts waiting — the agent auto-sent the safe ones.</div></div>';
-        return uc("Finance &amp; legal","the two things only a human owns — approve or edit the AI drafts that never auto-send, and work the legal &amp; recovery queue for 30+ day accounts.")+apprv+legalSection();
+        return uc("Finance &amp; legal","the two things only a human owns — approve or edit the AI drafts that never auto-send, or hit <b>Legal</b> to escalate: the account drops out of this queue into Legal &amp; recovery below and the escalation is posted to Slack <b>#legal</b>.")+apprv+legalSection();
       }
       function legalSection(){var inv=mainInvoices().filter(function(i){return field(i,"status")==="LEGAL"});
         var head='<div style="margin:1.4rem 0 .5rem"><h2 style="font-family:var(--serif);font-weight:500;font-size:1.1rem;margin:0">⚖ Legal &amp; recovery · '+inv.length+'</h2></div>';
-        if(!inv.length)return head+'<div class="panel"><div class="empty" style="padding:1.2rem 1rem">Nothing in legal. Accounts 30+ days overdue or escalated by finance appear here — they never get automated email.</div></div>';
+        if(!inv.length)return head+'<div class="panel"><div class="empty" style="padding:1.2rem 1rem">Nothing in legal. When you hit <b>Legal</b> on a draft in Approvals, the account moves here and the escalation is posted to Slack <b>#legal</b> — these never get automated email.</div></div>';
         var total=inv.reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
         return head+'<div class="stats">'+kpi(inv.length,"Accounts in legal")+kpi(money(total),"Amount at risk")+'</div>'+
           inv.map(function(i){var c=clientOf(field(i,"client_id"));var evs=STATE.interactions.filter(function(e){return field(e,"invoice_id")===field(i,"id")}).slice(0,4);return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.1rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+' days overdue · '+esc(field(c,"email")||"")+'</div></div><div class="row-actions"><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Full history</button><button class="btn sm gold" onclick="notifyLegal(\''+field(i,"invoice_no")+'\')">Notify legal team</button></div></div><div class="timeline" style="margin-top:.7rem">'+evs.map(function(e){return '<div class="ev"><span class="dot"></span><div class="when">'+dt(field(e,"created_at"))+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join("")+'</div></div>'}).join("");
       }
-      window.approve=function(id){action({action:"approve",draft_id:id},"Approved & sent")};window.reject=function(id){action({action:"reject",draft_id:id,note:"Rejected by reviewer"},"Rejected")};window.flag=function(id){action({action:"flag",draft_id:id,note:"Escalated to legal"},"Flagged to legal")};
+      window.approve=function(id){action({action:"approve",draft_id:id},"Approved & sent")};window.reject=function(id){action({action:"reject",draft_id:id,note:"Rejected by reviewer"},"Rejected")};window.flag=function(id){action({action:"flag",draft_id:id,note:"Escalated to legal"})};
 
       function viewReplies(){var rs=repliesReal();
         var searchVal = (STATE.repliesSearch || "").toLowerCase();
@@ -528,11 +523,11 @@
           inp("email_from","From name","Acme Finance")+
           (mode==="GMAIL"?'<div class="guide">Gmail sends as <b>your connected Google account</b> — no passwords stored here. Connect once from the CLI:<ol><li><code>lemma connectors auth-configs create gmail --name workspace-gmail</code></li><li><code>lemma connectors connect-requests create gmail --auth-config-id &lt;id&gt;</code> → open the link, authorize Google.</li><li>Back here: flip <b>Send real email</b> on and hit <b>Send test</b>.</li></ol></div>':'<div class="guide">In-app mode: every follow-up is drafted, validated and recorded so you can demo the full pipeline safely — nothing leaves your inbox. Switch to Gmail to send for real.</div>')+
           '<div style="margin-top:.8rem"><button class="btn gold sm" onclick="saveMail()">Save</button> <button class="btn sm" onclick="testEmail()">Send test</button></div></div>'+
-        '<div class="panel"><h2>Legal escalation channel</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .6rem">The channel the one-click <b>Notify legal team</b> button (Approvals ▸ Legal &amp; recovery) posts to. Uses the same Slack connector as the Schedule tab.</p>'+
-          '<label class="fld"><span class="lbl">Alerts channel</span><select id="cfg_notify_channel" onchange="render(true)">'+["NONE","SLACK"].map(function(m){return '<option '+(ch===m?"selected":"")+'>'+m+'</option>'}).join("")+'</select></label>'+
-          (ch==="SLACK"?'<div class="grid2">'+inp("slack_channel","Default channel id","C0123ABC")+inp("slack_legal_channel","Legal channel id (optional)","C0456DEF")+'</div><div class="guide">Connect Slack once (same account the Schedule tab uses):<ol><li><code>lemma connectors auth-configs create slack --name slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li></ol></div>':'<div class="guide">Set to Slack to enable one-click legal escalations to a channel.</div>')+
+        '<div class="panel"><h2>Slack #legal (escalations)</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .6rem">Set to Slack and paste your <b>#legal</b> channel id. Every time you hit <b>Legal</b> on a draft in Approvals — and the one-click <b>Notify legal team</b> button — posts the escalation here automatically via the official Slack connector.</p>'+
+          '<label class="fld"><span class="lbl">Post escalations to</span><select id="cfg_notify_channel" onchange="render(true)">'+["NONE","SLACK"].map(function(m){return '<option '+(ch===m?"selected":"")+'>'+m+'</option>'}).join("")+'</select></label>'+
+          (ch==="SLACK"?'<div class="grid2">'+inp("slack_legal_channel","#legal channel id","C0LEGAL")+inp("slack_channel","Fallback channel id (optional)","C0123ABC")+'</div><div class="guide">Connect Slack once (same account the Schedule tab uses):<ol><li><code>lemma connectors auth-configs create slack --name slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li><li>Invite the app to <b>#legal</b>, paste its channel id above, Save, Send test.</li></ol></div>':'<div class="guide">Set to Slack to auto-post legal escalations to your #legal channel.</div>')+
           '<div style="margin-top:.8rem"><button class="btn gold sm" onclick="saveNotify()">Save</button> '+(ch!=="NONE"?'<button class="btn sm" onclick="testNotify()">Send test</button>':'')+'</div></div>'+
-        '<div class="panel"><h2>Chat with your agent on Telegram</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .6rem">Lemma runs a managed Telegram bot — no bot token, no webhook. Your finance &amp; legal team can DM the Collections Agent (&ldquo;what&rsquo;s overdue for Acme?&rdquo;, &ldquo;show the legal queue&rdquo;) and it answers from this pod&rsquo;s live data. (This is the agent DM — different from the Telegram stats digest in the Schedule tab.)</p><div class="guide">Enable once from the CLI:<ol><li><code>lemma surfaces upsert telegram --agent collections-concierge</code></li><li><code>lemma surfaces setup telegram</code> → open the <b>t.me</b> link it prints and message the bot.</li></ol>That&rsquo;s it — no credentials. The same pod, a second front door.</div></div>'+
+        '<div class="panel"><h2>Chat with the pod (Slack #chat + Telegram)</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .6rem">The concierge agent answers questions about the live book on <b>Slack #chat</b> and <b>Telegram</b> (and the in-app 💬 Ask tab). Telegram uses a managed bot (no token). Slack #chat is a surface — set up from the 📖 Setup guide.</p><div class="guide">Telegram (no credentials):<ol><li><code>lemma surfaces upsert telegram --agent collections-concierge</code></li><li><code>lemma surfaces setup telegram</code> → open the <b>t.me</b> link it prints and message the bot.</li></ol></div></div>'+
         '<div class="panel"><h2>Identity &amp; model</h2>'+inp("company_name","Company name")+inp("sender_identity","Sender signature")+
           '<div class="guide">Drafting runs on this pod&rsquo;s Lemma runtime. On lemma.work you can run on Lemma credits or pin your own provider via a runtime profile (<code>lemma runtime profiles</code>) — set per pod, no app change.</div></div>';
       }
@@ -555,7 +550,7 @@
         '<button class="btn gold" onclick="submitInvoice()">Add &amp; queue</button></div>';openDrawerEl()};
       window.submitInvoice=async function(){var row={invoice_no:$("ai_no").value.trim(),client_name:$("ai_name").value.trim(),client_email:$("ai_email").value.trim(),amount:parseFloat($("ai_amt").value)||0,due_date:$("ai_due").value,payment_link:$("ai_link").value.trim(),currency:"INR",status:"ACTIVE"};if(!row.invoice_no||!row.client_email||!row.due_date||!row.amount)return toast("Fill the required fields");setBusy(true,"Adding invoice…");try{await invokeFn("ingest_invoices",{rows:[row]});await invokeFn("app_action",{action:"process",invoice_id:""});}catch(e){}try{var inv=(await client.records.list("invoices",{limit:1000})).items.find(function(i){return field(i,"invoice_no")===row.invoice_no});if(inv)await invokeFn("app_action",{action:"process",invoice_id:field(inv,"id")});await loadData();render(true);closeDrawer();toast("Invoice added & queued")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
 
-      // ---- Schedule tab: share stats to Slack / Telegram / WhatsApp
+      // ---- Schedule tab: share the daily-stats digest to Slack (#daily-stats) and Telegram
       var STATS_METRICS=[["inc_outstanding","Outstanding total",true],["inc_overdue","Overdue accounts",true],["inc_sent_today","Follow-ups sent today",true],["inc_pending","Awaiting approval",true],["inc_legal","In legal",true],["inc_promises","Open promises",false],["inc_disputes","Disputed",false],["inc_top_accounts","Top overdue accounts",false]];
       function scSwitch(ch,f,on){return '<label style="position:relative;display:inline-block;width:42px;height:24px;flex:none"><input type="checkbox" id="sc_'+ch+'_'+f+'" '+(on?"checked":"")+' style="opacity:0;width:0;height:0" onchange="this.nextElementSibling.style.background=this.checked?\'var(--gold)\':\'var(--line)\';this.nextElementSibling.nextElementSibling.style.left=this.checked?\'21px\':\'3px\'"><span style="position:absolute;inset:0;background:'+(on?"var(--gold)":"var(--line)")+';border-radius:999px"></span><span style="position:absolute;top:3px;left:'+(on?"21px":"3px")+';width:18px;height:18px;background:#fff;border-radius:50%"></span></label>'}
       function channelCard(def){
@@ -565,8 +560,7 @@
         var min=field(row,"send_minute");if(min==null)min=0;min=(min>=30?30:0);
         var dow=field(row,"weekly_dow");if(dow==null)dow=0;
         var creds="";
-        if(ch==="TELEGRAM")creds='<label class="fld"><span class="lbl">Bot token</span><input id="sc_TELEGRAM_telegram_bot_token" value="'+esc(field(c,"telegram_bot_token")||"")+'" placeholder="123456:ABC-DEF…"></label><div style="margin:-.2rem 0 .5rem"><button class="btn sm" onclick="tgFindChat(\'TELEGRAM\')">🔎 Find chat id</button> <span id="sc_TELEGRAM_chatlist"></span></div>';
-        if(ch==="WHATSAPP")creds='<div class="grid2"><label class="fld"><span class="lbl">Phone number id</span><input id="sc_WHATSAPP_whatsapp_phone_id" value="'+esc(field(c,"whatsapp_phone_id")||"")+'" placeholder="1029384756"></label><label class="fld"><span class="lbl">Access token</span><input id="sc_WHATSAPP_whatsapp_token" value="'+esc(field(c,"whatsapp_token")||"")+'" placeholder="EAAG…"></label></div>';
+        if(ch==="TELEGRAM")creds='<label class="fld"><span class="lbl">Bot token <span class="muted" style="text-transform:none">(for stats posting — chat uses the managed surface)</span></span><input id="sc_TELEGRAM_telegram_bot_token" value="'+esc(field(c,"telegram_bot_token")||"")+'" placeholder="123456:ABC-DEF…"></label><div style="margin:-.2rem 0 .5rem"><button class="btn sm" onclick="tgFindChat(\'TELEGRAM\')">🔎 Find chat id</button> <span id="sc_TELEGRAM_chatlist"></span></div>';
         var metrics=STATS_METRICS.map(function(m){var v=field(row,m[0]);if(v==null)v=m[2];return '<label style="display:flex;align-items:center;gap:.4rem;font-size:.82rem;padding:.2rem 0"><input type="checkbox" id="sc_'+ch+'_'+m[0]+'" '+(v?"checked":"")+' style="width:auto">'+esc(m[1])+'</label>'}).join("");
         var hourOpts="";for(var h=0;h<24;h++)hourOpts+='<option value="'+h+'" '+(h===hour?"selected":"")+'>'+(h<10?"0":"")+h+':00</option>';
         var minOpts=[0,30].map(function(mm){return '<option value="'+mm+'" '+(mm===min?"selected":"")+'>'+(mm<10?"0":"")+mm+'</option>'}).join("");
@@ -585,20 +579,19 @@
       }
       function viewSchedule(){
         var defs=[
-          {ch:"SLACK",icon:"💬",name:"Slack",color:"--blue",destLabel:"Channel id",destPh:"C0123ABC",guide:'Posts through the Lemma Slack connector — no token stored here.<ol><li><code>lemma connectors auth-configs create slack --name slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li><li>Copy the channel id (channel ▸ View details, the <code>C…</code> code), paste above, Save, Send test.</li></ol>'},
-          {ch:"TELEGRAM",icon:"✈",name:"Telegram",color:"--gold",destLabel:"Chat id",destPh:"-1001234567890",guide:'Bring your own bot:<ol><li>DM <b>@BotFather</b> ▸ <code>/newbot</code> ▸ copy the token, paste it above.</li><li>Message your bot (or add it to a group &amp; post once), then click <b>Find chat id</b> and pick the chat.</li><li>Save, then Send test.</li></ol>'},
-          {ch:"WHATSAPP",icon:"🟢",name:"WhatsApp",color:"--low",destLabel:"Recipient number (E.164)",destPh:"+15551234567",guide:'Bring your own WhatsApp Business Cloud API (Meta):<ol><li>Meta ▸ WhatsApp ▸ API Setup: copy the <b>Phone number ID</b> and a <b>permanent access token</b>, paste both above.</li><li>Recipient must have messaged your number in the last 24h (or you must use an approved template).</li><li>Save, then Send test.</li></ol>'}
+          {ch:"SLACK",icon:"💬",name:"Slack · #daily-stats",color:"--blue",destLabel:"#daily-stats channel id",destPh:"C0123ABC",guide:'Posts through the official <b>Lemma Slack connector</b> (<code>chat_post_message</code>) — no token here. Connect once:<ol><li><code>lemma connectors auth-configs create slack --name slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li><li>Invite the app to <b>#daily-stats</b>, copy its channel id (channel ▸ View details, the <code>C…</code> code), paste above, Save, Send test.</li></ol>'},
+          {ch:"TELEGRAM",icon:"✈",name:"Telegram",color:"--gold",destLabel:"Chat id",destPh:"-1001234567890",guide:'Telegram <b>chat</b> with the pod uses the managed surface (no token). This card is only for <b>pushing the stats digest</b> to Telegram, which needs a bot:<ol><li>DM <b>@BotFather</b> ▸ <code>/newbot</code> ▸ copy the token, paste it above.</li><li>Message your bot (or add it to a group &amp; post once), then click <b>Find chat id</b> and pick the chat.</li><li>Save, then Send test.</li></ol>'}
         ];
-        return uc("Finance lead","share the collections stats where the team already is — pick what each channel gets and when. Send manually any time; scheduled sweeps run every 30 min once you resume the schedule.")+
-          '<div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap"><div><b>Send now to every enabled channel</b><div class="muted" style="font-size:.8rem">Fires each channel below whose toggle is on.</div></div><button class="btn gold" onclick="sendAllStats()">📣 Send to all enabled</button></div>'+
+        return uc("Finance lead","share the daily collections digest where the team already is — Slack <b>#daily-stats</b> (official connector) and Telegram. Pick what to send and when; send manually any time, or resume the schedule for hands-off delivery.")+
+          '<div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap"><div><b>📊 Daily stats digest</b><div class="muted" style="font-size:.8rem">Send the digest now to every enabled destination below.</div></div><button class="btn gold" onclick="sendAllStats()">📣 Send now to all enabled</button></div>'+
           defs.map(channelCard).join("")+
-          '<div class="panel"><h2>Scheduled sending</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .5rem">The <code>stats-dispatch</code> schedule sweeps every 30 minutes and sends each channel whose <b>When to send</b> matches. It ships paused — resume it once from the CLI:</p><div class="guide"><code>lemma schedules resume stats-dispatch</code> &nbsp;·&nbsp; pause with <code>lemma schedules pause stats-dispatch</code>.</div></div>';
+          '<div class="panel"><h2>Scheduled sending</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .5rem">The <code>stats-dispatch</code> schedule sweeps every 30 minutes and sends each destination whose <b>When to send</b> matches. It ships paused — resume it once from the CLI:</p><div class="guide"><code>lemma schedules resume stats-dispatch</code> &nbsp;·&nbsp; pause with <code>lemma schedules pause stats-dispatch</code>.</div></div>'+
+          '<div class="panel"><h2>💬 Chat with the pod</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 0">Two-way chat is separate from stats: ask the pod anything in <b>Slack #chat</b> or on <b>Telegram</b> (both routed to the concierge agent), or use the in-app <b>💬 Ask</b> tab. See the 📖 Setup guide to wire #chat.</p></div>';
       }
       function _collectChannel(ch){
         var gv=function(f){var e=$("sc_"+ch+"_"+f);return e?(e.type==="checkbox"?e.checked:e.value):undefined};
         var cfg={};
         if(ch==="TELEGRAM"){var t=gv("telegram_bot_token");if(t!=null)cfg.telegram_bot_token=t}
-        if(ch==="WHATSAPP"){var p=gv("whatsapp_phone_id"),k=gv("whatsapp_token");if(p!=null)cfg.whatsapp_phone_id=p;if(k!=null)cfg.whatsapp_token=k}
         var row={channel:ch};
         ["enabled","destination","inc_outstanding","inc_overdue","inc_sent_today","inc_pending","inc_legal","inc_promises","inc_disputes","inc_top_accounts","freq"].forEach(function(f){var v=gv(f);if(v!==undefined)row[f]=v});
         ["send_hour","send_minute","weekly_dow"].forEach(function(f){var v=gv(f);if(v!==undefined)row[f]=parseInt(v,10)});
@@ -611,16 +604,6 @@
       window.sendAllStats=async function(){setBusy(true,"Sending to all enabled channels…");try{var o=await invokeFn("stats_dispatch",{mode:"manual"});await loadData();render(true);toast("Sent to "+((o&&o.sent)||0)+" channel(s)")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
       window.tgFindChat=async function(ch){var e=$("sc_"+ch+"_telegram_bot_token");var tok=e?e.value.trim():"";if(!tok)return toast("Enter the bot token first");setBusy(true,"Asking Telegram…");try{var o=await invokeFn("telegram_get_chat",{bot_token:tok});setBusy(false);if(!o.ok)return toast("⚠ "+o.detail);var box=$("sc_"+ch+"_chatlist");if(box)box.innerHTML=(o.chats||[]).map(function(cc){return '<button class="btn sm" onclick="document.getElementById(\'sc_TELEGRAM_destination\').value=\''+esc(cc.id)+'\';toast(\'Chat set: '+esc(cc.name)+'\')">'+esc(cc.name)+' · '+esc(cc.id)+'</button>'}).join(" ");toast("@"+o.bot+" — "+o.detail)}catch(err){setBusy(false);toast("⚠ "+err.message)}};
 
-      // ---- Mock Mailbox (sandbox demo data, isolated by demo=true)
-      function viewMock(){
-        var inv=mockInvoices();
-        var head=uc("Explorer","a sandbox mailbox — seeded customers, invoices and simulated replies to explore the pipeline without touching real data. Everything here is badged DEMO and never mixes with your live book.");
-        var bar='<div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap"><div><b>🧪 Mock Mailbox</b> <span class="chip" style="background:color-mix(in srgb,var(--med) 18%,transparent);color:var(--med)">DEMO</span><div class="muted" style="font-size:.8rem">'+inv.length+' sandbox invoice(s), separate from your real workspace.</div></div><div class="row-actions"><button class="btn gold sm" onclick="seedDemo()">＋ Seed demo data</button><button class="btn sm" onclick="seedReplies()">💬 Seed replies</button>'+(inv.length?'<button class="btn sm danger" onclick="clearMock()">🗑 Clear mock data</button>':'')+'</div></div>';
-        if(!inv.length)return head+bar+'<div class="panel"><div class="empty"><div class="big">Sandbox is empty</div><p>Click <b>Seed demo data</b> to generate customers, overdue invoices and drafts — then explore every tab with realistic data. Your real workspace stays untouched.</p></div></div>';
-        var rows=inv.slice().sort(function(a,b){return Number(field(b,"days_overdue")||0)-Number(field(a,"days_overdue")||0)}).map(function(i){var c=clientOf(field(i,"client_id"));var d=latestDraft(field(i,"id"),["AUTO_SENT","SENT","PENDING_REVIEW","FAILED"]);return '<tr class="clickable" onclick="openInvoice(\''+field(i,"id")+'\')"><td><b>'+esc(field(i,"invoice_no"))+'</b> <span class="chip" style="background:color-mix(in srgb,var(--med) 16%,transparent);color:var(--med);font-size:.62rem">DEMO</span><div class="muted" style="font-size:.76rem">'+esc(field(c,"name")||"")+'</div></td><td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td><td class="num">'+(Number(field(i,"days_overdue")||0))+'d</td><td>'+stageChip(field(i,"stage"))+'</td><td>'+statusChip(field(i,"status"))+'</td><td>'+(d?draftChip(field(d,"status")):'<span class="muted">—</span>')+'</td></tr>'}).join("");
-        return head+bar+'<div class="panel"><h2>Sandbox invoices</h2><table><thead><tr><th>Invoice / Customer</th><th>Amount</th><th>Overdue</th><th>Stage</th><th>Status</th><th>Draft</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
-      }
-      window.clearMock=async function(){if(!confirm("Delete all sandbox (DEMO) invoices, drafts and replies? Your real data is untouched."))return;setBusy(true,"Clearing mock data…");try{await invokeFn("reset_pod",{confirm:true,demo_only:true});await loadData();render(true);toast("Mock data cleared")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
 
       // ---- Google Sheets import
       window.importSheet=function(){closeMenu();
@@ -650,11 +633,10 @@
           '<p class="muted" style="font-size:.82rem">Everything is optional — the pod runs in safe, record-only mode until you connect a channel. Run these from a terminal where the Lemma CLI is signed in to this pod.</p>'+
           sec("📊 Google Sheets (import invoices)",'Primary way to load real data.<ol><li><code>lemma connectors auth-configs create google_sheets --name workspace-sheets</code></li><li><code>lemma connectors connect-requests create google_sheets --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Data ▾ ▸ <b>Import from Google Sheets</b>, paste the link.</li></ol>')+
           sec("📧 Gmail (send real follow-ups)",'<ol><li><code>lemma connectors auth-configs create gmail --name workspace-gmail</code></li><li><code>lemma connectors connect-requests create gmail --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Settings ⚙ ▸ Email delivery ▸ set Mode = Gmail, flip <b>Send real email</b> on.</li></ol>')+
-          sec("💬 Slack (stats digest + legal alerts)",'<ol><li><code>lemma connectors auth-configs create slack --name slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li><li>Schedule ▸ Slack card: paste the channel id, pick metrics &amp; time, Save.</li></ol>')+
-          sec("✈ Telegram digest (bring your own bot)",'<ol><li>DM <b>@BotFather</b> ▸ <code>/newbot</code> ▸ copy the token.</li><li>Schedule ▸ Telegram card: paste the token, <b>Find chat id</b>, pick a chat, Save.</li></ol>')+
-          sec("🟢 WhatsApp digest (Meta Cloud API)",'<ol><li>Meta ▸ WhatsApp ▸ API Setup: copy the <b>Phone number ID</b> + a <b>permanent access token</b>.</li><li>Schedule ▸ WhatsApp card: paste both, set the recipient number, Save. (24h session window / templates apply.)</li></ol>')+
-          sec("🤖 Telegram agent (chat with the pod)",'A managed bot — no token needed.<ol><li><code>lemma surfaces upsert telegram --agent collections-concierge</code></li><li><code>lemma surfaces setup telegram</code> → open the <b>t.me</b> link, message the bot.</li></ol>')+
-          sec("⏰ Resume scheduled digests",'The stats sweep ships paused.<ol><li><code>lemma schedules resume stats-dispatch</code> — sweeps every 30 min, sending channels whose time matches.</li><li>Pause anytime: <code>lemma schedules pause stats-dispatch</code>.</li></ol>')+
+          sec("💬 Slack connector (#legal + #daily-stats posts)",'One connector powers both the legal-escalation posts and the daily-stats digest.<ol><li><code>lemma connectors auth-configs create slack --name slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li><li>Invite the app to <b>#legal</b> and <b>#daily-stats</b>.</li><li>Paste <b>#legal</b>&rsquo;s channel id in Settings ⚙ ▸ Legal escalation channel, and <b>#daily-stats</b>&rsquo;s id in Schedule ▸ Slack card.</li></ol>')+
+          sec("💬 Slack #chat (chat with the pod)",'A Slack <b>surface</b> routes a channel to the concierge agent. Needs a custom Slack app + a one-time webhook paste:<ol><li>Wire the surface (already done on the pod): <code>lemma surfaces upsert slack --agent collections-concierge --account &lt;slack-account-id&gt;</code></li><li>Route the channel: <code>lemma surfaces channels slack --channel-id &lt;C…&gt; --channel-name chat --agent collections-concierge</code></li><li><code>lemma surfaces setup slack</code> → paste the webhook URL it prints into your Slack app&rsquo;s Event Subscriptions. Then message <b>#chat</b>.</li></ol>')+
+          sec("✈ Telegram (chat + stats digest)",'<b>Chat</b> uses the managed surface (no token): <code>lemma surfaces upsert telegram --agent collections-concierge</code> then <code>lemma surfaces setup telegram</code> → open the <b>t.me</b> link and message the bot.<br><br><b>Stats digest</b> to Telegram needs a bot (the connector has no send op): DM <b>@BotFather</b> ▸ <code>/newbot</code> ▸ copy the token ▸ Schedule ▸ Telegram card: paste it, <b>Find chat id</b>, Save.')+
+          sec("⏰ Resume scheduled digests",'The stats sweep ships paused.<ol><li><code>lemma schedules resume stats-dispatch</code> — sweeps every 30 min, sending destinations whose time matches.</li><li>Pause anytime: <code>lemma schedules pause stats-dispatch</code>.</li></ol>')+
         '</div>';openDrawerEl();
       };
 
