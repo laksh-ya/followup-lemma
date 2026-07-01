@@ -17,6 +17,8 @@
         "permission_ids": ["datastore.table.read", "datastore.record.read", "datastore.record.write"] },
       { "resource_type": "datastore_table", "resource_name": "interactions",
         "permission_ids": ["datastore.table.read", "datastore.record.write"] },
+      { "resource_type": "datastore_table", "resource_name": "stats_channels",
+        "permission_ids": ["datastore.table.read", "datastore.record.read", "datastore.record.write"] },
       { "resource_type": "connector", "resource_name": "gmail",
         "permission_ids": ["connector.use"] },
       { "resource_type": "connector", "resource_name": "slack",

@@ -94,7 +94,7 @@
 
     <script>
       (function(){var cfg=window.__LEMMA_CONFIG__||{};var base=(cfg.apiUrl||location.origin).replace(/\/$/,"");var c=document.createElement("script");c.src=base+"/public/sdk/lemma-client.js";c.onload=function(){var u=document.createElement("script");u.src=base+"/public/sdk/lemma-ui.js";u.onload=boot;u.onerror=boot;document.head.appendChild(u)};c.onerror=function(){fatal("Couldn't load the Lemma SDK.")};document.head.appendChild(c);})();
-      var client,ME={},STATE={clients:[],invoices:[],drafts:[],interactions:[],promises:[],config:{}},TAB="dashboard";
+      var client,ME={},STATE={clients:[],invoices:[],drafts:[],interactions:[],promises:[],config:{},statsChannels:[],demoInvIds:{}},TAB="dashboard";
       function $(id){return document.getElementById(id)}
       function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
       function field(r,k){return (r&&r.data&&r.data[k]!=null)?r.data[k]:(r?r[k]:undefined)}
@@ -120,15 +120,29 @@
       function signIn(){$("app").innerHTML='<div class="center"><div><div class="eyebrow">Collections Agent</div><h1>Welcome.</h1><p class="muted" style="margin:.6rem 0 1rem">Sign in to open the desk.</p><button class="btn gold" id="si">Sign in</button></div></div>';$("si").onclick=function(){client.auth.redirectToAuth()}}
 
       async function loadData(){
-        var r=await Promise.all([client.records.list("clients",{limit:1000}),client.records.list("invoices",{limit:1000}),client.records.list("drafts",{limit:2000}),client.records.list("interactions",{limit:400,sort:[{field:"created_at",direction:"desc"}]}),client.records.list("promises",{limit:500}),client.records.list("pod_config",{limit:1}),client.records.list("followup_queue",{limit:1000})]);
-        STATE.clients=listOf(r[0]);STATE.invoices=listOf(r[1]);STATE.drafts=listOf(r[2]);STATE.interactions=listOf(r[3]);STATE.promises=listOf(r[4]);STATE.config=listOf(r[5])[0]||{};STATE.queue=listOf(r[6]);
+        var r=await Promise.all([client.records.list("clients",{limit:1000}),client.records.list("invoices",{limit:1000}),client.records.list("drafts",{limit:2000}),client.records.list("interactions",{limit:400,sort:[{field:"created_at",direction:"desc"}]}),client.records.list("promises",{limit:500}),client.records.list("pod_config",{limit:1}),client.records.list("followup_queue",{limit:1000}),client.records.list("stats_channels",{limit:20})]);
+        STATE.clients=listOf(r[0]);STATE.invoices=listOf(r[1]);STATE.drafts=listOf(r[2]);STATE.interactions=listOf(r[3]);STATE.promises=listOf(r[4]);STATE.config=listOf(r[5])[0]||{};STATE.queue=listOf(r[6]);STATE.statsChannels=listOf(r[7]);
+        // demo/real split: a seeded invoice carries demo=true and lives only in the Mock Mailbox.
+        STATE.demoInvIds={};STATE.invoices.forEach(function(i){if(field(i,"demo"))STATE.demoInvIds[field(i,"id")]=1});
       }
+      // ---- real vs mock partitioning (main workspace shows real; Mock Mailbox shows demo)
+      function isDemoInv(i){return !!field(i,"demo")}
+      function isDemoId(id){return !!STATE.demoInvIds[id]}
+      function mainInvoices(){return STATE.invoices.filter(function(i){return !isDemoInv(i)})}
+      function mockInvoices(){return STATE.invoices.filter(function(i){return isDemoInv(i)})}
+      function realDrafts(){return STATE.drafts.filter(function(d){return !isDemoId(field(d,"invoice_id"))})}
+      function mockDrafts(){return STATE.drafts.filter(function(d){return isDemoId(field(d,"invoice_id"))})}
+      function clientHasReal(cid){return STATE.invoices.some(function(i){return field(i,"client_id")===cid&&!isDemoInv(i)})}
+      function clientHasMock(cid){return STATE.invoices.some(function(i){return field(i,"client_id")===cid&&isDemoInv(i)})}
+      function statsChan(ch){return STATE.statsChannels.find(function(r){return String(field(r,"channel")).toUpperCase()===ch})||{}}
       function clientOf(id){return STATE.clients.find(function(c){return field(c,"id")===id})||{}}
       function invoiceOf(id){return STATE.invoices.find(function(i){return field(i,"id")===id})||{}}
       function invoicesForClient(cid){return STATE.invoices.filter(function(i){return field(i,"client_id")===cid})}
       function latestDraft(invId,st){var ds=STATE.drafts.filter(function(d){return field(d,"invoice_id")===invId&&(!st||st.indexOf(field(d,"status"))>=0)});ds.sort(function(a,b){return String(field(b,"created_at")).localeCompare(String(field(a,"created_at")))});return ds[0]}
       function pendingDrafts(){return STATE.drafts.filter(function(d){return field(d,"status")==="PENDING_REVIEW"})}
+      function pendingReal(){return pendingDrafts().filter(function(d){return !isDemoId(field(d,"invoice_id"))})}
       function replies(){return STATE.interactions.filter(function(e){return field(e,"kind")==="REPLY_RECEIVED"})}
+      function repliesReal(){return replies().filter(function(e){return !isDemoId(field(e,"invoice_id"))})}
       function processingCount(){return (STATE.queue||[]).filter(function(q){return ["QUEUED","PROCESSING"].indexOf(field(q,"status"))>=0}).length}
 
       var _t=null;function subscribe(){try{if(client.datastore&&client.datastore.watchChanges){client.datastore.watchChanges({onChange:function(){clearTimeout(_t);_t=setTimeout(async function(){await loadData();if(TAB!=="ask")render(true)},800)}})}}catch(e){}}
@@ -161,7 +175,6 @@
         try{await invokeFn("seed_demo",payload);await loadData();render(true);toast("Demo data seeded — agent is processing")}catch(e){toast("⚠ "+e.message)}setBusy(false);
       };
       window.seedReplies=async function(){setBusy(true,"Seeding customer replies…");try{await invokeFn("seed_replies",{});await loadData();render(true);toast("Replies seeded")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
-      window.sendDigest=async function(){setBusy(true,"Sending digest to team…");try{var o=await invokeFn("app_action",{action:"digest"});await loadData();render(true);toast(o&&o.detail||"Digest sent")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
       window.logReply=function(){closeMenu();var opts=STATE.invoices.filter(function(i){return field(i,"status")==="ACTIVE"}).map(function(i){var c=clientOf(field(i,"client_id"));return '<option value="'+field(i,"id")+'">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</option>'}).join("");
         $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Inbound</div><h1 style="font-size:1.3rem">Log a customer reply</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db"><p class="muted" style="font-size:.82rem">Paste a reply — it is classified and the account updated (promise / dispute / paid / question), exactly like the live mailbox would.</p><label class="fld"><span class="lbl">Invoice</span><select id="lr_inv">'+opts+'</select></label><label class="fld"><span class="lbl">Reply text</span><textarea id="lr_body" placeholder="e.g. We will clear this by Friday."></textarea></label><button class="btn gold" onclick="submitReply()">Process reply</button></div>';openDrawerEl()};
       window.submitReply=async function(){var id=$("lr_inv").value,body=$("lr_body").value.trim();if(!body)return toast("Paste the reply text");setBusy(true,"Reading the reply…");try{var o=await invokeFn("handle_reply",{invoice_id:id,body:body});await loadData();render(true);closeDrawer();toast("Reply classified: "+(o&&o.category)+" — "+(o&&o.detail))}catch(e){toast("⚠ "+e.message)}setBusy(false)};
@@ -192,62 +205,64 @@
 
       // ---- render shell
       function render(keep){
-        var p=pendingDrafts().length,legal=STATE.invoices.filter(function(i){return field(i,"status")==="LEGAL"}).length,rep=replies().length,proc=processingCount();
-        var sentCount=STATE.drafts.filter(function(d){return ["SENT","AUTO_SENT"].indexOf(field(d,"status"))>=0}).length;
-        var nav=[["dashboard","Overview"],["invoices","Invoices"],["sent","Sent",sentCount],["customers","Customers"],["approvals","Approvals",p],["replies","Replies",rep],["legal","Legal",legal],["ask","Ask agent"],["settings","Settings"]];
+        var p=pendingReal().length,legal=mainInvoices().filter(function(i){return field(i,"status")==="LEGAL"}).length,rep=repliesReal().length,proc=processingCount();
+        var enabledChans=STATE.statsChannels.filter(function(r){return field(r,"enabled")}).length;
+        var nav=[["dashboard","Overview"],["invoices","Invoices"],["approvals","Approvals",p+legal,p>0],["replies","Replies",rep],["customers","Customers"],["schedule","Schedule",enabledChans]];
+        function uicon(tab,label,title){return '<button class="btn sm'+(TAB===tab?' gold':'')+'" title="'+title+'" onclick="go(\''+tab+'\')">'+label+'</button>'}
         $("app").innerHTML='<div class="wrap"><div class="top"><div><div class="eyebrow">Acme Finance · Accounts Receivable</div><h1>Collections Agent</h1></div>'+
-          '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap"><span class="pill"><span class="pip"></span> live</span>'+
+          '<div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap"><span class="pill"><span class="pip"></span> live</span>'+
           '<button class="btn gold sm" onclick="doScan()">Run scan</button>'+
           '<div class="menu" id="datamenu"><button class="btn sm" onclick="document.getElementById(\'datamenu\').classList.toggle(\'open\')">Data ▾</button><div class="items">'+
-            '<button onclick="closeMenu();seedDemo()">✨ Seed demo data</button>'+
-            '<button onclick="closeMenu();seedReplies()">💬 Seed customer replies</button>'+
-            '<button onclick="closeMenu();sendDigest()">📊 Send daily digest</button>'+
-            '<button onclick="closeMenu();pickCSV()">⬆ Import CSV</button>'+
+            '<button onclick="closeMenu();importSheet()">📊 Import from Google Sheets</button>'+
+            '<button onclick="closeMenu();pickCSV()">⬆ Import CSV / Excel</button>'+
             '<button onclick="closeMenu();exportCSV()">⬇ Export CSV</button>'+
             '<button onclick="closeMenu();addInvoice()">＋ Add invoice</button><hr>'+
-            '<button onclick="closeMenu();resetData()" style="color:var(--high)">🗑 Reset data</button>'+
+            '<button onclick="closeMenu();resetData()" style="color:var(--high)">🗑 Reset real data</button>'+
           '</div></div>'+
-          '<button class="btn sm" onclick="compose()">✎ Inform</button>'+
+          '<span style="width:1px;height:22px;background:var(--line);margin:0 .1rem"></span>'+
+          '<button class="btn sm ghost" title="How to set everything up" onclick="openSetupGuide()">📖 Setup</button>'+
+          uicon("mock","🧪","Mock Mailbox — sandbox demo data")+
+          uicon("ask","💬","Ask the agent")+
+          uicon("settings","⚙","Settings")+
           '<span class="pill"><button onclick="toggleTheme()">'+(theme()==="dark"?"☀":"☾")+'</button></span></div></div>'+
-          '<div class="tabs">'+nav.map(function(n){var b=n[2]?(' <span class="badge'+(n[0]==="approvals"&&n[2]?" hot":"")+'">'+n[2]+'</span>'):"";return '<button class="'+(TAB===n[0]?"on":"")+'" onclick="go(\''+n[0]+'\')">'+n[1]+b+'</button>'}).join("")+'</div>'+
+          '<div class="tabs">'+nav.map(function(n){var b=n[2]?(' <span class="badge'+(n[3]?" hot":"")+'">'+n[2]+'</span>'):"";return '<button class="'+(TAB===n[0]?"on":"")+'" onclick="go(\''+n[0]+'\')">'+n[1]+b+'</button>'}).join("")+'</div>'+
           (proc?'<div class="working"><span class="spin" style="width:14px;height:14px;border-width:2px"></span> The agent is processing <b>&nbsp;'+proc+'&nbsp;</b> invoice(s) — drafts appear automatically.</div>':'')+
           '<div id="view"></div></div>';
         renderView();
       }
       window.go=function(t){TAB=t;render()};window.toggleTheme=function(){applyTheme(theme()==="dark"?"light":"dark");render()};window.closeMenu=function(){var m=$("datamenu");if(m)m.classList.remove("open")};
       function uc(who,what){return '<div class="usecase"><span>👥</span><div><span class="who">'+who+'</span> — '+what+'</div></div>'}
-      function renderView(){var v=$("view");if(!v)return;v.innerHTML=({dashboard:viewDashboard,invoices:viewInvoices,sent:viewSent,customers:viewCustomers,approvals:viewApprovals,replies:viewReplies,legal:viewLegal,activity:viewActivity,ask:viewAsk,settings:viewSettings}[TAB]||viewDashboard)()}
+      function renderView(){var v=$("view");if(!v)return;v.innerHTML=({dashboard:viewDashboard,invoices:viewInvoices,approvals:viewApprovals,replies:viewReplies,customers:viewCustomers,schedule:viewSchedule,mock:viewMock,ask:viewAsk,settings:viewSettings}[TAB]||viewDashboard)()}
       function kpi(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'}
       function ncard(n,l,sub,tab,c){return '<button class="acard" onclick="go(\''+tab+'\')" style="--ac:var('+c+')"><div class="acn">'+n+'</div><div class="acl">'+l+'</div><div class="acs">'+esc(sub)+'</div></button>'}
 
-      function emptyState(){
-        return '<div class="panel"><div class="empty"><div class="big">No data yet</div><p>Seed a realistic demo book, or import your invoices.</p>'+
-          '<div style="margin: 1.2rem 0 0.5rem; font-weight:600; font-size:.84rem; text-transform:uppercase; letter-spacing:.05em" class="muted">Quick seed options:</div>'+
-          '<div class="row-actions" style="justify-content:center;margin-bottom:1.5rem">'+
-            '<button class="btn gold sm" onclick="seedWithCount(10)">✨ Seed 10 Invoices</button>'+
-            '<button class="btn gold sm" onclick="seedWithCount(20)">✨ Seed 20 Invoices</button>'+
-            '<button class="btn gold sm" onclick="seedWithCount(50)">✨ Seed 50 Invoices</button>'+
+      function realEmptyState(){
+        var hasMock=mockInvoices().length;
+        return '<div class="panel"><div class="empty"><div class="big">Your workspace is empty</div><p>Load your real invoices to get started — the agent triages and drafts follow-ups automatically.</p>'+
+          '<div style="margin:1.2rem 0 .5rem;font-weight:600;font-size:.84rem;text-transform:uppercase;letter-spacing:.05em" class="muted">Add data</div>'+
+          '<div class="row-actions" style="justify-content:center;margin-bottom:1rem;gap:.6rem">'+
+            '<button class="btn gold sm" onclick="importSheet()">📊 Import from Google Sheets</button>'+
+            '<button class="btn sm" onclick="pickCSV()">⬆ Import CSV / Excel</button>'+
+            '<button class="btn sm" onclick="addInvoice()">＋ Add invoice</button>'+
           '</div>'+
-          '<div class="row-actions" style="justify-content:center;gap:.6rem">'+
-            '<button class="btn sm" onclick="pickCSV()">⬆ Import CSV</button>'+
-            '<button class="btn sm ghost" onclick="seedDemo()">Custom Count…</button>'+
-          '</div>'+
+          '<div class="muted" style="font-size:.8rem">Just exploring? Open <button class="btn sm ghost" onclick="go(\'mock\')">🧪 Mock Mailbox</button> to seed a sandbox demo — kept separate from your real data'+(hasMock?' ('+hasMock+' sandbox invoices already loaded)':'')+'.</div>'+
           '</div></div>';
       }
 
       function viewDashboard(){
-        if(!STATE.invoices.length)return uc("Everyone","one shared workspace — the AI triages overdue invoices, the team approves the sensitive ones, legal handles the rest.")+emptyState();
-        var inv=STATE.invoices,active=inv.filter(function(i){return field(i,"status")==="ACTIVE"});
+        if(!mainInvoices().length)return uc("Everyone","one shared workspace — the AI triages overdue invoices, the team approves the sensitive ones, legal handles the rest.")+realEmptyState();
+        var inv=mainInvoices(),active=inv.filter(function(i){return field(i,"status")==="ACTIVE"});
         var outstanding=active.reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
         var overdue=active.filter(function(i){return Number(field(i,"days_overdue")||0)>0}).length;
         var legalInv=inv.filter(function(i){return field(i,"status")==="LEGAL"});
         var legalAmt=legalInv.reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
-        var pending=pendingDrafts().length;
-        var sent=STATE.drafts.filter(function(d){return["SENT","AUTO_SENT"].indexOf(field(d,"status"))>=0});
+        var pending=pendingReal().length;
+        var sent=realDrafts().filter(function(d){return["SENT","AUTO_SENT"].indexOf(field(d,"status"))>=0});
         var autoSent=sent.filter(function(d){return field(d,"status")==="AUTO_SENT"}).length;
-        var openProm=STATE.promises.filter(function(p){return field(p,"status")==="OPEN"}).length;
+        var openProm=STATE.promises.filter(function(p){return field(p,"status")==="OPEN"&&!isDemoId(field(p,"invoice_id"))}).length;
         var disputes=inv.filter(function(i){return field(i,"status")==="DISPUTED"}).length;
-        var repl=replies().length;
+        var repl=repliesReal().length;
+        var realClients=STATE.clients.filter(function(c){return clientHasReal(field(c,"id"))}).length;
 
         // Hero — the one number that matters, with the three counts a collector watches.
         var hero='<div class="hero"><div><div class="big">'+money(outstanding)+'</div><div class="sub">Outstanding · '+active.length+' active invoice'+(active.length===1?"":"s")+'</div></div>'+
@@ -260,7 +275,7 @@
         // Needs you now — only what requires a human, each jumping to the right tab.
         var cards=[];
         if(pending)cards.push(ncard(pending,"Awaiting approval","Drafts to review before they send","approvals","--med"));
-        if(legalInv.length)cards.push(ncard(legalInv.length,"In legal",money(legalAmt)+" at risk","legal","--purple"));
+        if(legalInv.length)cards.push(ncard(legalInv.length,"In legal",money(legalAmt)+" at risk","approvals","--purple"));
         if(openProm)cards.push(ncard(openProm,"Promises to pay","Payment dates to watch","replies","--low"));
         if(disputes)cards.push(ncard(disputes,"Disputed","Dunning paused until resolved","invoices","--high"));
         var needs=cards.length?'<div class="needs">'+cards.join("")+'</div>':
@@ -273,27 +288,35 @@
 
         // What the agent has done — outcome metrics, not a duplicate activity feed.
         var autoPct=sent.length?Math.round(autoSent/sent.length*100):0;
-        var perf='<div class="stats" style="margin:0 0 .2rem">'+kpi(sent.length,"Follow-ups sent")+kpi(autoSent,"Auto-sent by AI")+kpi(repl,"Replies handled")+kpi(STATE.clients.length,"Customers")+'</div>'+
+        var perf='<div class="stats" style="margin:0 0 .2rem">'+kpi(sent.length,"Follow-ups sent")+kpi(autoSent,"Auto-sent by AI")+kpi(repl,"Replies handled")+kpi(realClients,"Customers")+'</div>'+
           '<div class="muted" style="font-size:.78rem">'+(sent.length?autoPct+'% sent automatically · the rest reviewed by a person first.':'No follow-ups sent yet — run a scan to let the agent start drafting.')+'</div>';
 
-        // Recent activity — a few lines; the full log lives in the Activity tab.
-        var rec=STATE.interactions.slice(0,6).map(function(e){return '<div style="display:flex;gap:.5rem;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--line)"><span class="chip" style="background:var(--chip)">'+esc(field(e,"kind")||"")+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(field(e,"summary")||"")+'</span><span class="muted num" style="font-size:.7rem">'+shortDate(field(e,"created_at"))+'</span></div>'}).join("")||'<div class="empty">No activity yet.</div>';
+        // Activity & audit — folded into Overview. Skips sandbox rows; expandable to the full log.
+        var acts=STATE.interactions.filter(function(e){var iid=field(e,"invoice_id");return !iid||!isDemoId(iid)});
+        var showAll=!!STATE.dashAllLog;var shown=showAll?acts:acts.slice(0,8);
+        var lc={INFO:"--muted",SUCCESS:"--low",WARN:"--med",ERROR:"--high"};
+        var rec=shown.length?'<div class="timeline">'+shown.map(function(e){return '<div class="ev"><span class="dot" style="background:var('+(lc[field(e,"level")]||"--gold")+')"></span><div class="when">'+dt(field(e,"created_at"))+' · '+esc(field(e,"kind")||"")+(field(e,"actor_label")?' · '+esc(field(e,"actor_label")):"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join("")+'</div>':'<div class="empty">No activity yet.</div>';
+        var moreBtn=acts.length>8?'<button class="btn sm ghost" onclick="STATE.dashAllLog='+(!showAll)+';renderView()">'+(showAll?'Show less ↑':'Full activity log ('+acts.length+') ↓')+'</button>':'';
 
         return uc("Finance team","at-a-glance health of the book — the one number that matters, what needs you, and what the agent has handled on its own.")+
           hero+needs+
           '<div class="split"><div class="panel"><h2>Escalation pipeline</h2>'+bars+'</div><div class="panel"><h2>What the agent has done</h2>'+perf+'</div></div>'+
-          '<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Live activity</h2><button class="btn sm ghost" onclick="go(\'activity\')">View all →</button></div><div style="margin-top:.6rem">'+rec+'</div></div>';
+          '<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Activity &amp; audit</h2>'+moreBtn+'</div><div style="margin-top:.6rem">'+rec+'</div></div>';
       }
 
       function invRow(i){var c=clientOf(field(i,"client_id"));var d=latestDraft(field(i,"id"),["AUTO_SENT","SENT","PENDING_REVIEW","FAILED"]);
         return '<tr class="clickable" onclick="openInvoice(\''+field(i,"id")+'\')"><td><b>'+esc(field(i,"invoice_no"))+'</b><div class="muted" style="font-size:.76rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' ★':'')+'</div></td><td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td><td class="num">'+(Number(field(i,"days_overdue")||0))+'d</td><td>'+stageChip(field(i,"stage"))+'</td><td>'+riskChip(field(i,"risk_level"))+'</td><td>'+statusChip(field(i,"status"))+'</td><td>'+(d?draftChip(field(d,"status")):'<span class="muted">—</span>')+'</td></tr>'}
       function viewInvoices(){
-        if(!STATE.invoices.length)return emptyState();
+        if(!mainInvoices().length)return realEmptyState();
+        var sub=STATE.invSub||"all";
+        var invToggle='<div style="display:flex;gap:.4rem;margin:.2rem 0 1rem"><button class="btn sm'+(sub==="all"?" gold":"")+'" onclick="STATE.invSub=\'all\';renderView()">📋 All invoices</button><button class="btn sm'+(sub==="sent"?" gold":"")+'" onclick="STATE.invSub=\'sent\';renderView()">✉ Sent history</button></div>';
+        if(sub==="sent")return invToggle+viewSent();
+        var allInv=mainInvoices();
         var searchVal = (STATE.invoicesSearch || "").toLowerCase();
         var filterStage = STATE.invoicesFilterStage || "ALL";
         var filterRisk = STATE.invoicesFilterRisk || "ALL";
         var filterStatus = STATE.invoicesFilterStatus || "ALL";
-        var filtered = STATE.invoices.filter(function(i){
+        var filtered = allInv.filter(function(i){
           var c=clientOf(field(i,"client_id"));
           var matchesSearch = !searchVal ||
             (field(i,"invoice_no")||"").toLowerCase().indexOf(searchVal)>=0 ||
@@ -322,10 +345,10 @@
           var label = st === "ALL" ? "All Statuses" : st.charAt(0)+st.slice(1).toLowerCase();
           return '<option value="'+st+'" '+(filterStatus===st?'selected':'')+'>'+label+'</option>';
         }).join('');
-        return uc("Collector","your working queue — every overdue account, its stage, risk, and the last follow-up. Click any row for the draft + history.")+
+        return invToggle+uc("Collector","your working queue — every overdue account, its stage, risk, and the last follow-up. Click any row for the draft + history.")+
           '<div class="panel">'+
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;gap:1rem;flex-wrap:wrap">'+
-            '<h2 style="margin:0">Invoices · '+filtered.length+' / '+STATE.invoices.length+'</h2>'+
+            '<h2 style="margin:0">Invoices · '+filtered.length+' / '+allInv.length+'</h2>'+
             '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">'+
               '<input type="text" placeholder="Search invoices..." value="'+esc(STATE.invoicesSearch||"")+'" oninput="STATE.invoicesSearch=this.value;renderView()" style="width:160px;padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+
               '<select onchange="STATE.invoicesFilterStage=this.value;renderView()" style="padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+stageOpts+'</select>'+
@@ -338,7 +361,7 @@
       }
 
       function viewSent(){
-        var sentDrafts=STATE.drafts.filter(function(d){
+        var sentDrafts=realDrafts().filter(function(d){
           return ["SENT","AUTO_SENT"].indexOf(field(d,"status"))>=0;
         }).sort(function(a,b){return String(field(b,"created_at")).localeCompare(String(field(a,"created_at")))});
         var searchVal = (STATE.sentSearch || "").toLowerCase();
@@ -351,7 +374,7 @@
             (field(i,"invoice_no")||"").toLowerCase().indexOf(searchVal)>=0 ||
             (field(d,"subject")||"").toLowerCase().indexOf(searchVal)>=0 ||
             (field(d,"body")||"").toLowerCase().indexOf(searchVal)>=0;
-          var method = field(d,"status")===="AUTO_SENT"?"AUTO":"MANUAL";
+          var method = field(d,"status")==="AUTO_SENT"?"AUTO":"MANUAL";
           var matchesMethod = filterMethod === "ALL" || method === filterMethod;
           var matchesStage = filterStage === "ALL" || field(d,"stage") === filterStage;
           return matchesSearch && matchesMethod && matchesStage;
@@ -396,11 +419,12 @@
       }
 
       function viewCustomers(){
-        if(!STATE.clients.length)return emptyState();
+        var realClients=STATE.clients.filter(function(c){return clientHasReal(field(c,"id"))});
+        if(!realClients.length)return realEmptyState();
         var searchVal = (STATE.customersSearch || "").toLowerCase();
-        var allRows=STATE.clients.map(function(c){
+        var allRows=realClients.map(function(c){
           var cid=field(c,"id");
-          var invs=invoicesForClient(cid);
+          var invs=invoicesForClient(cid).filter(function(i){return !isDemoInv(i)});
           var out=invs.filter(function(i){return field(i,"status")==="ACTIVE"}).reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
           var worst=invs.map(function(i){return field(i,"days_overdue")||0}).reduce(function(a,b){return Math.max(a,b)},0);
           return {c:c,invs:invs,out:out,worst:worst};
@@ -424,11 +448,23 @@
           }).join("") : '<tr><td colspan="5" class="empty">No matching customers found.</td></tr>')+'</tbody></table></div>';
       }
 
-      function viewApprovals(){var ds=pendingDrafts();if(!ds.length)return uc("Finance lead","approve, edit, reject or escalate AI-written notices before they go out.")+'<div class="panel"><div class="empty"><div class="big">Inbox zero ✓</div>No drafts awaiting approval.</div></div>';
-        return uc("Finance lead","high-risk and final-notice drafts wait here for a human. Edit the wording, then approve — nothing sensitive sends on its own.")+ds.map(function(d){var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.2rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+'d overdue · '+stageChip(field(i,"stage"))+' '+riskChip(field(d,"risk_level"))+(field(d,"fallback_used")?' '+chip("template","--muted"):'')+'</div></div><div class="row-actions"><button class="btn gold sm" onclick="approve(\''+field(d,"id")+'\')">Approve &amp; send</button><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Edit</button><button class="btn sm danger" onclick="reject(\''+field(d,"id")+'\')">Reject</button><button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\')">Legal</button></div></div><div class="mail" style="margin-top:.8rem"><div class="subj">'+esc(field(d,"subject"))+'</div>'+esc(field(d,"body"))+'</div></div>'}).join("")}
+      function viewApprovals(){
+        var ds=pendingReal();
+        var apprv = ds.length
+          ? '<div style="margin:.2rem 0 .5rem"><h2 style="font-family:var(--serif);font-weight:500;font-size:1.1rem;margin:0">📥 Awaiting approval · '+ds.length+'</h2></div>'+ds.map(function(d){var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.2rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+'d overdue · '+stageChip(field(i,"stage"))+' '+riskChip(field(d,"risk_level"))+(field(d,"fallback_used")?' '+chip("template","--muted"):'')+'</div></div><div class="row-actions"><button class="btn gold sm" onclick="approve(\''+field(d,"id")+'\')">Approve &amp; send</button><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Edit</button><button class="btn sm danger" onclick="reject(\''+field(d,"id")+'\')">Reject</button><button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\')">Legal</button></div></div><div class="mail" style="margin-top:.8rem"><div class="subj">'+esc(field(d,"subject"))+'</div>'+esc(field(d,"body"))+'</div></div>'}).join("")
+          : '<div class="panel"><h2 style="margin:0 0 .4rem">📥 Awaiting approval</h2><div class="empty" style="padding:1.2rem 1rem"><div class="big">Inbox zero ✓</div>No drafts waiting — the agent auto-sent the safe ones.</div></div>';
+        return uc("Finance &amp; legal","the two things only a human owns — approve or edit the AI drafts that never auto-send, and work the legal &amp; recovery queue for 30+ day accounts.")+apprv+legalSection();
+      }
+      function legalSection(){var inv=mainInvoices().filter(function(i){return field(i,"status")==="LEGAL"});
+        var head='<div style="margin:1.4rem 0 .5rem"><h2 style="font-family:var(--serif);font-weight:500;font-size:1.1rem;margin:0">⚖ Legal &amp; recovery · '+inv.length+'</h2></div>';
+        if(!inv.length)return head+'<div class="panel"><div class="empty" style="padding:1.2rem 1rem">Nothing in legal. Accounts 30+ days overdue or escalated by finance appear here — they never get automated email.</div></div>';
+        var total=inv.reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
+        return head+'<div class="stats">'+kpi(inv.length,"Accounts in legal")+kpi(money(total),"Amount at risk")+'</div>'+
+          inv.map(function(i){var c=clientOf(field(i,"client_id"));var evs=STATE.interactions.filter(function(e){return field(e,"invoice_id")===field(i,"id")}).slice(0,4);return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.1rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+' days overdue · '+esc(field(c,"email")||"")+'</div></div><div class="row-actions"><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Full history</button><button class="btn sm gold" onclick="notifyLegal(\''+field(i,"invoice_no")+'\')">Notify legal team</button></div></div><div class="timeline" style="margin-top:.7rem">'+evs.map(function(e){return '<div class="ev"><span class="dot"></span><div class="when">'+dt(field(e,"created_at"))+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join("")+'</div></div>'}).join("");
+      }
       window.approve=function(id){action({action:"approve",draft_id:id},"Approved & sent")};window.reject=function(id){action({action:"reject",draft_id:id,note:"Rejected by reviewer"},"Rejected")};window.flag=function(id){action({action:"flag",draft_id:id,note:"Escalated to legal"},"Flagged to legal")};
 
-      function viewReplies(){var rs=replies();
+      function viewReplies(){var rs=repliesReal();
         var searchVal = (STATE.repliesSearch || "").toLowerCase();
         var filterCategory = STATE.repliesFilterCategory || "ALL";
         var filteredReplies = rs.filter(function(e){
@@ -442,7 +478,7 @@
           var matchesCategory = filterCategory === "ALL" || cat === filterCategory;
           return matchesSearch && matchesCategory;
         });
-        if(!rs.length)return uc("Collector","when customers reply, the AI reads each one — promise-to-pay, dispute, paid, or question — and updates the account.")+'<div class="panel"><div class="empty"><div class="big">No replies yet</div><p>With a mailbox connected, replies land here classified. Try it now:</p><div class="row-actions" style="justify-content:center;margin-top:.8rem"><button class="btn gold" onclick="logReply()">＋ Log a reply</button><button class="btn" onclick="seedReplies()">💬 Seed samples</button></div></div></div>';
+        if(!rs.length)return uc("Collector","when customers reply, the AI reads each one — promise-to-pay, dispute, paid, or question — and updates the account.")+'<div class="panel"><div class="empty"><div class="big">No replies yet</div><p>With a mailbox connected, replies land here classified. Log one manually to see it in action, or explore the sandbox in 🧪 Mock Mailbox.</p><div class="row-actions" style="justify-content:center;margin-top:.8rem"><button class="btn gold" onclick="logReply()">＋ Log a reply</button></div></div></div>';
         var catOpts = ["ALL", "PROMISE_TO_PAY", "PAID_CLAIM", "DISPUTE", "QUESTION", "OTHER"].map(function(c){
           var label = c === "ALL" ? "All Categories" : c.replace(/_/g," ").replace(/\b\w/g, function(ch){return ch.toUpperCase()});
           return '<option value="'+c+'" '+(filterCategory===c?'selected':'')+'>'+label+'</option>';
@@ -465,20 +501,10 @@
             var c=clientOf(field(e,"client_id")),i=invoiceOf(field(e,"invoice_id"));
             return '<tr class="clickable" onclick="openInvoice(\''+field(e,"invoice_id")+'\')"><td><b>'+esc(field(c,"name")||"customer")+'</b></td><td class="num">'+esc(field(i,"invoice_no")||"")+'</td><td>'+chip(cat.replace(/_/g," "),CC[cat]||"--muted")+'</td><td style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(det.body||field(e,"summary")||"")+'</td><td class="muted num" style="font-size:.72rem">'+shortDate(field(e,"created_at"))+'</td></tr>';
           }).join("") : '<tr><td colspan="5" class="empty">No matching replies found.</td></tr>')+'</tbody></table></div>'+
-          (STATE.promises.length?'<div class="panel"><h2>Promises to pay · '+STATE.promises.length+'</h2><table><thead><tr><th>Customer</th><th>Invoice</th><th>Promised by</th><th>Status</th></tr></thead><tbody>'+STATE.promises.map(function(p){var c=clientOf(field(p,"client_id")),i=invoiceOf(field(p,"invoice_id"));return '<tr><td>'+esc(field(c,"name")||"")+'</td><td class="num">'+esc(field(i,"invoice_no")||"")+'</td><td class="num">'+String(field(p,"promised_date")||"").slice(0,10)+'</td><td>'+chip(field(p,"status"),field(p,"status")==="BROKEN"?"--high":field(p,"status")==="KEPT"?"--low":"--med")+'</td></tr>'}).join("")+'</tbody></table></div>':'');
+          (function(){var proms=STATE.promises.filter(function(p){return !isDemoId(field(p,"invoice_id"))});return proms.length?'<div class="panel"><h2>Promises to pay · '+proms.length+'</h2><table><thead><tr><th>Customer</th><th>Invoice</th><th>Promised by</th><th>Status</th></tr></thead><tbody>'+proms.map(function(p){var c=clientOf(field(p,"client_id")),i=invoiceOf(field(p,"invoice_id"));return '<tr><td>'+esc(field(c,"name")||"")+'</td><td class="num">'+esc(field(i,"invoice_no")||"")+'</td><td class="num">'+String(field(p,"promised_date")||"").slice(0,10)+'</td><td>'+chip(field(p,"status"),field(p,"status")==="BROKEN"?"--high":field(p,"status")==="KEPT"?"--low":"--med")+'</td></tr>'}).join("")+'</tbody></table></div>':''})();
       }
 
-      function viewLegal(){var inv=STATE.invoices.filter(function(i){return field(i,"status")==="LEGAL"});
-        var head=uc("Legal / recovery team","accounts 30+ days overdue or escalated by finance — with full history and a one-click notice. These never get automated email.");
-        if(!inv.length)return head+'<div class="panel"><div class="empty"><div class="big">Nothing in legal</div>Escalated accounts will appear here.</div></div>';
-        var total=inv.reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
-        return head+'<div class="stats">'+kpi(inv.length,"Accounts in legal")+kpi(money(total),"Amount at risk")+'</div>'+
-          inv.map(function(i){var c=clientOf(field(i,"client_id"));var evs=STATE.interactions.filter(function(e){return field(e,"invoice_id")===field(i,"id")}).slice(0,4);return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.1rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+' days overdue · '+esc(field(c,"email")||"")+'</div></div><div class="row-actions"><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Full history</button><button class="btn sm gold" onclick="notifyLegal(\''+field(i,"invoice_no")+'\')">Notify legal team</button></div></div><div class="timeline" style="margin-top:.7rem">'+evs.map(function(e){return '<div class="ev"><span class="dot"></span><div class="when">'+dt(field(e,"created_at"))+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join("")+'</div></div>'}).join("");
-      }
       window.notifyLegal=function(no){action({action:"notify",note:"legal",config:{message:"⚖️ Legal escalation: invoice "+no+" needs recovery action."}},"Legal team notified (or logged)")};
-
-      function viewActivity(){var ev=STATE.interactions;if(!ev.length)return '<div class="panel"><div class="empty">No activity yet.</div></div>';var lc={INFO:"--muted",SUCCESS:"--low",WARN:"--med",ERROR:"--high"};
-        return uc("Admin / audit","an immutable, time-stamped record of every action — by the agent and by people.")+'<div class="panel"><h2>Activity &amp; audit</h2><div class="timeline">'+ev.map(function(e){return '<div class="ev"><span class="dot" style="background:var('+(lc[field(e,"level")]||"--gold")+')"></span><div class="when">'+dt(field(e,"created_at"))+' · '+esc(field(e,"kind")||"")+(field(e,"actor_label")?' · '+esc(field(e,"actor_label")):"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join("")+'</div></div>'}
 
       function viewAsk(){
         return uc("Anyone","ask the Collections Agent about the book — overdue accounts, a customer's status, the legal queue, what's awaiting approval. It reads live pod data. This is the same agent your finance &amp; legal team can DM on Telegram.")+
@@ -490,7 +516,7 @@
       function viewSettings(){var c=STATE.config;var mode=(field(c,"mail_mode")||"IN_APP");var ch=(field(c,"notify_channel")||"NONE");
         function tg(k,l,d){var on=field(c,k);return '<div class="toggle"><div><b>'+l+'</b><div class="muted" style="font-size:.76rem">'+d+'</div></div><label style="position:relative;display:inline-block;width:42px;height:24px;flex:none"><input type="checkbox" id="cfg_'+k+'" '+(on?"checked":"")+' style="opacity:0;width:0;height:0"><span style="position:absolute;inset:0;background:'+(on?"var(--gold)":"var(--line)")+';border-radius:999px"></span><span style="position:absolute;top:3px;left:'+(on?"21px":"3px")+';width:18px;height:18px;background:#fff;border-radius:50%"></span></label></div>'}
         function inp(k,l,ph){return '<label class="fld"><span class="lbl">'+l+'</span><input id="cfg_'+k+'" value="'+esc(field(c,k)||"")+'" placeholder="'+(ph||"")+'"></label>'}
-        return uc("Admin","configure behavior, real email (Gmail), team alerts (Slack), and the Telegram agent — all live, no redeploy.")+
+        return uc("Admin","configure behavior, real email (Gmail), and the Telegram agent — all live, no redeploy. Stats-sharing to Slack / Telegram / WhatsApp lives in the Schedule tab.")+
         '<div class="panel"><h2>Behavior</h2>'+
           tg("auto_dispatch","Auto-dispatch","Auto-send low-risk follow-ups (off → everything needs approval)")+
           tg("human_in_loop","Human-in-the-loop","Route high-risk &amp; stage-4 to the approval inbox")+
@@ -502,11 +528,11 @@
           inp("email_from","From name","Acme Finance")+
           (mode==="GMAIL"?'<div class="guide">Gmail sends as <b>your connected Google account</b> — no passwords stored here. Connect once from the CLI:<ol><li><code>lemma connectors auth-configs create gmail --name workspace-gmail</code></li><li><code>lemma connectors connect-requests create gmail --auth-config-id &lt;id&gt;</code> → open the link, authorize Google.</li><li>Back here: flip <b>Send real email</b> on and hit <b>Send test</b>.</li></ol></div>':'<div class="guide">In-app mode: every follow-up is drafted, validated and recorded so you can demo the full pipeline safely — nothing leaves your inbox. Switch to Gmail to send for real.</div>')+
           '<div style="margin-top:.8rem"><button class="btn gold sm" onclick="saveMail()">Save</button> <button class="btn sm" onclick="testEmail()">Send test</button></div></div>'+
-        '<div class="panel"><h2>Team &amp; legal alerts</h2>'+
-          '<label class="fld"><span class="lbl">Channel</span><select id="cfg_notify_channel" onchange="render(true)">'+["NONE","SLACK"].map(function(m){return '<option '+(ch===m?"selected":"")+'>'+m+'</option>'}).join("")+'</select></label>'+
-          (ch==="SLACK"?'<div class="grid2">'+inp("slack_channel","Team channel id","C0123ABC")+inp("slack_legal_channel","Legal channel id (optional)","C0456DEF")+'</div><div class="guide">Posts alerts to Slack through the Lemma Slack connector. Connect once from the CLI:<ol><li><code>lemma connectors auth-configs create slack --name workspace-slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li><li>Paste the channel id(s) above, Save, then Send test.</li></ol></div>':'<div class="guide">No alerts. Pick Slack to push digests and legal escalations to a channel.</div>')+
+        '<div class="panel"><h2>Legal escalation channel</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .6rem">The channel the one-click <b>Notify legal team</b> button (Approvals ▸ Legal &amp; recovery) posts to. Uses the same Slack connector as the Schedule tab.</p>'+
+          '<label class="fld"><span class="lbl">Alerts channel</span><select id="cfg_notify_channel" onchange="render(true)">'+["NONE","SLACK"].map(function(m){return '<option '+(ch===m?"selected":"")+'>'+m+'</option>'}).join("")+'</select></label>'+
+          (ch==="SLACK"?'<div class="grid2">'+inp("slack_channel","Default channel id","C0123ABC")+inp("slack_legal_channel","Legal channel id (optional)","C0456DEF")+'</div><div class="guide">Connect Slack once (same account the Schedule tab uses):<ol><li><code>lemma connectors auth-configs create slack --name slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li></ol></div>':'<div class="guide">Set to Slack to enable one-click legal escalations to a channel.</div>')+
           '<div style="margin-top:.8rem"><button class="btn gold sm" onclick="saveNotify()">Save</button> '+(ch!=="NONE"?'<button class="btn sm" onclick="testNotify()">Send test</button>':'')+'</div></div>'+
-        '<div class="panel"><h2>Chat with your agent on Telegram</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .6rem">Lemma runs a managed Telegram bot — no bot token, no webhook. Your finance &amp; legal team can DM the Collections Agent (&ldquo;what&rsquo;s overdue for Acme?&rdquo;, &ldquo;show the legal queue&rdquo;) and it answers from this pod&rsquo;s live data.</p><div class="guide">Enable once from the CLI:<ol><li><code>lemma surfaces upsert telegram --agent collections-concierge</code></li><li><code>lemma surfaces setup telegram</code> → open the <b>t.me</b> link it prints and message the bot.</li></ol>That&rsquo;s it — no credentials. The same pod, a second front door.</div></div>'+
+        '<div class="panel"><h2>Chat with your agent on Telegram</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .6rem">Lemma runs a managed Telegram bot — no bot token, no webhook. Your finance &amp; legal team can DM the Collections Agent (&ldquo;what&rsquo;s overdue for Acme?&rdquo;, &ldquo;show the legal queue&rdquo;) and it answers from this pod&rsquo;s live data. (This is the agent DM — different from the Telegram stats digest in the Schedule tab.)</p><div class="guide">Enable once from the CLI:<ol><li><code>lemma surfaces upsert telegram --agent collections-concierge</code></li><li><code>lemma surfaces setup telegram</code> → open the <b>t.me</b> link it prints and message the bot.</li></ol>That&rsquo;s it — no credentials. The same pod, a second front door.</div></div>'+
         '<div class="panel"><h2>Identity &amp; model</h2>'+inp("company_name","Company name")+inp("sender_identity","Sender signature")+
           '<div class="guide">Drafting runs on this pod&rsquo;s Lemma runtime. On lemma.work you can run on Lemma credits or pin your own provider via a runtime profile (<code>lemma runtime profiles</code>) — set per pod, no app change.</div></div>';
       }
@@ -529,28 +555,110 @@
         '<button class="btn gold" onclick="submitInvoice()">Add &amp; queue</button></div>';openDrawerEl()};
       window.submitInvoice=async function(){var row={invoice_no:$("ai_no").value.trim(),client_name:$("ai_name").value.trim(),client_email:$("ai_email").value.trim(),amount:parseFloat($("ai_amt").value)||0,due_date:$("ai_due").value,payment_link:$("ai_link").value.trim(),currency:"INR",status:"ACTIVE"};if(!row.invoice_no||!row.client_email||!row.due_date||!row.amount)return toast("Fill the required fields");setBusy(true,"Adding invoice…");try{await invokeFn("ingest_invoices",{rows:[row]});await invokeFn("app_action",{action:"process",invoice_id:""});}catch(e){}try{var inv=(await client.records.list("invoices",{limit:1000})).items.find(function(i){return field(i,"invoice_no")===row.invoice_no});if(inv)await invokeFn("app_action",{action:"process",invoice_id:field(inv,"id")});await loadData();render(true);closeDrawer();toast("Invoice added & queued")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
 
-      // ---- compose / inform
-      window.compose=function(){
-        var opts=STATE.clients.map(function(c){return '<option value="'+field(c,"id")+'">'+esc(field(c,"name"))+' — '+esc(field(c,"email"))+'</option>'}).join("");
-        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Inform</div><h1 style="font-size:1.3rem">Compose &amp; send</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db">'+
-          '<label class="fld"><span class="lbl">Send to</span><select id="cmp_aud" onchange="composeMode()"><option value="customer">A customer (email)</option><option value="team">Team alert (Slack)</option><option value="legal">Legal alert (Slack)</option></select></label>'+
-          '<div id="cmp_customer"><label class="fld"><span class="lbl">Customer</span><select id="cmp_client">'+opts+'</select></label><label class="fld"><span class="lbl">Subject</span><input id="cmp_subj" value="A note about your account"></label></div>'+
-          '<label class="fld"><span class="lbl">Message</span><textarea id="cmp_body" placeholder="Type your message…"></textarea></label>'+
-          '<div class="guide" id="cmp_hint">Customer emails go out via Gmail when enabled (otherwise recorded in-app). Team &amp; legal alerts post to your Slack channel. Configure both in Settings.</div>'+
-          '<div style="margin-top:.8rem"><button class="btn gold" onclick="composeSend()">Send now</button> <span class="muted" style="font-size:.78rem">Tip: schedule recurring sends by resuming the daily-scan / heal schedules.</span></div></div>';
-        openDrawerEl();
+      // ---- Schedule tab: share stats to Slack / Telegram / WhatsApp
+      var STATS_METRICS=[["inc_outstanding","Outstanding total",true],["inc_overdue","Overdue accounts",true],["inc_sent_today","Follow-ups sent today",true],["inc_pending","Awaiting approval",true],["inc_legal","In legal",true],["inc_promises","Open promises",false],["inc_disputes","Disputed",false],["inc_top_accounts","Top overdue accounts",false]];
+      function scSwitch(ch,f,on){return '<label style="position:relative;display:inline-block;width:42px;height:24px;flex:none"><input type="checkbox" id="sc_'+ch+'_'+f+'" '+(on?"checked":"")+' style="opacity:0;width:0;height:0" onchange="this.nextElementSibling.style.background=this.checked?\'var(--gold)\':\'var(--line)\';this.nextElementSibling.nextElementSibling.style.left=this.checked?\'21px\':\'3px\'"><span style="position:absolute;inset:0;background:'+(on?"var(--gold)":"var(--line)")+';border-radius:999px"></span><span style="position:absolute;top:3px;left:'+(on?"21px":"3px")+';width:18px;height:18px;background:#fff;border-radius:50%"></span></label>'}
+      function channelCard(def){
+        var ch=def.ch,row=statsChan(ch),c=STATE.config;
+        var enabled=!!field(row,"enabled"),dest=field(row,"destination")||"",freq=field(row,"freq")||"OFF";
+        var hour=field(row,"send_hour");if(hour==null)hour=9;
+        var min=field(row,"send_minute");if(min==null)min=0;min=(min>=30?30:0);
+        var dow=field(row,"weekly_dow");if(dow==null)dow=0;
+        var creds="";
+        if(ch==="TELEGRAM")creds='<label class="fld"><span class="lbl">Bot token</span><input id="sc_TELEGRAM_telegram_bot_token" value="'+esc(field(c,"telegram_bot_token")||"")+'" placeholder="123456:ABC-DEF…"></label><div style="margin:-.2rem 0 .5rem"><button class="btn sm" onclick="tgFindChat(\'TELEGRAM\')">🔎 Find chat id</button> <span id="sc_TELEGRAM_chatlist"></span></div>';
+        if(ch==="WHATSAPP")creds='<div class="grid2"><label class="fld"><span class="lbl">Phone number id</span><input id="sc_WHATSAPP_whatsapp_phone_id" value="'+esc(field(c,"whatsapp_phone_id")||"")+'" placeholder="1029384756"></label><label class="fld"><span class="lbl">Access token</span><input id="sc_WHATSAPP_whatsapp_token" value="'+esc(field(c,"whatsapp_token")||"")+'" placeholder="EAAG…"></label></div>';
+        var metrics=STATS_METRICS.map(function(m){var v=field(row,m[0]);if(v==null)v=m[2];return '<label style="display:flex;align-items:center;gap:.4rem;font-size:.82rem;padding:.2rem 0"><input type="checkbox" id="sc_'+ch+'_'+m[0]+'" '+(v?"checked":"")+' style="width:auto">'+esc(m[1])+'</label>'}).join("");
+        var hourOpts="";for(var h=0;h<24;h++)hourOpts+='<option value="'+h+'" '+(h===hour?"selected":"")+'>'+(h<10?"0":"")+h+':00</option>';
+        var minOpts=[0,30].map(function(mm){return '<option value="'+mm+'" '+(mm===min?"selected":"")+'>'+(mm<10?"0":"")+mm+'</option>'}).join("");
+        var dowOpts=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(function(d,idx){return '<option value="'+idx+'" '+(idx===dow?"selected":"")+'>'+d+'</option>'}).join("");
+        var freqLbl={OFF:"Manual only",DAILY:"Every day",WEEKDAYS:"Weekdays",WEEKLY:"Weekly"};
+        var freqOpts=["OFF","DAILY","WEEKDAYS","WEEKLY"].map(function(f){return '<option value="'+f+'" '+(freq===f?"selected":"")+'>'+freqLbl[f]+'</option>'}).join("");
+        return '<div class="panel" style="border-left:3px solid var('+def.color+')">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap"><h2 style="margin:0">'+def.icon+' '+def.name+(enabled?' <span class="chip" style="background:color-mix(in srgb,var(--low) 16%,transparent);color:var(--low)">on</span>':'')+'</h2><div style="display:flex;align-items:center;gap:.5rem"><span class="muted" style="font-size:.8rem">Enabled</span>'+scSwitch(ch,"enabled",enabled)+'</div></div>'+
+          '<label class="fld"><span class="lbl">'+def.destLabel+'</span><input id="sc_'+ch+'_destination" value="'+esc(dest)+'" placeholder="'+def.destPh+'"></label>'+
+          creds+
+          '<div class="lbl" style="margin-top:.4rem">What to send</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem">'+metrics+'</div>'+
+          '<div class="lbl" style="margin-top:.7rem">When to send</div><div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center"><select id="sc_'+ch+'_freq" style="width:auto">'+freqOpts+'</select><span class="muted" style="font-size:.8rem">at</span><select id="sc_'+ch+'_send_hour" style="width:auto">'+hourOpts+'</select><select id="sc_'+ch+'_send_minute" style="width:auto">'+minOpts+'</select><span class="muted" style="font-size:.8rem">on</span><select id="sc_'+ch+'_weekly_dow" style="width:auto">'+dowOpts+'</select><span class="muted" style="font-size:.74rem">(day = Weekly only)</span></div>'+
+          '<div style="margin-top:.9rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn gold sm" onclick="saveScheduleChannel(\''+ch+'\')">Save</button><button class="btn sm" onclick="sendStatsNow(\''+ch+'\')">Send now</button><button class="btn sm ghost" onclick="sendStatsTest(\''+ch+'\')">Send test</button></div>'+
+          '<details style="margin-top:.7rem"><summary style="cursor:pointer;font-size:.8rem;color:var(--muted)">Setup guide</summary><div class="guide">'+def.guide+'</div></details>'+
+        '</div>';
+      }
+      function viewSchedule(){
+        var defs=[
+          {ch:"SLACK",icon:"💬",name:"Slack",color:"--blue",destLabel:"Channel id",destPh:"C0123ABC",guide:'Posts through the Lemma Slack connector — no token stored here.<ol><li><code>lemma connectors auth-configs create slack --name slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li><li>Copy the channel id (channel ▸ View details, the <code>C…</code> code), paste above, Save, Send test.</li></ol>'},
+          {ch:"TELEGRAM",icon:"✈",name:"Telegram",color:"--gold",destLabel:"Chat id",destPh:"-1001234567890",guide:'Bring your own bot:<ol><li>DM <b>@BotFather</b> ▸ <code>/newbot</code> ▸ copy the token, paste it above.</li><li>Message your bot (or add it to a group &amp; post once), then click <b>Find chat id</b> and pick the chat.</li><li>Save, then Send test.</li></ol>'},
+          {ch:"WHATSAPP",icon:"🟢",name:"WhatsApp",color:"--low",destLabel:"Recipient number (E.164)",destPh:"+15551234567",guide:'Bring your own WhatsApp Business Cloud API (Meta):<ol><li>Meta ▸ WhatsApp ▸ API Setup: copy the <b>Phone number ID</b> and a <b>permanent access token</b>, paste both above.</li><li>Recipient must have messaged your number in the last 24h (or you must use an approved template).</li><li>Save, then Send test.</li></ol>'}
+        ];
+        return uc("Finance lead","share the collections stats where the team already is — pick what each channel gets and when. Send manually any time; scheduled sweeps run every 30 min once you resume the schedule.")+
+          '<div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap"><div><b>Send now to every enabled channel</b><div class="muted" style="font-size:.8rem">Fires each channel below whose toggle is on.</div></div><button class="btn gold" onclick="sendAllStats()">📣 Send to all enabled</button></div>'+
+          defs.map(channelCard).join("")+
+          '<div class="panel"><h2>Scheduled sending</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .5rem">The <code>stats-dispatch</code> schedule sweeps every 30 minutes and sends each channel whose <b>When to send</b> matches. It ships paused — resume it once from the CLI:</p><div class="guide"><code>lemma schedules resume stats-dispatch</code> &nbsp;·&nbsp; pause with <code>lemma schedules pause stats-dispatch</code>.</div></div>';
+      }
+      function _collectChannel(ch){
+        var gv=function(f){var e=$("sc_"+ch+"_"+f);return e?(e.type==="checkbox"?e.checked:e.value):undefined};
+        var cfg={};
+        if(ch==="TELEGRAM"){var t=gv("telegram_bot_token");if(t!=null)cfg.telegram_bot_token=t}
+        if(ch==="WHATSAPP"){var p=gv("whatsapp_phone_id"),k=gv("whatsapp_token");if(p!=null)cfg.whatsapp_phone_id=p;if(k!=null)cfg.whatsapp_token=k}
+        var row={channel:ch};
+        ["enabled","destination","inc_outstanding","inc_overdue","inc_sent_today","inc_pending","inc_legal","inc_promises","inc_disputes","inc_top_accounts","freq"].forEach(function(f){var v=gv(f);if(v!==undefined)row[f]=v});
+        ["send_hour","send_minute","weekly_dow"].forEach(function(f){var v=gv(f);if(v!==undefined)row[f]=parseInt(v,10)});
+        return {cfg:cfg,row:row};
+      }
+      async function _persistChannel(ch){var c=_collectChannel(ch);if(Object.keys(c.cfg).length)await invokeFn("app_action",{action:"save_config",config:c.cfg});await invokeFn("app_action",{action:"save_stats_channel",config:c.row})}
+      window.saveScheduleChannel=async function(ch){setBusy(true,"Saving…");try{await _persistChannel(ch);await loadData();render(true);toast(ch.charAt(0)+ch.slice(1).toLowerCase()+" schedule saved")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.sendStatsNow=async function(ch){setBusy(true,"Sending "+ch+" digest…");try{await _persistChannel(ch);var o=await invokeFn("stats_dispatch",{mode:"manual",channel:ch});var r=o&&o.results&&o.results[0];await loadData();render(true);toast((r&&r.delivered)?("✓ Sent to "+ch):("⚠ "+((r&&r.detail)||"recorded (not sent)")))}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.sendStatsTest=async function(ch){setBusy(true,"Sending test to "+ch+"…");try{await _persistChannel(ch);var o=await invokeFn("stats_dispatch",{mode:"test",channel:ch});var r=o&&o.results&&o.results[0];toast((r&&r.delivered?"✓ ":"⚠ ")+((r&&r.detail)||"done"))}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.sendAllStats=async function(){setBusy(true,"Sending to all enabled channels…");try{var o=await invokeFn("stats_dispatch",{mode:"manual"});await loadData();render(true);toast("Sent to "+((o&&o.sent)||0)+" channel(s)")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.tgFindChat=async function(ch){var e=$("sc_"+ch+"_telegram_bot_token");var tok=e?e.value.trim():"";if(!tok)return toast("Enter the bot token first");setBusy(true,"Asking Telegram…");try{var o=await invokeFn("telegram_get_chat",{bot_token:tok});setBusy(false);if(!o.ok)return toast("⚠ "+o.detail);var box=$("sc_"+ch+"_chatlist");if(box)box.innerHTML=(o.chats||[]).map(function(cc){return '<button class="btn sm" onclick="document.getElementById(\'sc_TELEGRAM_destination\').value=\''+esc(cc.id)+'\';toast(\'Chat set: '+esc(cc.name)+'\')">'+esc(cc.name)+' · '+esc(cc.id)+'</button>'}).join(" ");toast("@"+o.bot+" — "+o.detail)}catch(err){setBusy(false);toast("⚠ "+err.message)}};
+
+      // ---- Mock Mailbox (sandbox demo data, isolated by demo=true)
+      function viewMock(){
+        var inv=mockInvoices();
+        var head=uc("Explorer","a sandbox mailbox — seeded customers, invoices and simulated replies to explore the pipeline without touching real data. Everything here is badged DEMO and never mixes with your live book.");
+        var bar='<div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap"><div><b>🧪 Mock Mailbox</b> <span class="chip" style="background:color-mix(in srgb,var(--med) 18%,transparent);color:var(--med)">DEMO</span><div class="muted" style="font-size:.8rem">'+inv.length+' sandbox invoice(s), separate from your real workspace.</div></div><div class="row-actions"><button class="btn gold sm" onclick="seedDemo()">＋ Seed demo data</button><button class="btn sm" onclick="seedReplies()">💬 Seed replies</button>'+(inv.length?'<button class="btn sm danger" onclick="clearMock()">🗑 Clear mock data</button>':'')+'</div></div>';
+        if(!inv.length)return head+bar+'<div class="panel"><div class="empty"><div class="big">Sandbox is empty</div><p>Click <b>Seed demo data</b> to generate customers, overdue invoices and drafts — then explore every tab with realistic data. Your real workspace stays untouched.</p></div></div>';
+        var rows=inv.slice().sort(function(a,b){return Number(field(b,"days_overdue")||0)-Number(field(a,"days_overdue")||0)}).map(function(i){var c=clientOf(field(i,"client_id"));var d=latestDraft(field(i,"id"),["AUTO_SENT","SENT","PENDING_REVIEW","FAILED"]);return '<tr class="clickable" onclick="openInvoice(\''+field(i,"id")+'\')"><td><b>'+esc(field(i,"invoice_no"))+'</b> <span class="chip" style="background:color-mix(in srgb,var(--med) 16%,transparent);color:var(--med);font-size:.62rem">DEMO</span><div class="muted" style="font-size:.76rem">'+esc(field(c,"name")||"")+'</div></td><td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td><td class="num">'+(Number(field(i,"days_overdue")||0))+'d</td><td>'+stageChip(field(i,"stage"))+'</td><td>'+statusChip(field(i,"status"))+'</td><td>'+(d?draftChip(field(d,"status")):'<span class="muted">—</span>')+'</td></tr>'}).join("");
+        return head+bar+'<div class="panel"><h2>Sandbox invoices</h2><table><thead><tr><th>Invoice / Customer</th><th>Amount</th><th>Overdue</th><th>Stage</th><th>Status</th><th>Draft</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      }
+      window.clearMock=async function(){if(!confirm("Delete all sandbox (DEMO) invoices, drafts and replies? Your real data is untouched."))return;setBusy(true,"Clearing mock data…");try{await invokeFn("reset_pod",{confirm:true,demo_only:true});await loadData();render(true);toast("Mock data cleared")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+
+      // ---- Google Sheets import
+      window.importSheet=function(){closeMenu();
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Import</div><h1 style="font-size:1.3rem">Import from Google Sheets</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db">'+
+          '<p class="muted" style="font-size:.82rem">Paste your Google Sheet link (or id). Row 1 must be headers. Required: <b>invoice_no</b>, <b>client_email</b>, <b>due_date</b>, <b>amount</b>. Optional: client_name, currency, payment_link, company, phone, vip, payment_behavior, status, notes. Imported rows are real data.</p>'+
+          '<label class="fld"><span class="lbl">Spreadsheet link or id</span><input id="gs_id" placeholder="https://docs.google.com/spreadsheets/d/…"></label>'+
+          '<label class="fld"><span class="lbl">Range (A1 notation)</span><input id="gs_range" value="A1:M500"></label>'+
+          '<div style="margin-top:.6rem"><button class="btn gold" onclick="runSheetImport()">Read &amp; import</button></div>'+
+          '<details style="margin-top:1rem"><summary style="cursor:pointer;font-size:.82rem;color:var(--muted)">First time? Connect Google Sheets</summary><div class="guide">The pod reads the sheet on <b>your connected Google account</b> — no keys stored here.<ol><li><code>lemma connectors auth-configs create google_sheets --name workspace-sheets</code></li><li><code>lemma connectors connect-requests create google_sheets --auth-config-id &lt;id&gt;</code> → open the link, authorize Google.</li><li>Share the sheet with that Google account, then paste the link above.</li></ol></div></details>'+
+        '</div>';openDrawerEl();
       };
-      window.composeMode=function(){var a=$("cmp_aud").value;$("cmp_customer").style.display=a==="customer"?"block":"none"};
-      window.composeSend=async function(){
-        var aud=$("cmp_aud").value,body=$("cmp_body").value.trim();if(!body)return toast("Write a message");
-        setBusy(true,"Sending…");
-        try{
-          if(aud==="customer"){var cid=$("cmp_client").value,subj=$("cmp_subj").value;await invokeFn("app_action",{action:"send_custom",config:{client_id:cid,subject:subj,body:body}})}
-          else{await invokeFn("app_action",{action:"notify",note:aud,config:{message:body}})}
-          await loadData();render(true);closeDrawer();toast("Sent (or logged if channel not configured)");
-        }catch(e){toast("⚠ "+e.message)}setBusy(false);
+      window.runSheetImport=async function(){var idv=$("gs_id").value.trim(),rng=$("gs_range").value.trim()||"A1:M500";if(!idv)return toast("Paste the sheet link or id");setBusy(true,"Reading the sheet…");
+        try{var o=await invokeFn("ingest_from_sheet",{spreadsheet_id:idv,sheet_range:rng});
+          if(!o||!o.ok){setBusy(false);return toast("⚠ "+((o&&o.detail)||"couldn't read the sheet"))}
+          if(!o.rows||!o.rows.length){setBusy(false);return toast("No valid rows found — check headers & range")}
+          setBusy(true,"Importing "+o.rows.length+" invoices…");
+          var r=await invokeFn("ingest_invoices",{rows:o.rows});await loadData();render(true);closeDrawer();
+          toast("Imported "+((r.invoices_created||0)+(r.invoices_updated||0))+" invoices · "+(r.clients_created||0)+" new customers");
+          if(((r.invoices_created||0)+(r.invoices_updated||0))>0&&confirm("Imported. Run a scan now so the agent drafts follow-ups?"))doScan();
+        }catch(e){setBusy(false);toast("⚠ "+e.message)}
       };
 
+      // ---- master setup guide
+      window.openSetupGuide=function(){closeMenu();
+        function sec(t,body){return '<details style="margin-bottom:.6rem;border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;background:var(--card)"><summary style="cursor:pointer;font-weight:600;font-size:.9rem">'+t+'</summary><div class="guide" style="margin-top:.5rem">'+body+'</div></details>'}
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Setup</div><h1 style="font-size:1.3rem">Set everything up</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db">'+
+          '<p class="muted" style="font-size:.82rem">Everything is optional — the pod runs in safe, record-only mode until you connect a channel. Run these from a terminal where the Lemma CLI is signed in to this pod.</p>'+
+          sec("📊 Google Sheets (import invoices)",'Primary way to load real data.<ol><li><code>lemma connectors auth-configs create google_sheets --name workspace-sheets</code></li><li><code>lemma connectors connect-requests create google_sheets --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Data ▾ ▸ <b>Import from Google Sheets</b>, paste the link.</li></ol>')+
+          sec("📧 Gmail (send real follow-ups)",'<ol><li><code>lemma connectors auth-configs create gmail --name workspace-gmail</code></li><li><code>lemma connectors connect-requests create gmail --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Settings ⚙ ▸ Email delivery ▸ set Mode = Gmail, flip <b>Send real email</b> on.</li></ol>')+
+          sec("💬 Slack (stats digest + legal alerts)",'<ol><li><code>lemma connectors auth-configs create slack --name slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li><li>Schedule ▸ Slack card: paste the channel id, pick metrics &amp; time, Save.</li></ol>')+
+          sec("✈ Telegram digest (bring your own bot)",'<ol><li>DM <b>@BotFather</b> ▸ <code>/newbot</code> ▸ copy the token.</li><li>Schedule ▸ Telegram card: paste the token, <b>Find chat id</b>, pick a chat, Save.</li></ol>')+
+          sec("🟢 WhatsApp digest (Meta Cloud API)",'<ol><li>Meta ▸ WhatsApp ▸ API Setup: copy the <b>Phone number ID</b> + a <b>permanent access token</b>.</li><li>Schedule ▸ WhatsApp card: paste both, set the recipient number, Save. (24h session window / templates apply.)</li></ol>')+
+          sec("🤖 Telegram agent (chat with the pod)",'A managed bot — no token needed.<ol><li><code>lemma surfaces upsert telegram --agent collections-concierge</code></li><li><code>lemma surfaces setup telegram</code> → open the <b>t.me</b> link, message the bot.</li></ol>')+
+          sec("⏰ Resume scheduled digests",'The stats sweep ships paused.<ol><li><code>lemma schedules resume stats-dispatch</code> — sweeps every 30 min, sending channels whose time matches.</li><li>Pause anytime: <code>lemma schedules pause stats-dispatch</code>.</li></ol>')+
+        '</div>';openDrawerEl();
+      };
+
+      function openDrawerEl(){$("scrim").classList.add("on");$("drawer").classList.add("on")}
       window.closeDrawer=function(){$("scrim").classList.remove("on");$("drawer").classList.remove("on")};
       window.changeStatus=async function(id, status){
         if(!confirm("Are you sure you want to change the status of this invoice to "+status+"?"))return;

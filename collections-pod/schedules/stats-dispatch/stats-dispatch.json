@@ -1,0 +1,7 @@
+{
+  "name": "stats-dispatch",
+  "schedule_type": "TIME",
+  "config": { "cron": "*/30 * * * *" },
+  "workflow_name": "stats-dispatch",
+  "is_active": false
+}

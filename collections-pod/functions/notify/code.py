@@ -37,7 +37,7 @@ def send_chat(cfg, audience, message, chat_id=None):
         if not target:
             return ("SLACK", False, "Slack channel id not set in Settings")
         try:
-            Pod.from_env().connectors.execute("workspace-slack", "chat_post_message",
+            Pod.from_env().connectors.execute("slack", "chat_post_message",
                 {"channel": target, "text": message})
             return ("SLACK", True, "sent via Slack")
         except Exception as exc:

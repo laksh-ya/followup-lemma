@@ -64,8 +64,8 @@ async def daily_digest(ctx: FunctionContext, data: DigestInput) -> DigestResult:
     elif channel in ("SLACK", "WHATSAPP"):
         try:
             op = "chat_post_message" if channel == "SLACK" else "whatsapp_send_message"
-            acct = "workspace-slack" if channel == "SLACK" else "workspace-whatsapp"
-            payload = {"channel": cfg.get("slack_channel") or "", "text": msg} if channel == "SLACK" else {"to": "", "text": msg}
+            acct = "slack" if channel == "SLACK" else "workspace-whatsapp"
+            payload = {"body": {"channel": cfg.get("slack_channel") or "", "text": msg}} if channel == "SLACK" else {"to": "", "text": msg}
             pod.connectors.execute(acct, op, payload)
             delivered, note = True, f"sent via {channel}"
         except Exception as exc:

@@ -7,17 +7,28 @@ then auto-sends the safe ones and routes risky / final notices to a human. A tea
 roles works one shared workspace; legal handles 30+ day accounts; replies are
 understood and acted on.
 
-App: deployed at `lemma apps open collections-app` (local: `http://collections-app.127-0-0-1.sslip.io:8711`).
+App: deployed at `lemma apps open collections-app` (cloud: `https://collections-app.apps.lemma.work`).
 
-## Who uses it (and why)
+> **Which pod?** App slugs are globally unique, and `lemma pods select` only lasts one
+> shell. Set a persistent default so imports/deploys always hit the right pod:
+> `lemma config set-default-org <org> && lemma config set-default-pod <pod>`. Verify
+> with `lemma pods list` (the active one shows `yes`) before `lemma pods import` / `lemma apps deploy`.
+
+## Interface (6 tabs + utility icons)
+
+**Tabs:** Overview · Invoices · Approvals · Replies · Customers · Schedule.
+**Top-right icons:** 📖 Setup guide · 🧪 Mock Mailbox · 💬 Ask agent · ⚙ Settings · ☾ theme.
+The pod **boots empty** — load real data (Google Sheets / CSV / manual), or open the
+**Mock Mailbox** to seed an isolated, DEMO-badged sandbox that never mixes with real work.
 
 | Team | Where | What they get |
 |---|---|---|
 | **Collector** | Invoices, Customers, Replies | The working queue; the AI has already triaged + drafted. |
-| **Finance lead** | Approvals | Approve/edit/reject AI drafts; final notices never auto-send. |
-| **Legal / recovery** | Legal | 30+ day & escalated accounts with full history + one-click notice. |
-| **Admin** | Settings | Behavior, mail mode, notification channels — all live. |
-| **Anyone** | Ask agent (app) / Telegram | Ask the concierge about the book in plain language. |
+| **Finance lead** | Approvals | Approve/edit/reject AI drafts (final notices never auto-send) **and** the Legal & recovery queue for 30+ day accounts — both sections on one tab. |
+| **Finance lead** | Schedule | Share collections stats to Slack / Telegram / WhatsApp — pick what each channel gets and when; manual + scheduled sends. |
+| **Admin** | Settings ⚙ | Behavior, mail mode (Gmail), legal-alert channel, Telegram agent — all live. |
+| **Anyone** | Ask 💬 (app) / Telegram | Ask the concierge about the book in plain language. |
+| **Explorer** | Mock Mailbox 🧪 | Seed / clear an isolated sandbox (`demo=true` rows) to explore without touching real data. |
 
 ## Customer identity (the data foundation)
 
@@ -48,8 +59,23 @@ bash ./collections-pod/seed/seed.sh         # or click "Seed demo data" in the a
 lemma apps open collections-app
 ```
 
-In the app: **Run scan** triages overdue invoices; the **Data ▾** menu seeds demo
-data, seeds replies, imports/exports CSV, adds an invoice, or resets.
+In the app: **Run scan** triages overdue invoices; the **Data ▾** menu imports from
+**Google Sheets**, imports/exports CSV, adds an invoice, or resets real data. Demo
+data lives under the **🧪 Mock Mailbox** (seed / seed replies / clear).
+
+## Loading real data
+
+Three paths, all landing as real (`demo=false`) invoices deduped by customer email:
+
+1. **Google Sheets** (primary) — Data ▾ → *Import from Google Sheets*. Reads on your
+   connected Google account via the `google_sheets` connector; no keys in the app:
+   ```bash
+   lemma connectors auth-configs create google_sheets --name workspace-sheets
+   lemma connectors connect-requests create google_sheets --auth-config-id <id>   # authorize in browser
+   ```
+   Paste the sheet link + A1 range; header row required (same columns as CSV below).
+2. **CSV / Excel** — Data ▾ → *Import CSV / Excel*.
+3. **Manual** — Data ▾ → *Add invoice*.
 
 ## CSV import format
 
@@ -79,16 +105,33 @@ Lemma-native only — no SMTP creds or API keys stored in the app:
   `app_action`, and `test_channel`. Toggle **Send real email** on, pick GMAIL,
   **Save**, then **Send test**.
 
-## Team & legal alerts (Settings → Team & legal alerts)
+## Stats sharing (Schedule tab)
 
-- **SLACK** — real delivery via the Lemma Slack connector:
+Share a collections digest to **Slack, Telegram, and WhatsApp** — each channel a card
+with its own *what to send* (metric checklist), *when to send* (freq + time + weekday),
+plus **Send now** / **Send test**, and a **Send to all enabled** button. Connect once:
+
+- **Slack** — Lemma connector (auth-config name is **`slack`**), destination = channel id:
   ```bash
-  lemma connectors auth-configs create slack --name workspace-slack
+  lemma connectors auth-configs create slack --name slack
   lemma connectors connect-requests create slack --auth-config-id <id>   # authorize in browser
   ```
-  Set the team channel id (and optional legal channel id) in Settings, **Save**,
-  **Send test**. Used for legal-escalation pings and the daily stats digest.
-- **NONE** (default) — alerts are recorded as interactions, nothing sent.
+- **Telegram** — bring your own bot (BotFather token stored in `pod_config`); use the
+  card's **Find chat id** button (calls `telegram_get_chat`) to pick the chat.
+- **WhatsApp** — bring your own Meta WhatsApp Business Cloud API (phone-number-id +
+  permanent token in `pod_config`); recipient must be inside the 24h window or use a template.
+
+**Scheduled sweep:** the `stats-dispatch` schedule (cron `*/30 * * * *`, ships **paused**)
+checks every channel's *when to send* and fires the due ones. Resume it to go hands-off:
+```bash
+lemma schedules resume stats-dispatch     # pause again: lemma schedules pause stats-dispatch
+```
+
+## Legal escalation alerts (Settings ⚙ → Legal escalation channel)
+
+The one-click **Notify legal team** button (Approvals → Legal & recovery) posts to Slack
+via the same `slack` connector. Set the alerts channel (and optional legal channel id) in
+Settings, **Save**, **Send test**. **NONE** (default) records the alert without sending.
 
 ## Chat with the agent — Telegram surface + in-app Ask
 
@@ -109,17 +152,19 @@ front doors:
 The Replies tab shows classified customer replies (promise-to-pay / dispute / paid /
 question). With a Gmail mailbox connected, a WEBHOOK schedule on new mail feeds the
 `reply-triager` agent which classifies and updates the account. For a demo without a
-mailbox, use **Data ▾ → Seed customer replies**.
+mailbox, use **🧪 Mock Mailbox → Seed replies**.
 
 ## Schedules
 
 - `followup-dispatch` (DATASTORE, active) — each enqueued invoice runs the pipeline.
 - `daily-scan` (TIME 09:00, paused) — resume for hands-off daily scanning.
 - `heal` (TIME, paused) — resume for automatic retry of transient failures.
+- `stats-dispatch` (TIME `*/30 * * * *`, paused) — the stats-sharing sweep (see Schedule tab).
 
 ```bash
 lemma schedules resume daily-scan
 lemma schedules resume heal
+lemma schedules resume stats-dispatch
 ```
 
 ## Deploy to lemma.work (cloud)
@@ -146,16 +191,19 @@ lemma runtime profiles create OPENAI_COMPATIBLE --name my-provider \
   --base-url <url> --api-key <key> --default-model <model> --model <model>
 ```
 
-Re-do connector auth (Gmail/Slack) on cloud and re-enter channel ids in Settings.
+Re-do connector auth on cloud (Gmail `workspace-gmail`, Slack `slack`, Google Sheets
+`workspace-sheets`) and re-enter channel ids / destinations in Settings and the Schedule tab.
 
 ## Verify (smoke test)
 
 ```bash
-lemma functions run seed_demo --data '{"enqueue":true}'    # → customers + invoices, pipeline runs
+lemma functions run seed_demo --data '{"enqueue":true}'    # → SANDBOX customers + invoices (demo=true), pipeline runs
 # wait ~1 min, then:
-lemma query run "select status,count(*) from drafts group by status"   # AUTO_SENT + PENDING_REVIEW
-lemma query run "select status,count(*) from invoices group by status" # LEGAL appears for 30+ day
+lemma query run "select status,count(*) from drafts group by status"     # AUTO_SENT + PENDING_REVIEW
+lemma query run "select demo,count(*) from invoices group by demo"       # seeded rows are demo=true
+lemma functions run stats_dispatch --data '{"mode":"test","channel":"SLACK"}'   # test the Schedule wiring
 ```
 
-Expected hero state: ~6 auto-sent, ~3 awaiting approval, ~2 legal — visible the moment
-the app opens.
+Seeded rows are `demo=true`, so they appear under the **🧪 Mock Mailbox** (badged DEMO),
+**not** the main Overview — the main tabs stay clean for real data. Clear the sandbox any
+time from the Mock Mailbox ("Clear mock data" → `reset_pod {demo_only:true}`).

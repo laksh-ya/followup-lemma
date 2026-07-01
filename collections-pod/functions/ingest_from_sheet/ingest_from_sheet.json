@@ -1,0 +1,11 @@
+{
+  "name": "ingest_from_sheet",
+  "description": "Read invoice rows from a Google Sheet via the google_sheets connector (delegated) and return them mapped for ingest_invoices. Primary path for loading real data.",
+  "type": "API",
+  "code": { "$file": "code.py" },
+  "permissions": {
+    "grants": [
+      { "resource_type": "connector", "resource_name": "google_sheets", "permission_ids": ["connector.use"] }
+    ]
+  }
+}

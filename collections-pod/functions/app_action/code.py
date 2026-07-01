@@ -62,7 +62,7 @@ def _notify(pod, cfg, audience, message):
     if not target:
         return (False, "Slack channel id not set in Settings")
     try:
-        pod.connectors.execute("workspace-slack", "chat_post_message", {"channel": target, "text": message})
+        pod.connectors.execute("slack", "chat_post_message", {"body": {"channel": target, "text": message}})
         return (True, "sent via Slack")
     except Exception as exc:
         return (False, "connect the Slack account first: " + str(exc)[:160])
@@ -225,6 +225,8 @@ async def app_action(ctx: FunctionContext, data: AppActionInput) -> AppActionRes
         allowed = {"auto_dispatch", "human_in_loop", "review_stage4", "review_high_risk",
                    "email_enabled", "mail_mode", "email_from",
                    "notify_channel", "slack_channel", "slack_legal_channel",
+                   "telegram_bot_token", "telegram_team_chat_id", "telegram_legal_chat_id",
+                   "whatsapp_phone_id", "whatsapp_token", "whatsapp_to",
                    "company_name", "sender_identity"}
         patch = {k: v for k, v in fields.items() if k in allowed}
         if rows:
@@ -232,5 +234,24 @@ async def app_action(ctx: FunctionContext, data: AppActionInput) -> AppActionRes
         else:
             pod.table("pod_config").create({"singleton": "main", **patch})
         return AppActionResult(ok=True, action=a, detail="settings saved")
+
+    if a == "save_stats_channel":
+        fields = data.config or {}
+        channel = str(fields.get("channel", "")).upper()
+        if channel not in ("SLACK", "TELEGRAM", "WHATSAPP"):
+            return AppActionResult(ok=False, action=a, detail="channel must be SLACK/TELEGRAM/WHATSAPP")
+        allowed = {"channel", "enabled", "destination",
+                   "inc_outstanding", "inc_overdue", "inc_sent_today", "inc_pending",
+                   "inc_legal", "inc_promises", "inc_disputes", "inc_top_accounts",
+                   "freq", "send_hour", "send_minute", "weekly_dow"}
+        patch = {k: v for k, v in fields.items() if k in allowed}
+        patch["channel"] = channel
+        existing = pod.records.list("stats_channels", limit=50, filter=[
+            {"field": "channel", "op": "eq", "value": channel}]).to_dict()["items"]
+        if existing:
+            pod.table("stats_channels").update(existing[0]["id"], patch)
+        else:
+            pod.table("stats_channels").create(patch)
+        return AppActionResult(ok=True, action=a, detail=f"{channel} schedule saved")
 
     return AppActionResult(ok=False, action=a, detail=f"unknown action {a}")

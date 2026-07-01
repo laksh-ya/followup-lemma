@@ -21,6 +21,8 @@
     { "name": "followup_count", "type": "INTEGER", "default": 0 },
     { "name": "last_followup_at", "type": "DATETIME" },
     { "name": "last_processed_at", "type": "DATETIME" },
+    { "name": "demo", "type": "BOOLEAN", "default": false,
+      "description": "true = sandbox/seeded row shown only in the Mock Mailbox; false = real data (Google Sheets / CSV / manual) shown in the main workspace" },
     { "name": "notes", "type": "TEXT", "max_length": 2000 }
   ],
   "config": {}

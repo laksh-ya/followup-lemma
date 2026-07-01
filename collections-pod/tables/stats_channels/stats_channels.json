@@ -1,0 +1,35 @@
+{
+  "name": "stats_channels",
+  "primary_key_column": "id",
+  "enable_rls": false,
+  "columns": [
+    { "name": "channel", "type": "TEXT", "required": true, "unique": true, "max_length": 20,
+      "description": "SLACK | TELEGRAM | WHATSAPP — one config row per messaging channel" },
+    { "name": "enabled", "type": "BOOLEAN", "default": false,
+      "description": "Include this channel in the scheduled sweep and manual 'send to all'" },
+    { "name": "destination", "type": "TEXT", "max_length": 200,
+      "description": "Slack channel id (C0123ABC) / Telegram chat id / WhatsApp recipient number" },
+
+    { "name": "inc_outstanding", "type": "BOOLEAN", "default": true },
+    { "name": "inc_overdue", "type": "BOOLEAN", "default": true },
+    { "name": "inc_sent_today", "type": "BOOLEAN", "default": true },
+    { "name": "inc_pending", "type": "BOOLEAN", "default": true },
+    { "name": "inc_legal", "type": "BOOLEAN", "default": true },
+    { "name": "inc_promises", "type": "BOOLEAN", "default": false },
+    { "name": "inc_disputes", "type": "BOOLEAN", "default": false },
+    { "name": "inc_top_accounts", "type": "BOOLEAN", "default": false,
+      "description": "Append the top overdue accounts by amount" },
+
+    { "name": "freq", "type": "ENUM", "default": "OFF",
+      "options": ["OFF", "DAILY", "WEEKDAYS", "WEEKLY"],
+      "description": "When the scheduled sweep should send. OFF = manual only." },
+    { "name": "send_hour", "type": "INTEGER", "default": 9,
+      "description": "Hour of day (0-23, server time) for scheduled sends" },
+    { "name": "send_minute", "type": "INTEGER", "default": 0 },
+    { "name": "weekly_dow", "type": "INTEGER", "default": 0,
+      "description": "Day of week for WEEKLY (0=Mon … 6=Sun)" },
+    { "name": "last_sent_at", "type": "DATETIME",
+      "description": "Set by the sweep to avoid double-sending within a window" }
+  ],
+  "config": {}
+}

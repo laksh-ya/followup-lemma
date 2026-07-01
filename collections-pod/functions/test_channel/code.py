@@ -50,8 +50,8 @@ async def test_channel(ctx: FunctionContext, data: TestInput) -> TestResult:
         if not target:
             return TestResult(ok=False, detail="Set a Slack channel id in Settings first.")
         try:
-            pod.connectors.execute("workspace-slack", "chat_post_message",
-                {"channel": target, "text": "✅ Collections Agent test notification."})
+            pod.connectors.execute("slack", "chat_post_message",
+                {"body": {"channel": target, "text": "✅ Collections Agent test notification."}})
             return TestResult(ok=True, detail=f"Slack: sent to {target}")
         except Exception as exc:
             return TestResult(ok=False, detail=f"Connect a Slack account first (lemma connectors). {str(exc)[:200]}")

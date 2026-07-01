@@ -1,0 +1,12 @@
+{
+  "name": "stats-dispatch",
+  "description": "Scheduled sweep: send the stats digest to every enabled messaging channel whose configured send-time matches now.",
+  "start": { "type": "MANUAL" },
+  "nodes": [
+    { "id": "dispatch", "type": "FUNCTION", "label": "Dispatch due channels",
+      "config": { "function_name": "stats_dispatch",
+        "input_mapping": { "mode": { "type": "literal", "value": "due" } } } },
+    { "id": "end", "type": "END", "label": "Done" }
+  ],
+  "edges": [ { "id": "e_d_end", "source": "dispatch", "target": "end" } ]
+}

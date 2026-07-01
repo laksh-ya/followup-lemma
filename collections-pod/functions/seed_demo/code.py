@@ -2,10 +2,12 @@
 #output_type_name: SeedResult
 #function_name: seed_demo
 
-"""One-click demo data for the app. Creates a realistic book of customers + invoices
+"""One-click SANDBOX data for the app. Creates a realistic book of customers + invoices
 across every escalation stage (deduping customers by email), then enqueues the overdue
-ones so the pipeline runs and the app fills with auto-sent follow-ups, pending
-approvals, and legal escalations. Idempotent by email/invoice_no.
+ones so the pipeline runs and the Mock Mailbox fills with auto-sent follow-ups, pending
+approvals, and legal escalations. Every seeded invoice is tagged demo=true so it stays
+isolated in the Mock Mailbox and never mixes with real sends. Idempotent by
+email/invoice_no. Nothing is seeded automatically — this only runs when invoked.
 """
 
 from datetime import date, timedelta
@@ -127,7 +129,7 @@ async def seed_demo(ctx: FunctionContext, data: SeedInput) -> SeedResult:
         fields = {
             "invoice_no": no, "client_id": cid[ck], "amount": amount, "currency": "INR",
             "due_date": (today - timedelta(days=days)).isoformat(), "status": status,
-            "payment_link": f"https://pay.acme.example/{no}",
+            "payment_link": f"https://pay.acme.example/{no}", "demo": True,
         }
         if no in by_no:
             pod.table("invoices").update(by_no[no], fields)
@@ -151,7 +153,7 @@ async def seed_demo(ctx: FunctionContext, data: SeedInput) -> SeedResult:
 
     pod.table("interactions").create({
         "kind": "NOTE", "channel": "SYSTEM", "direction": "INTERNAL",
-        "summary": f"Demo data seeded — {len(cid)} customers, {n_inv} invoices, {enq} enqueued",
+        "summary": f"Sandbox data seeded (Mock Mailbox) — {len(cid)} customers, {n_inv} invoices, {enq} enqueued",
         "actor_user": ctx.user_id, "actor_label": "seed_demo", "level": "INFO",
     })
     return SeedResult(clients=len(cid), invoices=n_inv, enqueued=enq)
