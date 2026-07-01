@@ -151,7 +151,15 @@
       window.doProcess=function(id){action({action:"process",invoice_id:id},"Queued for the agent")};
 
       // ---- data tools
-      window.seedDemo=async function(){setBusy(true,"Seeding demo customers & invoices…");try{await invokeFn("seed_demo",{enqueue:true});await loadData();render(true);toast("Demo data seeded — agent is processing")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.seedDemo=async function(){
+        var raw=prompt("How many invoices do you want to seed? (e.g. 10, 20, 50)", "20");
+        if(raw===null)return;
+        var count=parseInt(raw,10);
+        var payload={enqueue:true};
+        if(!isNaN(count) && count>0) payload.count=count;
+        setBusy(true,"Seeding "+(payload.count||"demo")+" customers & invoices…");
+        try{await invokeFn("seed_demo",payload);await loadData();render(true);toast("Demo data seeded — agent is processing")}catch(e){toast("⚠ "+e.message)}setBusy(false);
+      };
       window.seedReplies=async function(){setBusy(true,"Seeding customer replies…");try{await invokeFn("seed_replies",{});await loadData();render(true);toast("Replies seeded")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
       window.sendDigest=async function(){setBusy(true,"Sending digest to team…");try{var o=await invokeFn("app_action",{action:"digest"});await loadData();render(true);toast(o&&o.detail||"Digest sent")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
       window.logReply=function(){closeMenu();var opts=STATE.invoices.filter(function(i){return field(i,"status")==="ACTIVE"}).map(function(i){var c=clientOf(field(i,"client_id"));return '<option value="'+field(i,"id")+'">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</option>'}).join("");
@@ -185,7 +193,8 @@
       // ---- render shell
       function render(keep){
         var p=pendingDrafts().length,legal=STATE.invoices.filter(function(i){return field(i,"status")==="LEGAL"}).length,rep=replies().length,proc=processingCount();
-        var nav=[["dashboard","Overview"],["invoices","Invoices"],["customers","Customers"],["approvals","Approvals",p],["replies","Replies",rep],["legal","Legal",legal],["ask","Ask agent"],["settings","Settings"]];
+        var sentCount=STATE.drafts.filter(function(d){return ["SENT","AUTO_SENT"].indexOf(field(d,"status"))>=0}).length;
+        var nav=[["dashboard","Overview"],["invoices","Invoices"],["sent","Sent",sentCount],["customers","Customers"],["approvals","Approvals",p],["replies","Replies",rep],["legal","Legal",legal],["ask","Ask agent"],["settings","Settings"]];
         $("app").innerHTML='<div class="wrap"><div class="top"><div><div class="eyebrow">Acme Finance · Accounts Receivable</div><h1>Collections Agent</h1></div>'+
           '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap"><span class="pill"><span class="pip"></span> live</span>'+
           '<button class="btn gold sm" onclick="doScan()">Run scan</button>'+
@@ -207,11 +216,24 @@
       }
       window.go=function(t){TAB=t;render()};window.toggleTheme=function(){applyTheme(theme()==="dark"?"light":"dark");render()};window.closeMenu=function(){var m=$("datamenu");if(m)m.classList.remove("open")};
       function uc(who,what){return '<div class="usecase"><span>👥</span><div><span class="who">'+who+'</span> — '+what+'</div></div>'}
-      function renderView(){var v=$("view");if(!v)return;v.innerHTML=({dashboard:viewDashboard,invoices:viewInvoices,customers:viewCustomers,approvals:viewApprovals,replies:viewReplies,legal:viewLegal,activity:viewActivity,ask:viewAsk,settings:viewSettings}[TAB]||viewDashboard)()}
+      function renderView(){var v=$("view");if(!v)return;v.innerHTML=({dashboard:viewDashboard,invoices:viewInvoices,sent:viewSent,customers:viewCustomers,approvals:viewApprovals,replies:viewReplies,legal:viewLegal,activity:viewActivity,ask:viewAsk,settings:viewSettings}[TAB]||viewDashboard)()}
       function kpi(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'}
       function ncard(n,l,sub,tab,c){return '<button class="acard" onclick="go(\''+tab+'\')" style="--ac:var('+c+')"><div class="acn">'+n+'</div><div class="acl">'+l+'</div><div class="acs">'+esc(sub)+'</div></button>'}
 
-      function emptyState(){return '<div class="panel"><div class="empty"><div class="big">No data yet</div><p>Seed a realistic demo book, or import your invoices.</p><div class="row-actions" style="justify-content:center;margin-top:1rem"><button class="btn gold" onclick="seedDemo()">✨ Seed demo data</button><button class="btn" onclick="pickCSV()">⬆ Import CSV</button></div></div></div>'}
+      function emptyState(){
+        return '<div class="panel"><div class="empty"><div class="big">No data yet</div><p>Seed a realistic demo book, or import your invoices.</p>'+
+          '<div style="margin: 1.2rem 0 0.5rem; font-weight:600; font-size:.84rem; text-transform:uppercase; letter-spacing:.05em" class="muted">Quick seed options:</div>'+
+          '<div class="row-actions" style="justify-content:center;margin-bottom:1.5rem">'+
+            '<button class="btn gold sm" onclick="seedWithCount(10)">✨ Seed 10 Invoices</button>'+
+            '<button class="btn gold sm" onclick="seedWithCount(20)">✨ Seed 20 Invoices</button>'+
+            '<button class="btn gold sm" onclick="seedWithCount(50)">✨ Seed 50 Invoices</button>'+
+          '</div>'+
+          '<div class="row-actions" style="justify-content:center;gap:.6rem">'+
+            '<button class="btn sm" onclick="pickCSV()">⬆ Import CSV</button>'+
+            '<button class="btn sm ghost" onclick="seedDemo()">Custom Count…</button>'+
+          '</div>'+
+          '</div></div>';
+      }
 
       function viewDashboard(){
         if(!STATE.invoices.length)return uc("Everyone","one shared workspace — the AI triages overdue invoices, the team approves the sensitive ones, legal handles the rest.")+emptyState();
@@ -265,15 +287,141 @@
 
       function invRow(i){var c=clientOf(field(i,"client_id"));var d=latestDraft(field(i,"id"),["AUTO_SENT","SENT","PENDING_REVIEW","FAILED"]);
         return '<tr class="clickable" onclick="openInvoice(\''+field(i,"id")+'\')"><td><b>'+esc(field(i,"invoice_no"))+'</b><div class="muted" style="font-size:.76rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' ★':'')+'</div></td><td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td><td class="num">'+(Number(field(i,"days_overdue")||0))+'d</td><td>'+stageChip(field(i,"stage"))+'</td><td>'+riskChip(field(i,"risk_level"))+'</td><td>'+statusChip(field(i,"status"))+'</td><td>'+(d?draftChip(field(d,"status")):'<span class="muted">—</span>')+'</td></tr>'}
-      function viewInvoices(){if(!STATE.invoices.length)return emptyState();var inv=STATE.invoices.slice().sort(function(a,b){return Number(field(b,"days_overdue")||0)-Number(field(a,"days_overdue")||0)});
-        return uc("Collector","your working queue — every overdue account, its stage, risk, and the last follow-up. Click any row for the draft + history.")+'<div class="panel"><h2>Invoices · '+inv.length+'</h2><table><thead><tr><th>Invoice / Customer</th><th>Amount</th><th>Overdue</th><th>Stage</th><th>Risk</th><th>Status</th><th>Last follow-up</th></tr></thead><tbody>'+inv.map(invRow).join("")+'</tbody></table></div>'}
+      function viewInvoices(){
+        if(!STATE.invoices.length)return emptyState();
+        var searchVal = (STATE.invoicesSearch || "").toLowerCase();
+        var filterStage = STATE.invoicesFilterStage || "ALL";
+        var filterRisk = STATE.invoicesFilterRisk || "ALL";
+        var filterStatus = STATE.invoicesFilterStatus || "ALL";
+        var filtered = STATE.invoices.filter(function(i){
+          var c=clientOf(field(i,"client_id"));
+          var matchesSearch = !searchVal ||
+            (field(i,"invoice_no")||"").toLowerCase().indexOf(searchVal)>=0 ||
+            (field(c,"name")||"").toLowerCase().indexOf(searchVal)>=0 ||
+            (field(c,"email")||"").toLowerCase().indexOf(searchVal)>=0 ||
+            String(field(i,"amount")||"").toLowerCase().indexOf(searchVal)>=0;
+          var matchesStage = filterStage === "ALL" || field(i,"stage") === filterStage;
+          var matchesRisk = filterRisk === "ALL" || field(i,"risk_level") === filterRisk;
+          var matchesStatus = filterStatus === "ALL" || field(i,"status") === filterStatus;
+          return matchesSearch && matchesStage && matchesRisk && matchesStatus;
+        }).sort(function(a,b){
+          return Number(field(b,"days_overdue")||0)-Number(field(a,"days_overdue")||0);
+        });
+        var stages = ["ALL","STG1_FRIENDLY","STG2_FIRM","STG3_URGENT","STG4_FINAL"];
+        var stageOpts = stages.map(function(stg){
+          var label = stg === "ALL" ? "All Stages" : stg.replace("STG","Stage ").replace("_"," ");
+          return '<option value="'+stg+'" '+(filterStage===stg?'selected':'')+'>'+label+'</option>';
+        }).join('');
+        var risks = ["ALL","LOW","MEDIUM","HIGH"];
+        var riskOpts = risks.map(function(r){
+          var label = r === "ALL" ? "All Risks" : r.charAt(0)+r.slice(1).toLowerCase();
+          return '<option value="'+r+'" '+(filterRisk===r?'selected':'')+'>'+label+'</option>';
+        }).join('');
+        var statuses = ["ALL","ACTIVE","PAID","DISPUTED","LEGAL","PAUSED"];
+        var statusOpts = statuses.map(function(st){
+          var label = st === "ALL" ? "All Statuses" : st.charAt(0)+st.slice(1).toLowerCase();
+          return '<option value="'+st+'" '+(filterStatus===st?'selected':'')+'>'+label+'</option>';
+        }).join('');
+        return uc("Collector","your working queue — every overdue account, its stage, risk, and the last follow-up. Click any row for the draft + history.")+
+          '<div class="panel">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;gap:1rem;flex-wrap:wrap">'+
+            '<h2 style="margin:0">Invoices · '+filtered.length+' / '+STATE.invoices.length+'</h2>'+
+            '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">'+
+              '<input type="text" placeholder="Search invoices..." value="'+esc(STATE.invoicesSearch||"")+'" oninput="STATE.invoicesSearch=this.value;renderView()" style="width:160px;padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+
+              '<select onchange="STATE.invoicesFilterStage=this.value;renderView()" style="padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+stageOpts+'</select>'+
+              '<select onchange="STATE.invoicesFilterRisk=this.value;renderView()" style="padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+riskOpts+'</select>'+
+              '<select onchange="STATE.invoicesFilterStatus=this.value;renderView()" style="padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+statusOpts+'</select>'+
+            '</div>'+
+          '</div>'+
+          '<table><thead><tr><th>Invoice / Customer</th><th>Amount</th><th>Overdue</th><th>Stage</th><th>Risk</th><th>Status</th><th>Last follow-up</th></tr></thead><tbody>'+
+          (filtered.length ? filtered.map(invRow).join("") : '<tr><td colspan="7" class="empty">No matching invoices found.</td></tr>')+'</tbody></table></div>';
+      }
+
+      function viewSent(){
+        var sentDrafts=STATE.drafts.filter(function(d){
+          return ["SENT","AUTO_SENT"].indexOf(field(d,"status"))>=0;
+        }).sort(function(a,b){return String(field(b,"created_at")).localeCompare(String(field(a,"created_at")))});
+        var searchVal = (STATE.sentSearch || "").toLowerCase();
+        var filterMethod = STATE.sentFilterMethod || "ALL";
+        var filterStage = STATE.sentFilterStage || "ALL";
+        var filtered = sentDrafts.filter(function(d){
+          var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));
+          var matchesSearch = !searchVal ||
+            (field(c,"name")||"").toLowerCase().indexOf(searchVal)>=0 ||
+            (field(i,"invoice_no")||"").toLowerCase().indexOf(searchVal)>=0 ||
+            (field(d,"subject")||"").toLowerCase().indexOf(searchVal)>=0 ||
+            (field(d,"body")||"").toLowerCase().indexOf(searchVal)>=0;
+          var method = field(d,"status")===="AUTO_SENT"?"AUTO":"MANUAL";
+          var matchesMethod = filterMethod === "ALL" || method === filterMethod;
+          var matchesStage = filterStage === "ALL" || field(d,"stage") === filterStage;
+          return matchesSearch && matchesMethod && matchesStage;
+        });
+        var methodOpts = [
+          ["ALL","All Methods"],
+          ["AUTO","Auto-sent by AI"],
+          ["MANUAL","Approved by human"]
+        ].map(function(opt){
+          return '<option value="'+opt[0]+'" '+(filterMethod===opt[0]?'selected':'')+'>'+opt[1]+'</option>';
+        }).join('');
+        var stages = ["ALL","STG1_FRIENDLY","STG2_FIRM","STG3_URGENT","STG4_FINAL"];
+        var stageOpts = stages.map(function(stg){
+          var label = stg === "ALL" ? "All Stages" : stg.replace("STG","Stage ").replace("_"," ");
+          return '<option value="'+stg+'" '+(filterStage===stg?'selected':'')+'>'+label+'</option>';
+        }).join('');
+        return uc("Auditor","historical log of all sent communications — audit trail, delivery methods, confidence scores, and sent content.")+
+          '<div class="panel">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;gap:1rem;flex-wrap:wrap">'+
+            '<h2 style="margin:0">Sent communications · '+filtered.length+' / '+sentDrafts.length+'</h2>'+
+            '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">'+
+              '<input type="text" placeholder="Search sent emails..." value="'+esc(STATE.sentSearch||"")+'" oninput="STATE.sentSearch=this.value;renderView()" style="width:180px;padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+
+              '<select onchange="STATE.sentFilterMethod=this.value;renderView()" style="padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+methodOpts+'</select>'+
+              '<select onchange="STATE.sentFilterStage=this.value;renderView()" style="padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+stageOpts+'</select>'+
+              '<button class="btn sm" onclick="exportSentCSV()">⬇ Export Sent</button>'+
+            '</div>'+
+          '</div>'+
+          '<table><thead><tr><th>Recipient / Company</th><th>Invoice</th><th>Stage</th><th>Subject</th><th>Method</th><th>Sent At</th></tr></thead><tbody>'+
+          (filtered.length ? filtered.map(function(d){
+            var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));
+            var method = field(d,"status")==="AUTO_SENT"?"Auto-sent":"Approved";
+            var mColor = field(d,"status")==="AUTO_SENT"?"--blue":"--low";
+            return '<tr class="clickable" onclick="openSentEmail(\''+field(d,"id")+'\')">'+
+              '<td><b>'+esc(field(c,"name")||"")+'</b><div class="muted" style="font-size:.74rem">'+esc(field(c,"email")||"")+'</div></td>'+
+              '<td class="num">'+esc(field(i,"invoice_no")||"")+'</td>'+
+              '<td>'+stageChip(field(d,"stage"))+'</td>'+
+              '<td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(field(d,"subject"))+'</td>'+
+              '<td>'+chip(method,mColor)+'</td>'+
+              '<td class="muted num" style="font-size:.72rem">'+shortDate(field(d,"created_at"))+'</td>'+
+            '</tr>';
+          }).join("") : '<tr><td colspan="6" class="empty">No sent communications found.</td></tr>')+'</tbody></table></div>';
+      }
 
       function viewCustomers(){
         if(!STATE.clients.length)return emptyState();
-        var rows=STATE.clients.map(function(c){var cid=field(c,"id");var invs=invoicesForClient(cid);var out=invs.filter(function(i){return field(i,"status")==="ACTIVE"}).reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);var worst=invs.map(function(i){return field(i,"days_overdue")||0}).reduce(function(a,b){return Math.max(a,b)},0);return {c:c,invs:invs,out:out,worst:worst}}).sort(function(a,b){return b.out-a.out});
+        var searchVal = (STATE.customersSearch || "").toLowerCase();
+        var allRows=STATE.clients.map(function(c){
+          var cid=field(c,"id");
+          var invs=invoicesForClient(cid);
+          var out=invs.filter(function(i){return field(i,"status")==="ACTIVE"}).reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
+          var worst=invs.map(function(i){return field(i,"days_overdue")||0}).reduce(function(a,b){return Math.max(a,b)},0);
+          return {c:c,invs:invs,out:out,worst:worst};
+        });
+        var filteredRows = allRows.filter(function(r){
+          return !searchVal || 
+            (field(r.c,"name") || "").toLowerCase().indexOf(searchVal) >= 0 ||
+            (field(r.c,"email") || "").toLowerCase().indexOf(searchVal) >= 0 ||
+            (field(r.c,"company") || "").toLowerCase().indexOf(searchVal) >= 0;
+        });
+        filteredRows.sort(function(a,b){return b.out-a.out});
         return uc("Account manager","one row per customer — identity tracked by email, so every invoice, email and reply for a customer rolls up here.")+
-          '<div class="panel"><h2>Customers · '+rows.length+'</h2><table><thead><tr><th>Customer</th><th>Invoices</th><th>Outstanding</th><th>Worst overdue</th><th>Behavior</th></tr></thead><tbody>'+
-          rows.map(function(r){return '<tr class="clickable" onclick="openCustomer(\''+field(r.c,"id")+'\')"><td><b>'+esc(field(r.c,"name"))+'</b>'+(field(r.c,"vip")?' <span style="color:var(--gold)">★</span>':'')+'<div class="muted" style="font-size:.74rem">'+esc(field(r.c,"email"))+'</div></td><td class="num">'+r.invs.length+'</td><td class="num">'+money(r.out)+'</td><td class="num">'+r.worst+'d</td><td>'+chip(field(r.c,"payment_behavior")||"AVERAGE",field(r.c,"payment_behavior")==="RISKY"?"--high":field(r.c,"payment_behavior")==="GOOD"?"--low":"--med")+'</td></tr>'}).join("")+'</tbody></table></div>';
+          '<div class="panel">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;gap:1rem;flex-wrap:wrap">'+
+            '<h2 style="margin:0">Customers · '+filteredRows.length+' / '+allRows.length+'</h2>'+
+            '<input type="text" placeholder="Search..." value="'+esc(STATE.customersSearch||"")+'" oninput="STATE.customersSearch=this.value;renderView()" style="width:160px;padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+
+          '</div>'+
+          '<table><thead><tr><th>Customer</th><th>Invoices</th><th>Outstanding</th><th>Worst overdue</th><th>Behavior</th></tr></thead><tbody>'+
+          (filteredRows.length ? filteredRows.map(function(r){
+            return '<tr class="clickable" onclick="openCustomer(\''+field(r.c,"id")+'\')"><td><b>'+esc(field(r.c,"name"))+'</b>'+(field(r.c,"vip")?' <span style="color:var(--gold)">★</span>':'')+'<div class="muted" style="font-size:.74rem">'+esc(field(r.c,"email"))+'</div></td><td class="num">'+r.invs.length+'</td><td class="num">'+money(r.out)+'</td><td class="num">'+r.worst+'d</td><td>'+chip(field(r.c,"payment_behavior")||"AVERAGE",field(r.c,"payment_behavior")==="RISKY"?"--high":field(r.c,"payment_behavior")==="GOOD"?"--low":"--med")+'</td></tr>';
+          }).join("") : '<tr><td colspan="5" class="empty">No matching customers found.</td></tr>')+'</tbody></table></div>';
       }
 
       function viewApprovals(){var ds=pendingDrafts();if(!ds.length)return uc("Finance lead","approve, edit, reject or escalate AI-written notices before they go out.")+'<div class="panel"><div class="empty"><div class="big">Inbox zero ✓</div>No drafts awaiting approval.</div></div>';
@@ -281,11 +429,42 @@
       window.approve=function(id){action({action:"approve",draft_id:id},"Approved & sent")};window.reject=function(id){action({action:"reject",draft_id:id,note:"Rejected by reviewer"},"Rejected")};window.flag=function(id){action({action:"flag",draft_id:id,note:"Escalated to legal"},"Flagged to legal")};
 
       function viewReplies(){var rs=replies();
+        var searchVal = (STATE.repliesSearch || "").toLowerCase();
+        var filterCategory = STATE.repliesFilterCategory || "ALL";
+        var filteredReplies = rs.filter(function(e){
+          var det=field(e,"detail")||{};
+          var cat=det.category||"OTHER";
+          var c=clientOf(field(e,"client_id")),i=invoiceOf(field(e,"invoice_id"));
+          var matchesSearch = !searchVal ||
+            (field(c,"name") || "").toLowerCase().indexOf(searchVal) >= 0 ||
+            (field(i,"invoice_no") || "").toLowerCase().indexOf(searchVal) >= 0 ||
+            (det.body || field(e,"summary") || "").toLowerCase().indexOf(searchVal) >= 0;
+          var matchesCategory = filterCategory === "ALL" || cat === filterCategory;
+          return matchesSearch && matchesCategory;
+        });
         if(!rs.length)return uc("Collector","when customers reply, the AI reads each one — promise-to-pay, dispute, paid, or question — and updates the account.")+'<div class="panel"><div class="empty"><div class="big">No replies yet</div><p>With a mailbox connected, replies land here classified. Try it now:</p><div class="row-actions" style="justify-content:center;margin-top:.8rem"><button class="btn gold" onclick="logReply()">＋ Log a reply</button><button class="btn" onclick="seedReplies()">💬 Seed samples</button></div></div></div>';
+        var catOpts = ["ALL", "PROMISE_TO_PAY", "PAID_CLAIM", "DISPUTE", "QUESTION", "OTHER"].map(function(c){
+          var label = c === "ALL" ? "All Categories" : c.replace(/_/g," ").replace(/\b\w/g, function(ch){return ch.toUpperCase()});
+          return '<option value="'+c+'" '+(filterCategory===c?'selected':'')+'>'+label+'</option>';
+        }).join('');
         var CC={PROMISE_TO_PAY:"--low",DISPUTE:"--high",PAID_CLAIM:"--blue",QUESTION:"--med",OTHER:"--muted"};
         return uc("Collector","every customer reply, classified — promises become trackable, disputes pause dunning, paid-claims await reconciliation.")+
-          '<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Customer replies · '+rs.length+'</h2><button class="btn sm" onclick="logReply()">＋ Log a reply</button></div><table style="margin-top:.6rem"><thead><tr><th>Customer</th><th>Invoice</th><th>Type</th><th>Message</th><th>When</th></tr></thead><tbody>'+
-          rs.map(function(e){var det=field(e,"detail")||{};var cat=det.category||"OTHER";var c=clientOf(field(e,"client_id")),i=invoiceOf(field(e,"invoice_id"));return '<tr class="clickable" onclick="openInvoice(\''+field(e,"invoice_id")+'\')"><td><b>'+esc(field(c,"name")||"customer")+'</b></td><td class="num">'+esc(field(i,"invoice_no")||"")+'</td><td>'+chip(cat.replace(/_/g," "),CC[cat]||"--muted")+'</td><td style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(det.body||field(e,"summary")||"")+'</td><td class="muted num" style="font-size:.72rem">'+shortDate(field(e,"created_at"))+'</td></tr>'}).join("")+'</tbody></table></div>'+
+          '<div class="panel">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;gap:1rem;flex-wrap:wrap">'+
+            '<h2 style="margin:0">Customer replies · '+filteredReplies.length+' / '+rs.length+'</h2>'+
+            '<div style="display:flex;gap:.5rem;align-items:center">'+
+              '<input type="text" placeholder="Search..." value="'+esc(STATE.repliesSearch||"")+'" oninput="STATE.repliesSearch=this.value;renderView()" style="width:160px;padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+
+              '<select onchange="STATE.repliesFilterCategory=this.value;renderView()" style="padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+catOpts+'</select>'+
+              '<button class="btn sm" onclick="logReply()">＋ Log a reply</button>'+
+            '</div>'+
+          '</div>'+
+          '<table><thead><tr><th>Customer</th><th>Invoice</th><th>Type</th><th>Message</th><th>When</th></tr></thead><tbody>'+
+          (filteredReplies.length ? filteredReplies.map(function(e){
+            var det=field(e,"detail")||{};
+            var cat=det.category||"OTHER";
+            var c=clientOf(field(e,"client_id")),i=invoiceOf(field(e,"invoice_id"));
+            return '<tr class="clickable" onclick="openInvoice(\''+field(e,"invoice_id")+'\')"><td><b>'+esc(field(c,"name")||"customer")+'</b></td><td class="num">'+esc(field(i,"invoice_no")||"")+'</td><td>'+chip(cat.replace(/_/g," "),CC[cat]||"--muted")+'</td><td style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(det.body||field(e,"summary")||"")+'</td><td class="muted num" style="font-size:.72rem">'+shortDate(field(e,"created_at"))+'</td></tr>';
+          }).join("") : '<tr><td colspan="5" class="empty">No matching replies found.</td></tr>')+'</tbody></table></div>'+
           (STATE.promises.length?'<div class="panel"><h2>Promises to pay · '+STATE.promises.length+'</h2><table><thead><tr><th>Customer</th><th>Invoice</th><th>Promised by</th><th>Status</th></tr></thead><tbody>'+STATE.promises.map(function(p){var c=clientOf(field(p,"client_id")),i=invoiceOf(field(p,"invoice_id"));return '<tr><td>'+esc(field(c,"name")||"")+'</td><td class="num">'+esc(field(i,"invoice_no")||"")+'</td><td class="num">'+String(field(p,"promised_date")||"").slice(0,10)+'</td><td>'+chip(field(p,"status"),field(p,"status")==="BROKEN"?"--high":field(p,"status")==="KEPT"?"--low":"--med")+'</td></tr>'}).join("")+'</tbody></table></div>':'');
       }
 
@@ -373,16 +552,179 @@
       };
 
       window.closeDrawer=function(){$("scrim").classList.remove("on");$("drawer").classList.remove("on")};
-      window.openInvoice=function(id){var i=invoiceOf(id),c=clientOf(field(i,"client_id"));var d=latestDraft(id,["PENDING_REVIEW","AUTO_SENT","SENT","FAILED","REJECTED"]);var evs=STATE.interactions.filter(function(e){return field(e,"invoice_id")===id});var pending=d&&field(d,"status")==="PENDING_REVIEW";
+      window.changeStatus=async function(id, status){
+        if(!confirm("Are you sure you want to change the status of this invoice to "+status+"?"))return;
+        setBusy(true,"Updating status…");
+        try{
+          await invokeFn("app_action",{action:"change_status",invoice_id:id,config:{status:status}});
+          await loadData();
+          render(true);
+          openInvoice(id);
+          toast("Status updated to "+status);
+        }catch(e){
+          toast("⚠ "+e.message);
+        }
+        setBusy(false);
+      };
+      window.exportSentCSV=function(){
+        var rows=[["customer_name","customer_email","invoice_no","subject","body","stage","status","sent_at"]];
+        var sent=STATE.drafts.filter(function(d){return ["SENT","AUTO_SENT"].indexOf(field(d,"status"))>=0});
+        sent.forEach(function(d){
+          var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));
+          rows.push([
+            field(c,"name"),
+            field(c,"email"),
+            field(i,"invoice_no"),
+            field(d,"subject"),
+            field(d,"body"),
+            field(d,"stage"),
+            field(d,"status"),
+            field(d,"created_at")
+          ]);
+        });
+        var csv=rows.map(function(r){return r.map(function(x){x=String(x==null?"":x);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x}).join(",")}).join("\n");
+        var blob=new Blob([csv],{type:"text/csv"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="sent_emails_export.csv";a.click();toast("Exported "+sent.length+" sent emails");
+      };
+      window.openSentEmail=function(draftId){
+        var d=STATE.drafts.find(function(x){return field(x,"id")===draftId});
+        if(!d)return;
+        var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));
+        var method = field(d,"status")==="AUTO_SENT"?"Auto-sent by AI":"Approved by human reviewer";
+        var confidence = field(d,"confidence_score") != null ? (Math.round(field(d,"confidence_score")*100)+"%") : "N/A";
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Sent Communication</div><h1 style="font-size:1.3rem">'+esc(field(c,"name")||"")+'</h1></div><button class="x" onclick="closeDrawer()">×</button></div>'+
+          '<div class="db">'+
+            '<div class="kv">'+
+              '<span class="k">Invoice</span><span>'+esc(field(i,"invoice_no")||"")+'</span>'+
+              '<span class="k">Stage</span><span>'+stageChip(field(d,"stage"))+'</span>'+
+              '<span class="k">Method</span><span>'+chip(field(d,"status")==="AUTO_SENT"?"Auto-sent":"Approved",field(d,"status")==="AUTO_SENT"?"--blue":"--low")+' ('+method+')</span>'+
+              '<span class="k">Confidence</span><span>'+confidence+'</span>'+
+              '<span class="k">Sent At</span><span>'+dt(field(d,"created_at"))+'</span>'+
+            '</div>'+
+            '<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:1.2rem 0 .5rem">Email Content</h2>'+
+            '<div class="mail"><div class="subj">'+esc(field(d,"subject"))+'</div>'+esc(field(d,"body"))+'</div>'+
+            '<div style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap">'+
+              '<button class="btn sm" onclick="openInvoice(\''+field(d,"invoice_id")+'\')">View invoice</button>'+
+              '<button class="btn sm gold" onclick="simulateReplyForInvoice(\''+field(d,"invoice_id")+'\')">💬 Simulate reply</button>'+
+              '<button class="btn sm ghost" onclick="closeDrawer()">Close</button>'+
+            '</div>'+
+          '</div>';
+        openDrawerEl();
+      };
+      window.openInvoice=function(id){
+        var i=invoiceOf(id),c=clientOf(field(i,"client_id"));
+        var d=latestDraft(id,["PENDING_REVIEW","AUTO_SENT","SENT","FAILED","REJECTED"]);
+        var evs=STATE.interactions.filter(function(e){return field(e,"invoice_id")===id});
+        var pending=d&&field(d,"status")==="PENDING_REVIEW";
         var mailHtml=d?('<div class="mail"><div class="subj">'+esc(field(d,"subject"))+'</div>'+(pending?'<textarea id="edit_body">'+esc(field(d,"body"))+'</textarea>':esc(field(d,"body")))+'</div>'):'<div class="muted">No draft yet.</div>';
         var acts=pending?'<div class="row-actions" style="margin-top:.7rem"><button class="btn gold sm" onclick="approveEdited(\''+field(d,"id")+'\')">Approve &amp; send</button><button class="btn sm danger" onclick="reject(\''+field(d,"id")+'\');closeDrawer()">Reject</button><button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\');closeDrawer()">Legal</button></div>':'';
-        var proc=(field(i,"status")==="ACTIVE")?'<button class="btn sm" onclick="doProcess(\''+id+'\')">Process now</button> <button class="btn sm" onclick="doProcess(\''+id+'\')">Regenerate</button>':'';
-        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">'+esc(field(i,"invoice_no"))+'</div><h1 style="font-size:1.3rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' <span style="color:var(--gold)">★ VIP</span>':'')+'</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db"><div class="kv"><span class="k">Amount</span><span class="num">'+money(field(i,"amount"),field(i,"currency"))+'</span><span class="k">Due</span><span>'+String(field(i,"due_date")||"").slice(0,10)+' · '+(Number(field(i,"days_overdue")||0))+'d overdue</span><span class="k">Stage</span><span>'+stageChip(field(i,"stage"))+' '+riskChip(field(i,"risk_level"))+'</span><span class="k">Status</span><span>'+statusChip(field(i,"status"))+'</span><span class="k">Follow-ups</span><span>'+(field(i,"followup_count")||0)+'</span>'+(field(c,"email")?'<span class="k">Email</span><span class="muted">'+esc(field(c,"email"))+'</span>':"")+'</div><div style="display:flex;gap:.4rem;margin-bottom:.8rem">'+proc+'</div><h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:.2rem 0 .5rem">Latest draft</h2>'+mailHtml+acts+'<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:1.2rem 0 .3rem">History</h2><div class="timeline">'+(evs.length?evs.map(function(e){return '<div class="ev"><span class="dot"></span><div class="when">'+dt(field(e,"created_at"))+' · '+esc(field(e,"kind")||"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join(""):'<div class="muted">No history yet.</div>')+'</div></div>';openDrawerEl()};
+        
+        var drawerActions = "";
+        if (field(i,"status") === "ACTIVE") {
+          drawerActions += '<button class="btn sm" onclick="doProcess(\''+id+'\')">Process now</button> '+
+            '<button class="btn sm" onclick="doProcess(\''+id+'\')">Regenerate</button> ';
+        }
+        
+        var statusButtons = "";
+        var currentStatus = field(i,"status");
+        if (currentStatus === "ACTIVE") {
+          statusButtons = '<button class="btn sm" onclick="changeStatus(\''+id+'\',\'PAID\')">✓ Paid</button> '+
+            '<button class="btn sm" onclick="changeStatus(\''+id+'\',\'PAUSED\')">⏸ Pause</button> '+
+            '<button class="btn sm" onclick="changeStatus(\''+id+'\',\'DISPUTED\')">⚡ Dispute</button> '+
+            '<button class="btn sm danger" onclick="changeStatus(\''+id+'\',\'LEGAL\')">⚖ Legal</button>';
+        } else if (currentStatus === "PAUSED" || currentStatus === "DISPUTED") {
+          statusButtons = '<button class="btn sm gold" onclick="changeStatus(\''+id+'\',\'ACTIVE\')">▶ Reactivate</button> '+
+            '<button class="btn sm danger" onclick="changeStatus(\''+id+'\',\'LEGAL\')">⚖ Legal</button>';
+        } else if (currentStatus === "LEGAL") {
+          statusButtons = '<button class="btn sm gold" onclick="changeStatus(\''+id+'\',\'ACTIVE\')">▶ Reactivate</button>';
+        }
+        drawerActions += statusButtons;
+        
+        var sentDrafts=STATE.drafts.filter(function(x){
+          return field(x,"invoice_id")===id && ["SENT","AUTO_SENT"].indexOf(field(x,"status"))>=0;
+        }).sort(function(a,b){return String(field(b,"created_at")).localeCompare(String(field(a,"created_at")))});
+
+        if (sentDrafts.length > 0 && field(i,"status") === "ACTIVE") {
+          drawerActions += ' <button class="btn sm gold" onclick="simulateReplyForInvoice(\''+id+'\')">💬 Simulate reply</button>';
+        }
+        
+        var sentEmailsHtml = "";
+        if (sentDrafts.length) {
+          sentEmailsHtml = '<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:1.2rem 0 .5rem">All sent emails ('+sentDrafts.length+')</h2>'+
+            sentDrafts.map(function(sd, idx){
+              var method = field(sd,"status")==="AUTO_SENT"?"Auto-sent by AI":"Approved by human";
+              return '<details style="margin-bottom:.5rem;border:1px solid var(--line);border-radius:8px;padding:.5rem;background:var(--card)" '+(idx===0?'open':'')+'>'+
+                '<summary style="cursor:pointer;font-weight:600;font-size:.8rem;outline:none">'+
+                  esc(field(sd,"subject"))+' <span style="font-weight:normal;font-size:.74rem;color:var(--muted)">('+dt(field(sd,"created_at"))+' · '+method+')</span>'+
+                '</summary>'+
+                '<div style="margin-top:.5rem;font-size:.82rem;line-height:1.55;border-top:1px solid var(--line);padding-top:.5rem;white-space:pre-wrap">'+
+                  esc(field(sd,"body"))+
+                '</div>'+
+              '</details>';
+            }).join("");
+        }
+
+        var lc={
+          REPLY_RECEIVED: {color: "--blue", label: "Inbound Reply"},
+          STATUS_CHANGE: {color: "--purple", label: "Status Change"},
+          PROMISE_MADE: {color: "--low", label: "Promise Recorded"},
+          NOTE: {color: "--muted", label: "Internal Note"},
+          EMAIL_SENT: {color: "--low", label: "Email Sent"},
+          STATUS_CHANGED: {color: "--purple", label: "Status Update"},
+          AUTO_SENT: {color: "--low", label: "Auto-sent Email"},
+          SENT: {color: "--low", label: "Approved Email"}
+        };
+        var renderTimeline = function(evs){
+          return evs.length ? evs.map(function(e){
+            var k = field(e,"kind")||"";
+            var cfg = lc[k] || {color: "--gold", label: k.replace(/_/g," ")};
+            return '<div class="ev"><span class="dot" style="background:var('+cfg.color+')"></span><div class="when">'+dt(field(e,"created_at"))+' · <b>'+esc(cfg.label)+'</b></div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>';
+          }).join("") : '<div class="muted">No history yet.</div>';
+        };
+
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">'+esc(field(i,"invoice_no"))+'</div><h1 style="font-size:1.3rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' <span style="color:var(--gold)">★ VIP</span>':'')+'</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db"><div class="kv"><span class="k">Amount</span><span class="num">'+money(field(i,"amount"),field(i,"currency"))+'</span><span class="k">Due</span><span>'+String(field(i,"due_date")||"").slice(0,10)+' · '+(Number(field(i,"days_overdue")||0))+'d overdue</span><span class="k">Stage</span><span>'+stageChip(field(i,"stage"))+' '+riskChip(field(i,"risk_level"))+'</span><span class="k">Status</span><span>'+statusChip(field(i,"status"))+'</span><span class="k">Follow-ups</span><span>'+(field(i,"followup_count")||0)+'</span>'+(field(c,"email")?'<span class="k">Email</span><span class="muted">'+esc(field(c,"email"))+'</span>':"")+'</div><div style="display:flex;gap:.4rem;margin-bottom:.8rem;flex-wrap:wrap">'+drawerActions+'</div><h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:.2rem 0 .5rem">Latest draft</h2>'+mailHtml+acts+sentEmailsHtml+'<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:1.2rem 0 .3rem">History</h2><div class="timeline">'+renderTimeline(evs)+'</div></div>';openDrawerEl()};
       window.approveEdited=function(id){var t=$("edit_body");var b=t?t.value:null;action(b?{action:"approve",draft_id:id,edited_body:b}:{action:"approve",draft_id:id},"Approved & sent");closeDrawer()};
       window.openCustomer=function(cid){var c=clientOf(cid);var invs=invoicesForClient(cid);var evs=STATE.interactions.filter(function(e){return field(e,"client_id")===cid}).slice(0,12);var out=invs.filter(function(i){return field(i,"status")==="ACTIVE"}).reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
+        var lc={
+          REPLY_RECEIVED: {color: "--blue", label: "Inbound Reply"},
+          STATUS_CHANGE: {color: "--purple", label: "Status Change"},
+          PROMISE_MADE: {color: "--low", label: "Promise Recorded"},
+          NOTE: {color: "--muted", label: "Internal Note"},
+          EMAIL_SENT: {color: "--low", label: "Email Sent"},
+          STATUS_CHANGED: {color: "--purple", label: "Status Update"},
+          AUTO_SENT: {color: "--low", label: "Auto-sent Email"},
+          SENT: {color: "--low", label: "Approved Email"}
+        };
+        var renderTimeline = function(evs){
+          return evs.length ? evs.map(function(e){
+            var k = field(e,"kind")||"";
+            var cfg = lc[k] || {color: "--gold", label: k.replace(/_/g," ")};
+            return '<div class="ev"><span class="dot" style="background:var('+cfg.color+')"></span><div class="when">'+dt(field(e,"created_at"))+' · <b>'+esc(cfg.label)+'</b></div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>';
+          }).join("") : '<div class="muted">No history yet.</div>';
+        };
         $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Customer</div><h1 style="font-size:1.3rem">'+esc(field(c,"name"))+(field(c,"vip")?' <span style="color:var(--gold)">★</span>':'')+'</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db"><div class="kv"><span class="k">Email</span><span class="muted">'+esc(field(c,"email"))+'</span><span class="k">Outstanding</span><span class="num">'+money(out)+'</span><span class="k">Behavior</span><span>'+esc(field(c,"payment_behavior")||"AVERAGE")+'</span>'+(field(c,"notes")?'<span class="k">Notes</span><span>'+esc(field(c,"notes"))+'</span>':"")+'</div>'+
           '<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:.2rem 0 .5rem">Invoices ('+invs.length+')</h2><table><tbody>'+invs.map(function(i){return '<tr class="clickable" onclick="openInvoice(\''+field(i,"id")+'\')"><td><b>'+esc(field(i,"invoice_no"))+'</b></td><td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td><td>'+stageChip(field(i,"stage"))+'</td><td>'+statusChip(field(i,"status"))+'</td></tr>'}).join("")+'</tbody></table>'+
-          '<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:1.1rem 0 .3rem">Relationship history</h2><div class="timeline">'+(evs.length?evs.map(function(e){return '<div class="ev"><span class="dot"></span><div class="when">'+dt(field(e,"created_at"))+' · '+esc(field(e,"kind")||"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join(""):'<div class="muted">No history yet.</div>')+'</div></div>';openDrawerEl()};
+          '<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:1.1rem 0 .3rem">Relationship history</h2><div class="timeline">'+renderTimeline(evs)+'</div></div>';openDrawerEl()};
+
+      window.seedWithCount=async function(count){
+        setBusy(true,"Seeding "+count+" customers & invoices…");
+        try{
+          await invokeFn("seed_demo",{enqueue:true, count:count});
+          await loadData();
+          render(true);
+          toast("Demo data seeded with "+count+" invoices");
+        }catch(e){
+          toast("⚠ "+e.message);
+        }
+        setBusy(false);
+      };
+
+      window.simulateReplyForInvoice=function(invId){
+        closeDrawer();
+        var i=invoiceOf(invId);
+        var c=clientOf(field(i,"client_id"));
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Simulate Reply</div><h1 style="font-size:1.3rem">Simulate reply from '+esc(field(c,"name")||"customer")+'</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db"><p class="muted" style="font-size:.82rem">Enter reply text representing what this customer wrote back. The AI will classify it (promise / dispute / paid / question) and take the correct side effects.</p><label class="fld"><span class="lbl">Invoice</span><input type="text" id="lr_inv_display" value="'+esc(field(i,"invoice_no"))+'" disabled style="opacity:0.7"><input type="hidden" id="lr_inv" value="'+invId+'"></label><label class="fld"><span class="lbl">Reply text</span><textarea id="lr_body" placeholder="e.g. Apologies for the delay — we will pay by Friday."></textarea></label><div style="margin-top:1rem;display:flex;gap:.5rem"><button class="btn gold" onclick="submitReply()">Process reply</button><button class="btn sm ghost" onclick="openInvoice(\''+invId+'\')">Back to invoice</button></div></div>';
+        openDrawerEl();
+      };
     </script>
   </body>
 </html>

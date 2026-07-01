@@ -9,6 +9,7 @@ approvals, and legal escalations. Idempotent by email/invoice_no.
 """
 
 from datetime import date, timedelta
+from typing import Optional
 
 from pydantic import BaseModel
 from lemma_sdk import FunctionContext, Pod
@@ -16,6 +17,7 @@ from lemma_sdk import FunctionContext, Pod
 
 class SeedInput(BaseModel):
     enqueue: bool = True
+    count: Optional[int] = None
 
 
 class SeedResult(BaseModel):
@@ -53,11 +55,58 @@ INVOICES = [
 
 async def seed_demo(ctx: FunctionContext, data: SeedInput) -> SeedResult:
     pod = Pod.from_env()
+    count = data.count
+
+    clients_data = {}
+    invoices_data = []
+
+    if count is not None and count > 0:
+        FIRST_NAMES = ["Rajesh", "Priya", "Vikram", "Suresh", "Megha", "Tara", "Amit", "Neha", "Rohan", "Anjali", "Sanjay", "Kiran", "Aditya", "Pooja", "Arjun", "Deepa"]
+        LAST_NAMES = ["Kapoor", "Sharma", "Verma", "Patel", "Reddy", "Nair", "Mehta", "Joshi", "Das", "Rao", "Gupta", "Sen", "Choudhury", "Bose", "Pillai", "Trivedi"]
+        COMPANIES = ["Acme", "Apex", "Nova", "Zenith", "Quantum", "Vortex", "Stellar", "Core", "Nexus", "Summit", "Prime", "Matrix", "Krypton", "Aether", "Horizon"]
+        INDUSTRIES = ["Tech", "Soft", "Labs", "Consult", "Logix", "AI", "Health", "Solutions", "Ventures", "Systems", "Infotech", "Digital"]
+        
+        num_clients = max(3, count // 2)
+        import random
+        for i in range(num_clients):
+            rng = random.Random(1000 + i)
+            fn = rng.choice(FIRST_NAMES)
+            ln = rng.choice(LAST_NAMES)
+            name = f"{fn} {ln}"
+            comp = rng.choice(COMPANIES)
+            ind = rng.choice(INDUSTRIES)
+            company = f"{comp} {ind}"
+            email = f"{fn.lower()}.{ln.lower()}_{i}@example.com"
+            vip = rng.random() < 0.15
+            beh = rng.choice(["GOOD", "AVERAGE", "RISKY"])
+            notes = f"Generated demo client. Behavior: {beh}."
+            if vip:
+                notes += " VIP Client."
+            clients_data[f"gen_{i}"] = (name, email, company, vip, beh, notes)
+            
+        for idx in range(count):
+            rng = random.Random(2000 + idx)
+            client_idx = rng.randint(0, num_clients - 1)
+            ck = f"gen_{client_idx}"
+            no = f"INV-GEN-{idx+1:03d}"
+            amount = rng.randint(5, 50) * 10000
+            days = rng.randint(1, 45)
+            client_beh = clients_data[ck][4]
+            if client_beh == "GOOD":
+                status = rng.choice(["ACTIVE", "ACTIVE", "PAID"])
+            elif client_beh == "AVERAGE":
+                status = rng.choice(["ACTIVE", "ACTIVE", "DISPUTED", "PAID"])
+            else:
+                status = rng.choice(["ACTIVE", "ACTIVE", "ACTIVE", "DISPUTED", "LEGAL"])
+            invoices_data.append((no, ck, amount, days, status))
+    else:
+        clients_data = CLIENTS
+        invoices_data = INVOICES
 
     existing = pod.records.list("clients", limit=2000).to_dict()["items"]
     by_email = {(c.get("email_norm") or c.get("email", "").lower()): c["id"] for c in existing}
     cid = {}
-    for key, (name, email, company, vip, beh, notes) in CLIENTS.items():
+    for key, (name, email, company, vip, beh, notes) in clients_data.items():
         en = email.lower()
         if en in by_email:
             cid[key] = by_email[en]
@@ -74,7 +123,7 @@ async def seed_demo(ctx: FunctionContext, data: SeedInput) -> SeedResult:
     today = date.today()
     n_inv = 0
     inv_ids = {}
-    for no, ck, amount, days, status in INVOICES:
+    for no, ck, amount, days, status in invoices_data:
         fields = {
             "invoice_no": no, "client_id": cid[ck], "amount": amount, "currency": "INR",
             "due_date": (today - timedelta(days=days)).isoformat(), "status": status,
@@ -94,7 +143,7 @@ async def seed_demo(ctx: FunctionContext, data: SeedInput) -> SeedResult:
         queued = {str(x["invoice_id"]) for x in q if x.get("status") in ("QUEUED", "PROCESSING")}
         dr = pod.records.list("drafts", limit=2000).to_dict()["items"]
         drafted = {str(d["invoice_id"]) for d in dr if d.get("status") in ("PENDING_REVIEW", "APPROVED", "AUTO_SENT", "SENT")}
-        for no, ck, amount, days, status in INVOICES:
+        for no, ck, amount, days, status in invoices_data:
             iid = inv_ids[no]
             if status == "ACTIVE" and days > 0 and iid not in queued and iid not in drafted:
                 pod.table("followup_queue").create({"invoice_id": iid, "reason": "manual", "status": "QUEUED"})

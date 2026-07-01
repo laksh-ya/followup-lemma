@@ -203,6 +203,22 @@ async def app_action(ctx: FunctionContext, data: AppActionInput) -> AppActionRes
              level="SUCCESS" if delivered else "INFO")
         return AppActionResult(ok=True, action=a, detail=("sent to team" if delivered else "digest recorded (" + info + ")"))
 
+    if a == "change_status":
+        if not data.invoice_id:
+            return AppActionResult(ok=False, action=a, detail="invoice_id required")
+        new_status = (data.config or {}).get("status")
+        if not new_status:
+            return AppActionResult(ok=False, action=a, detail="status required in config")
+        inv = pod.table("invoices").get(data.invoice_id)
+        if not inv:
+            return AppActionResult(ok=False, action=a, detail="invoice not found")
+        pod.table("invoices").update(data.invoice_id, {"status": new_status})
+        _log(pod, invoice_id=data.invoice_id, client_id=inv.get("client_id"),
+             kind="STATUS_CHANGED", channel="SYSTEM", direction="INTERNAL",
+             summary=f"Operator changed status of {inv.get('invoice_no', '')} to {new_status}",
+             actor_user=ctx.user_id, actor_label="operator", level="INFO")
+        return AppActionResult(ok=True, action=a, detail=f"status changed to {new_status}")
+
     if a == "save_config":
         rows = pod.records.list("pod_config", limit=1).to_dict()["items"]
         fields = data.config or {}

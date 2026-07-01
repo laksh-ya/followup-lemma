@@ -34,15 +34,42 @@ REPLIES = [
 async def seed_replies(ctx: FunctionContext, data: SeedRepliesInput) -> SeedRepliesResult:
     pod = Pod.from_env()
     invs = pod.records.list("invoices", limit=2000).to_dict()["items"]
-    by_no = {str(i.get("invoice_no")): i for i in invs}
+    
+    import random
+    active_invs = [i for i in invs if i.get("status") == "ACTIVE"]
+    if not active_invs:
+        active_invs = invs
+    
+    if not active_invs:
+        return SeedRepliesResult(replies=0)
+
+    # Let's shuffle and take up to 8 invoices
+    rng = random.Random(42)
+    selected_invs = list(active_invs)
+    rng.shuffle(selected_invs)
+    selected_invs = selected_invs[:8]
+
+    REPLY_TEMPLATES = [
+        ("PROMISE_TO_PAY", "Apologies for the delay — we'll clear this by Friday.", 5),
+        ("PAID_CLAIM", "We've already paid this last week, please check UTR ref: 99812.", None),
+        ("DISPUTE", "We dispute two line items on this invoice; details attached.", None),
+        ("QUESTION", "Can you resend the payment link? The old one expired.", None),
+        ("PROMISE_TO_PAY", "Our accounting team is processing this. Expected payment within 3 days.", 3),
+        ("PAID_CLAIM", "Payment has been processed, please check your bank statement.", None),
+        ("DISPUTE", "We never received these items. Please verify delivery.", None),
+        ("QUESTION", "Who is the billing manager? I need to ask a question.", None),
+    ]
 
     n = 0
-    for no, category, body, promise_days in REPLIES:
-        inv = by_no.get(no)
-        if not inv:
-            continue
+    for idx, inv in enumerate(selected_invs):
+        template = REPLY_TEMPLATES[idx % len(REPLY_TEMPLATES)]
+        category, body, promise_days = template
+        no = inv.get("invoice_no", "")
         client = pod.table("clients").get(str(inv["client_id"])) if inv.get("client_id") else {}
         frm = (client or {}).get("email", "")
+        
+        # Check if we already have replies for this invoice to prevent duplication
+        # (For idempotency we can check interactions of type REPLY_RECEIVED)
         pod.table("interactions").create({
             "invoice_id": inv["id"], "client_id": inv.get("client_id"),
             "kind": "REPLY_RECEIVED", "channel": "EMAIL", "direction": "INBOUND",
@@ -51,6 +78,7 @@ async def seed_replies(ctx: FunctionContext, data: SeedRepliesInput) -> SeedRepl
             "actor_label": "customer", "level": "INFO",
         })
         n += 1
+        
         if category == "PROMISE_TO_PAY":
             pod.table("promises").create({
                 "invoice_id": inv["id"], "client_id": inv.get("client_id"),
@@ -72,7 +100,7 @@ async def seed_replies(ctx: FunctionContext, data: SeedRepliesInput) -> SeedRepl
                 "actor_label": "reply-triager", "level": "WARN",
             })
         elif category == "PAID_CLAIM":
-            pod.table("invoices").update(inv["id"], {"status": "PAUSED", "notes": "Customer claims paid — verify (UTR 99812)"})
+            pod.table("invoices").update(inv["id"], {"status": "PAUSED", "notes": f"Customer claims paid — verify (Ref: {no})"})
             pod.table("interactions").create({
                 "invoice_id": inv["id"], "client_id": inv.get("client_id"),
                 "kind": "STATUS_CHANGE", "channel": "SYSTEM", "direction": "INTERNAL",
