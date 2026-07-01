@@ -1,0 +1,16 @@
+{
+  "name": "ingest_invoices",
+  "description": "Upsert invoices and dedupe customers by normalized email (clients.email_norm). The customer-identity foundation for uploads, manual entry, and replies.",
+  "type": "API",
+  "code": { "$file": "code.py" },
+  "permissions": {
+    "grants": [
+      { "resource_type": "datastore_table", "resource_name": "clients",
+        "permission_ids": ["datastore.table.read", "datastore.record.read", "datastore.record.write"] },
+      { "resource_type": "datastore_table", "resource_name": "invoices",
+        "permission_ids": ["datastore.table.read", "datastore.record.read", "datastore.record.write"] },
+      { "resource_type": "datastore_table", "resource_name": "interactions",
+        "permission_ids": ["datastore.table.read", "datastore.record.write"] }
+    ]
+  }
+}

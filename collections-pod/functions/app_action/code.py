@@ -4,7 +4,12 @@
 
 """Single write-entrypoint for the operator app. The browser invokes this for every
 mutating action (scan, process an invoice, approve/edit/reject a draft, flag legal,
-save settings), so all business rules live server-side and the UI stays thin.
+send a manual message, alert the team, save settings), so all business rules live
+server-side and the UI stays thin.
+
+Integrations are Lemma-native only: email goes out through the Gmail connector
+(delegated), team/legal alerts through the Slack connector. IN_APP / no-channel modes
+record the action without sending, so the pod demos itself with zero setup.
 """
 
 from datetime import date, datetime, timezone
@@ -15,7 +20,7 @@ from lemma_sdk import FunctionContext, Pod
 
 
 class AppActionInput(BaseModel):
-    action: str                       # scan | process | approve | reject | flag | save_config
+    action: str   # scan | process | regenerate | approve | reject | flag | send_custom | notify | digest | save_config
     invoice_id: Optional[str] = None
     draft_id: Optional[str] = None
     edited_subject: Optional[str] = None
@@ -32,6 +37,35 @@ class AppActionResult(BaseModel):
 
 def _log(pod, **kw):
     pod.table("interactions").create(kw)
+
+
+def _send_email(pod, cfg, to, subject, body):
+    """(provider, delivered, message_id, error). Lemma-native: IN_APP records only,
+    GMAIL delivers via the Gmail connector on the invoking user's account."""
+    mode = (cfg.get("mail_mode") or "IN_APP").upper()
+    if not cfg.get("email_enabled") or mode != "GMAIL" or not to:
+        return ("in_app", True, None, None)
+    try:
+        res = pod.connectors.execute("workspace-gmail", "gmail_send_email",
+            {"recipient_email": to, "subject": subject, "body": body}).to_dict().get("result", {})
+        return ("gmail", True, str(res.get("id") or "") or None, None)
+    except Exception as exc:
+        return ("gmail", False, None, str(exc)[:400])
+
+
+def _notify(pod, cfg, audience, message):
+    """(delivered, info). Lemma-native Slack connector; records when no channel set."""
+    channel = (cfg.get("notify_channel") or "NONE").upper()
+    if channel != "SLACK":
+        return (False, "no channel configured (record-only)")
+    target = (cfg.get("slack_legal_channel") if audience == "legal" else cfg.get("slack_channel")) or cfg.get("slack_channel") or ""
+    if not target:
+        return (False, "Slack channel id not set in Settings")
+    try:
+        pod.connectors.execute("workspace-slack", "chat_post_message", {"channel": target, "text": message})
+        return (True, "sent via Slack")
+    except Exception as exc:
+        return (False, "connect the Slack account first: " + str(exc)[:160])
 
 
 def _latest_pending_draft(pod, invoice_id):
@@ -51,13 +85,16 @@ async def app_action(ctx: FunctionContext, data: AppActionInput) -> AppActionRes
             {"field": "status", "op": "eq", "value": "ACTIVE"}]).to_dict()["items"]
         q = pod.records.list("followup_queue", limit=1000).to_dict()["items"]
         queued = {str(r["invoice_id"]) for r in q if r.get("status") in ("QUEUED", "PROCESSING")}
+        dr = pod.records.list("drafts", limit=2000).to_dict()["items"]
+        drafted = {str(d["invoice_id"]) for d in dr if d.get("status") in ("PENDING_REVIEW", "APPROVED", "AUTO_SENT", "SENT")}
         n = 0
         for inv in actives:
             try:
                 delta = (date.today() - date.fromisoformat(str(inv.get("due_date"))[:10])).days
             except Exception:
                 continue
-            if delta > 0 and str(inv["id"]) not in queued:
+            iid = str(inv["id"])
+            if delta > 0 and iid not in queued and iid not in drafted:
                 pod.table("followup_queue").create({"invoice_id": inv["id"], "reason": "manual", "status": "QUEUED"})
                 n += 1
         _log(pod, kind="NOTE", channel="SYSTEM", direction="INTERNAL",
@@ -83,16 +120,8 @@ async def app_action(ctx: FunctionContext, data: AppActionInput) -> AppActionRes
             body = data.edited_body or draft.get("body")
             edited = bool(data.edited_subject or data.edited_body)
             cfg = (pod.records.list("pod_config", limit=1).to_dict()["items"] or [{}])[0]
-            email_enabled = bool(cfg.get("email_enabled", False))
-            provider, delivered, err, mid = "in_app", True, None, None
             to_email = (client or {}).get("email", "")
-            if email_enabled and to_email:
-                try:
-                    res = pod.connectors.execute("workspace-gmail", "gmail_send_email",
-                        {"recipient_email": to_email, "subject": subject, "body": body}).to_dict().get("result", {})
-                    provider, mid = "gmail", str(res.get("id") or "") or None
-                except Exception as exc:
-                    provider, delivered, err = "gmail", False, str(exc)[:800]
+            provider, delivered, mid, err = _send_email(pod, cfg, to_email, subject, body)
             pod.table("drafts").update(draft["id"], {
                 "status": "SENT" if delivered else "FAILED", "subject": subject[:300], "body": body[:6000],
                 "edited_by_human": edited, "reviewer_note": data.note, "provider": provider,
@@ -126,11 +155,61 @@ async def app_action(ctx: FunctionContext, data: AppActionInput) -> AppActionRes
              actor_user=ctx.user_id, actor_label="reviewer", level="ERROR")
         return AppActionResult(ok=True, action=a, detail="flagged legal")
 
+    if a == "send_custom":
+        # manual email to a customer (by invoice_id or by client_id in config)
+        cfg = (pod.records.list("pod_config", limit=1).to_dict()["items"] or [{}])[0]
+        fields = data.config or {}
+        inv = pod.table("invoices").get(data.invoice_id) if data.invoice_id else None
+        client = None
+        if inv and inv.get("client_id"):
+            client = pod.table("clients").get(str(inv["client_id"]))
+        elif fields.get("client_id"):
+            client = pod.table("clients").get(str(fields["client_id"]))
+        to = (client or {}).get("email", "") if client else fields.get("to", "")
+        subject = fields.get("subject") or data.edited_subject or "A note about your account"
+        body = data.edited_body or fields.get("body") or ""
+        provider, delivered, mid, err = _send_email(pod, cfg, to, subject, body)
+        _log(pod, invoice_id=data.invoice_id, client_id=(client or {}).get("id") if client else None,
+             kind="EMAIL_SENT" if delivered else "EMAIL_FAILED", channel="EMAIL", direction="OUTBOUND",
+             summary=(f"Manual message to {(client or {}).get('name', to)} via {provider}") if delivered else f"Manual send FAILED via {provider}: {err}",
+             detail={"to": to, "subject": subject, "manual": True}, actor_user=ctx.user_id, actor_label="operator",
+             level="SUCCESS" if delivered else "ERROR")
+        return AppActionResult(ok=delivered, action=a, detail=f"{'sent' if delivered else 'recorded'} via {provider}")
+
+    if a == "notify":
+        cfg = (pod.records.list("pod_config", limit=1).to_dict()["items"] or [{}])[0]
+        audience = data.note or "team"
+        msg = (data.config or {}).get("message") or "Update from Collections Agent"
+        delivered, info = _notify(pod, cfg, audience, msg)
+        _log(pod, kind="NOTIFICATION_SENT", channel="SLACK" if delivered else "SYSTEM", direction="OUTBOUND",
+             summary=f"[{audience}] {msg[:180]}", detail={"delivered": delivered, "info": info},
+             actor_user=ctx.user_id, actor_label="app", level="SUCCESS" if delivered else "INFO")
+        return AppActionResult(ok=True, action=a, detail=info)
+
+    if a == "digest":
+        invs = pod.records.list("invoices", limit=2000).to_dict()["items"]
+        active = [i for i in invs if i.get("status") == "ACTIVE"]
+        outstanding = sum(float(i.get("amount") or 0) for i in active)
+        overdue = sum(1 for i in active if int(i.get("days_overdue") or 0) > 0)
+        legal = sum(1 for i in invs if i.get("status") == "LEGAL")
+        pend = len(pod.records.list("drafts", limit=2000, filter=[{"field": "status", "op": "eq", "value": "PENDING_REVIEW"}]).to_dict()["items"])
+        msg = (f"Collections digest\nOutstanding: {outstanding:,.0f}\nOverdue accounts: {overdue}\n"
+               f"Awaiting approval: {pend}\nIn legal: {legal}")
+        cfg = (pod.records.list("pod_config", limit=1).to_dict()["items"] or [{}])[0]
+        delivered, info = _notify(pod, cfg, "team", msg)
+        _log(pod, kind="NOTIFICATION_SENT", channel="SLACK" if delivered else "SYSTEM", direction="OUTBOUND",
+             summary="Daily digest sent to team" if delivered else "Daily digest (recorded)",
+             detail={"message": msg, "delivered": delivered}, actor_user=ctx.user_id, actor_label="app",
+             level="SUCCESS" if delivered else "INFO")
+        return AppActionResult(ok=True, action=a, detail=("sent to team" if delivered else "digest recorded (" + info + ")"))
+
     if a == "save_config":
         rows = pod.records.list("pod_config", limit=1).to_dict()["items"]
         fields = data.config or {}
         allowed = {"auto_dispatch", "human_in_loop", "review_stage4", "review_high_risk",
-                   "email_enabled", "notify_channel", "company_name", "sender_identity"}
+                   "email_enabled", "mail_mode", "email_from",
+                   "notify_channel", "slack_channel", "slack_legal_channel",
+                   "company_name", "sender_identity"}
         patch = {k: v for k, v in fields.items() if k in allowed}
         if rows:
             pod.table("pod_config").update(rows[0]["id"], patch)

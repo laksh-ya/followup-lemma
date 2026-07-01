@@ -1,0 +1,7 @@
+{
+  "name": "telegram_get_chat",
+  "description": "Validate a Telegram bot token and list recent chat ids for the setup wizard.",
+  "type": "API",
+  "code": { "$file": "code.py" },
+  "permissions": { "grants": [] }
+}

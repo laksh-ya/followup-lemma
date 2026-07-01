@@ -7,16 +7,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-      :root{color-scheme:light;--paper:#faf8f3;--card:#fffdf8;--ink:#1c1a17;--muted:#6f6658;--line:#ece6da;--gold:#c9a227;--serif:"Fraunces",ui-serif,Georgia,serif;--sans:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;--glow:#fdf6e6;--chip:#f3efe6;
-        --low:#5c7a53;--med:#b8862b;--high:#b4452f;--blue:#3b6ea5;--purple:#7a5c7e;}
+      :root{color-scheme:light;--paper:#faf8f3;--card:#fffdf8;--ink:#1c1a17;--muted:#6f6658;--line:#ece6da;--gold:#c9a227;--serif:"Fraunces",ui-serif,Georgia,serif;--sans:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;--glow:#fdf6e6;--chip:#f3efe6;--low:#5c7a53;--med:#b8862b;--high:#b4452f;--blue:#3b6ea5;--purple:#7a5c7e;}
       [data-theme="dark"]{color-scheme:dark;--paper:#15130d;--card:#1e1b14;--ink:#f1ead9;--muted:#a99f8b;--line:#2e2a20;--gold:#e0bd4a;--glow:#241e10;--chip:#2c281f;}
       *{box-sizing:border-box}
       body{margin:0;min-height:100dvh;background:radial-gradient(120% 90% at 100% 0%,var(--glow) 0%,rgba(0,0,0,0) 55%),var(--paper);color:var(--ink);font-family:var(--sans);font-size:14.5px;line-height:1.5}
-      a{color:inherit}
-      .wrap{max-width:1180px;margin:0 auto;padding:clamp(1rem,3vw,2rem)}
+      .wrap{max-width:1200px;margin:0 auto;padding:clamp(1rem,3vw,2rem)}
       .top{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-      .brand{display:flex;align-items:baseline;gap:.6rem}
       .eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600}
       h1{font-family:var(--serif);font-weight:500;font-size:clamp(1.5rem,3.5vw,2.1rem);letter-spacing:-.015em;margin:0;line-height:1.05}
       .pill{display:inline-flex;align-items:center;gap:.45rem;font-size:.78rem;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.35rem .75rem}
@@ -24,62 +22,66 @@
       @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(92,122,83,.45)}70%{box-shadow:0 0 0 7px rgba(92,122,83,0)}100%{box-shadow:0 0 0 0 rgba(92,122,83,0)}}
       .pill button{font:inherit;cursor:pointer;border:none;background:none;color:var(--ink);padding:0;font-size:.95rem}
       .btn{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:.5rem .9rem;font-weight:600;font-size:.83rem;transition:.15s}
-      .btn:hover{border-color:var(--gold)}
-      .btn.gold{background:var(--gold);border-color:var(--gold);color:#1c1a17}
-      .btn.sm{padding:.32rem .6rem;font-size:.76rem;border-radius:8px}
-      .btn.ghost{background:none}
-      .btn.danger:hover{border-color:var(--high);color:var(--high)}
-      .btn:disabled{opacity:.5;cursor:default}
-      .tabs{display:flex;gap:.3rem;flex-wrap:wrap;margin:1.4rem 0 1.1rem;border-bottom:1px solid var(--line);padding-bottom:.2rem}
+      .btn:hover{border-color:var(--gold)} .btn.gold{background:var(--gold);border-color:var(--gold);color:#1c1a17}
+      .btn.sm{padding:.32rem .6rem;font-size:.76rem;border-radius:8px} .btn.ghost{background:none}
+      .btn.danger:hover{border-color:var(--high);color:var(--high)} .btn:disabled{opacity:.5;cursor:default}
+      .menu{position:relative;display:inline-block}
+      .menu .items{position:absolute;right:0;top:110%;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.12);padding:.4rem;min-width:200px;z-index:20;display:none}
+      .menu.open .items{display:block}
+      .menu .items button{display:block;width:100%;text-align:left;font:inherit;font-size:.84rem;background:none;border:none;color:var(--ink);padding:.5rem .6rem;border-radius:8px;cursor:pointer}
+      .menu .items button:hover{background:var(--glow)} .menu .items hr{border:none;border-top:1px solid var(--line);margin:.3rem 0}
+      .tabs{display:flex;gap:.3rem;flex-wrap:wrap;margin:1.2rem 0 1rem;border-bottom:1px solid var(--line);padding-bottom:.2rem}
       .tabs button{font:inherit;font-size:.86rem;font-weight:600;cursor:pointer;border:none;background:none;color:var(--muted);padding:.5rem .8rem;border-radius:9px 9px 0 0;position:relative}
-      .tabs button.on{color:var(--ink)}
-      .tabs button.on::after{content:"";position:absolute;left:.6rem;right:.6rem;bottom:-.25rem;height:2px;background:var(--gold);border-radius:2px}
+      .tabs button.on{color:var(--ink)} .tabs button.on::after{content:"";position:absolute;left:.6rem;right:.6rem;bottom:-.25rem;height:2px;background:var(--gold);border-radius:2px}
       .tabs .badge{display:inline-block;min-width:18px;text-align:center;font-size:.7rem;background:var(--chip);border-radius:999px;padding:.05rem .35rem;margin-left:.35rem;color:var(--ink)}
       .tabs .badge.hot{background:var(--high);color:#fff}
-      .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.7rem;margin-bottom:1.1rem}
+      .usecase{display:flex;gap:.6rem;align-items:flex-start;background:color-mix(in srgb,var(--gold) 8%,transparent);border:1px solid color-mix(in srgb,var(--gold) 28%,transparent);border-radius:12px;padding:.6rem .85rem;margin-bottom:1rem;font-size:.82rem}
+      .usecase .who{font-weight:700;color:var(--gold-ink,var(--ink))}
+      .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.7rem;margin-bottom:1.1rem}
       .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:.85rem 1rem}
-      .stat .n{font-family:var(--serif);font-size:1.7rem;line-height:1}
-      .stat .l{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:.4rem}
-      .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.1rem 1.2rem;margin-bottom:1rem;box-shadow:0 12px 32px rgba(70,55,25,.04)}
+      .stat .n{font-family:var(--serif);font-size:1.6rem;line-height:1} .stat .l{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:.4rem}
+      .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.1rem 1.2rem;margin-bottom:1rem}
       .panel h2{font-family:var(--serif);font-weight:500;font-size:1.05rem;margin:0 0 .8rem}
-      table{width:100%;border-collapse:collapse;font-size:.84rem}
-      th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:.4rem .5rem;border-bottom:1px solid var(--line)}
+      table{width:100%;border-collapse:collapse;font-size:.84rem} th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:.4rem .5rem;border-bottom:1px solid var(--line)}
       td{padding:.55rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
-      tr.clickable{cursor:pointer}
-      tr.clickable:hover td{background:var(--glow)}
+      tr.clickable{cursor:pointer} tr.clickable:hover td{background:var(--glow)}
       .num{font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:.82rem}
-      .chip{display:inline-block;font-size:.7rem;font-weight:700;padding:.12rem .5rem;border-radius:999px;letter-spacing:.02em;white-space:nowrap}
-      .muted{color:var(--muted)}
-      .row-actions{display:flex;gap:.35rem;flex-wrap:wrap}
-      .empty{text-align:center;color:var(--muted);padding:2.5rem 1rem}
-      .empty .big{font-size:1.6rem;font-family:var(--serif);color:var(--ink);margin-bottom:.3rem}
-      /* drawer */
-      .scrim{position:fixed;inset:0;background:rgba(20,16,8,.4);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.2s;z-index:40}
-      .scrim.on{opacity:1;pointer-events:auto}
-      .drawer{position:fixed;top:0;right:0;height:100dvh;width:min(560px,94vw);background:var(--paper);border-left:1px solid var(--line);transform:translateX(100%);transition:.25s;z-index:50;overflow-y:auto;box-shadow:-20px 0 60px rgba(0,0,0,.15)}
-      .drawer.on{transform:none}
-      .drawer .dh{position:sticky;top:0;background:var(--paper);border-bottom:1px solid var(--line);padding:1rem 1.2rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
-      .drawer .db{padding:1.1rem 1.2rem}
+      .chip{display:inline-block;font-size:.7rem;font-weight:700;padding:.12rem .5rem;border-radius:999px;white-space:nowrap}
+      .muted{color:var(--muted)} .row-actions{display:flex;gap:.35rem;flex-wrap:wrap}
+      .empty{text-align:center;color:var(--muted);padding:2rem 1rem} .empty .big{font-size:1.4rem;font-family:var(--serif);color:var(--ink);margin-bottom:.3rem}
+      .scrim{position:fixed;inset:0;background:rgba(20,16,8,.4);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.2s;z-index:40} .scrim.on{opacity:1;pointer-events:auto}
+      .drawer{position:fixed;top:0;right:0;height:100dvh;width:min(580px,95vw);background:var(--paper);border-left:1px solid var(--line);transform:translateX(100%);transition:.25s;z-index:50;overflow-y:auto} .drawer.on{transform:none}
+      .drawer .dh{position:sticky;top:0;background:var(--paper);border-bottom:1px solid var(--line);padding:1rem 1.2rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem} .drawer .db{padding:1.1rem 1.2rem}
       .x{font:inherit;cursor:pointer;border:none;background:none;font-size:1.3rem;color:var(--muted);line-height:1}
-      .kv{display:grid;grid-template-columns:auto 1fr;gap:.3rem 1rem;font-size:.84rem;margin:.4rem 0 1rem}
-      .kv .k{color:var(--muted)}
-      .mail{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;white-space:pre-wrap;font-size:.84rem;line-height:1.6}
-      .mail .subj{font-weight:700;margin-bottom:.5rem;font-family:var(--serif);font-size:1rem}
-      .timeline{position:relative;margin:.5rem 0 0;padding-left:1.1rem}
-      .timeline .ev{position:relative;padding:.4rem 0 .6rem .2rem;border-left:2px solid var(--line);margin-left:.2rem;padding-left:.9rem}
-      .timeline .ev .dot{position:absolute;left:-7px;top:.55rem;width:10px;height:10px;border-radius:50%;background:var(--gold);border:2px solid var(--paper)}
-      .timeline .ev .when{font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums}
-      .timeline .ev .what{font-size:.84rem}
+      .kv{display:grid;grid-template-columns:auto 1fr;gap:.3rem 1rem;font-size:.84rem;margin:.4rem 0 1rem} .kv .k{color:var(--muted)}
+      .mail{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;white-space:pre-wrap;font-size:.84rem;line-height:1.6} .mail .subj{font-weight:700;margin-bottom:.5rem;font-family:var(--serif);font-size:1rem}
+      .timeline{margin:.5rem 0 0;padding-left:.2rem} .timeline .ev{position:relative;padding:.4rem 0 .6rem .9rem;border-left:2px solid var(--line);margin-left:.2rem} .timeline .ev .dot{position:absolute;left:-7px;top:.55rem;width:10px;height:10px;border-radius:50%;background:var(--gold);border:2px solid var(--paper)} .timeline .ev .when{font-size:.7rem;color:var(--muted)} .timeline .ev .what{font-size:.84rem}
       textarea,input,select{font:inherit;font-size:.84rem;width:100%;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:.5rem .6rem}
       textarea{min-height:120px;resize:vertical;font-family:var(--mono);font-size:.8rem;line-height:1.5}
-      label.fld{display:block;margin:.6rem 0}
-      label.fld .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.25rem;display:block}
-      .toggle{display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--line)}
+      label.fld{display:block;margin:.6rem 0} label.fld .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.25rem;display:block}
+      .toggle{display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--line);font-size:.86rem}
+      .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem} @media(max-width:680px){.grid2{grid-template-columns:1fr}}
+      .guide{background:var(--chip);border-radius:10px;padding:.7rem .85rem;font-size:.8rem;line-height:1.55;margin-top:.5rem} .guide code{font-family:var(--mono);background:var(--card);padding:.05rem .35rem;border-radius:5px} .guide ol{margin:.3rem 0 0 1rem;padding:0}
       .center{min-height:80dvh;display:grid;place-items:center;text-align:center}
-      .toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%) translateY(2rem);background:var(--ink);color:var(--paper);padding:.6rem 1.1rem;border-radius:10px;font-size:.84rem;opacity:0;transition:.25s;z-index:60}
-      .toast.on{opacity:1;transform:translateX(-50%)}
-      .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
-      @keyframes sp{to{transform:rotate(360deg)}}
+      .toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%) translateY(2rem);background:var(--ink);color:var(--paper);padding:.6rem 1.1rem;border-radius:10px;font-size:.84rem;opacity:0;transition:.25s;z-index:80} .toast.on{opacity:1;transform:translateX(-50%)}
+      .busy{position:fixed;inset:0;background:rgba(20,16,8,.35);backdrop-filter:blur(3px);display:none;place-items:center;z-index:90} .busy.on{display:grid}
+      .busy .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.4rem 1.8rem;text-align:center;min-width:220px}
+      .spin{display:inline-block;width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite} @keyframes sp{to{transform:rotate(360deg)}}
+      .working{display:flex;align-items:center;gap:.5rem;background:color-mix(in srgb,var(--blue) 10%,transparent);border:1px solid color-mix(in srgb,var(--blue) 30%,transparent);border-radius:10px;padding:.5rem .8rem;margin-bottom:1rem;font-size:.83rem}
+      .hero{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1.2rem;background:linear-gradient(135deg,var(--card),var(--glow));border:1px solid var(--line);border-radius:18px;padding:1.2rem 1.4rem;margin-bottom:1rem}
+      .hero .big{font-family:var(--serif);font-size:clamp(2rem,5.5vw,2.9rem);line-height:1;letter-spacing:-.02em}
+      .hero .sub{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.45rem}
+      .hero .minis{display:flex;gap:1.5rem}
+      .hero .mini .n{font-family:var(--serif);font-size:1.5rem;line-height:1}
+      .hero .mini .l{font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:.3rem}
+      .needs{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:.7rem;margin-bottom:1rem}
+      .acard{cursor:pointer;text-align:left;font:inherit;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ac,var(--gold));border-radius:14px;padding:.8rem .95rem;transition:.15s}
+      .acard:hover{border-color:var(--ac,var(--gold));transform:translateY(-1px)}
+      .acard .acn{font-family:var(--serif);font-size:1.75rem;line-height:1;color:var(--ac,var(--ink))}
+      .acard .acl{font-weight:700;font-size:.84rem;margin-top:.3rem}
+      .acard .acs{font-size:.73rem;color:var(--muted);margin-top:.15rem}
+      .allclear{display:flex;align-items:center;gap:.7rem;background:color-mix(in srgb,var(--low) 11%,transparent);border:1px solid color-mix(in srgb,var(--low) 32%,transparent);border-radius:14px;padding:.85rem 1.1rem;margin-bottom:1rem;font-size:.86rem}
+      .split{display:grid;grid-template-columns:1fr 1fr;gap:1rem}@media(max-width:760px){.split{grid-template-columns:1fr}}
     </style>
   </head>
   <body>
@@ -87,242 +89,300 @@
     <div class="scrim" id="scrim" onclick="closeDrawer()"></div>
     <div class="drawer" id="drawer"></div>
     <div class="toast" id="toast"></div>
+    <div class="busy" id="busy"><div class="box"><div class="spin"></div><p id="busymsg" style="margin:.7rem 0 0">Working…</p></div></div>
+    <input type="file" id="csvfile" accept=".csv,.xlsx,.xls" style="display:none" />
 
     <script>
-      (function(){var cfg=window.__LEMMA_CONFIG__||{};var base=(cfg.apiUrl||location.origin).replace(/\/$/,"");var s=document.createElement("script");s.src=base+"/public/sdk/lemma-client.js";s.onload=boot;s.onerror=function(){fatal("Couldn't load the Lemma SDK.")};document.head.appendChild(s);})();
-
-      var client, ME={}, STATE={clients:[],invoices:[],drafts:[],interactions:[],config:{}}, TAB="dashboard", loading=false;
+      (function(){var cfg=window.__LEMMA_CONFIG__||{};var base=(cfg.apiUrl||location.origin).replace(/\/$/,"");var c=document.createElement("script");c.src=base+"/public/sdk/lemma-client.js";c.onload=function(){var u=document.createElement("script");u.src=base+"/public/sdk/lemma-ui.js";u.onload=boot;u.onerror=boot;document.head.appendChild(u)};c.onerror=function(){fatal("Couldn't load the Lemma SDK.")};document.head.appendChild(c);})();
+      var client,ME={},STATE={clients:[],invoices:[],drafts:[],interactions:[],promises:[],config:{}},TAB="dashboard";
       function $(id){return document.getElementById(id)}
       function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
       function field(r,k){return (r&&r.data&&r.data[k]!=null)?r.data[k]:(r?r[k]:undefined)}
-      function listOf(resp){return (resp&&(resp.items||resp.data))||(Array.isArray(resp)?resp:[])}
+      function listOf(r){return (r&&(r.items||r.data))||(Array.isArray(r)?r:[])}
       function fatal(m){$("app").innerHTML='<div class="center"><div><h1>⚠</h1><p>'+esc(m)+'</p></div></div>'}
       function theme(){try{return localStorage.getItem("ca-theme")||"light"}catch(e){return "light"}}
       function applyTheme(t){document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("ca-theme",t)}catch(e){}}
-      function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(function(){t.classList.remove("on")},2200)}
-      function money(v,cur){cur=cur||"INR";var n=Number(v||0);return (cur==="INR"?"₹":cur+" ")+n.toLocaleString("en-IN")}
+      function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(function(){t.classList.remove("on")},2600)}
+      function setBusy(on,msg){$("busy").classList.toggle("on",!!on);if(msg)$("busymsg").textContent=msg}
+      function money(v,cur){cur=cur||"INR";return (cur==="INR"?"₹":cur+" ")+Number(v||0).toLocaleString("en-IN")}
       function shortDate(s){if(!s)return"";var d=new Date(s);return isNaN(d)?String(s).slice(0,10):d.toLocaleDateString(undefined,{month:"short",day:"numeric"})}
       function dt(s){if(!s)return"";var d=new Date(s);return isNaN(d)?String(s):d.toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}
-
       var STAGE_C={PENDING:"--muted",STAGE_1:"--low",STAGE_2:"--med",STAGE_3:"--med",STAGE_4:"--high",ESCALATED:"--purple"};
       var RISK_C={LOW:"--low",MEDIUM:"--med",HIGH:"--high"};
       var STATUS_C={ACTIVE:"--blue",PAID:"--low",DISPUTED:"--med",LEGAL:"--purple",PAUSED:"--muted"};
-      function chip(text,varname){return '<span class="chip" style="background:color-mix(in srgb,var('+varname+') 16%,transparent);color:var('+varname+')">'+esc(text)+'</span>'}
+      function chip(t,v){return '<span class="chip" style="background:color-mix(in srgb,var('+v+') 16%,transparent);color:var('+v+')">'+esc(t)+'</span>'}
       function stageChip(s){return chip((s||"").replace("STAGE_","S"),STAGE_C[s]||"--muted")}
       function riskChip(r){return r?chip(r,RISK_C[r]||"--muted"):'<span class="muted">—</span>'}
       function statusChip(s){return chip(s,STATUS_C[s]||"--muted")}
-      function draftChip(s){var m={AUTO_SENT:"--low",SENT:"--low",PENDING_REVIEW:"--med",REJECTED:"--muted",FAILED:"--high",APPROVED:"--low",SUPERSEDED:"--muted"};return chip(s.replace("_"," "),m[s]||"--muted")}
+      function draftChip(s){var m={AUTO_SENT:"--low",SENT:"--low",PENDING_REVIEW:"--med",REJECTED:"--muted",FAILED:"--high"};return chip(s.replace("_"," "),m[s]||"--muted")}
 
-      async function boot(){
-        applyTheme(theme());
-        try{
-          client=new window.LemmaClient.LemmaClient();
-          var auth=await client.initialize();
-          if(auth.status!=="authenticated"){return signIn()}
-          ME=auth.user||{};
-          await loadData();
-          render();
-          subscribe();
-        }catch(e){fatal((e&&e.message)||"Something went wrong")}
-      }
-      function signIn(){
-        $("app").innerHTML='<div class="center"><div><div class="eyebrow">Collections Agent</div><h1>Welcome.</h1><p class="muted" style="margin:.6rem 0 1rem">Sign in to open the desk.</p><button class="btn gold" id="si">Sign in</button></div></div>';
-        $("si").onclick=function(){client.auth.redirectToAuth()};
-      }
+      async function boot(){applyTheme(theme());try{client=new window.LemmaClient.LemmaClient();var a=await client.initialize();if(a.status!=="authenticated")return signIn();ME=a.user||{};await loadData();render();subscribe();}catch(e){fatal((e&&e.message)||"error")}}
+      function signIn(){$("app").innerHTML='<div class="center"><div><div class="eyebrow">Collections Agent</div><h1>Welcome.</h1><p class="muted" style="margin:.6rem 0 1rem">Sign in to open the desk.</p><button class="btn gold" id="si">Sign in</button></div></div>';$("si").onclick=function(){client.auth.redirectToAuth()}}
 
       async function loadData(){
-        var r=await Promise.all([
-          client.records.list("clients",{limit:500}),
-          client.records.list("invoices",{limit:500}),
-          client.records.list("drafts",{limit:1000}),
-          client.records.list("interactions",{limit:300,sort:[{field:"created_at",direction:"desc"}]}),
-          client.records.list("pod_config",{limit:1})
-        ]);
-        STATE.clients=listOf(r[0]); STATE.invoices=listOf(r[1]); STATE.drafts=listOf(r[2]);
-        STATE.interactions=listOf(r[3]); STATE.config=(listOf(r[4])[0])||{};
+        var r=await Promise.all([client.records.list("clients",{limit:1000}),client.records.list("invoices",{limit:1000}),client.records.list("drafts",{limit:2000}),client.records.list("interactions",{limit:400,sort:[{field:"created_at",direction:"desc"}]}),client.records.list("promises",{limit:500}),client.records.list("pod_config",{limit:1}),client.records.list("followup_queue",{limit:1000})]);
+        STATE.clients=listOf(r[0]);STATE.invoices=listOf(r[1]);STATE.drafts=listOf(r[2]);STATE.interactions=listOf(r[3]);STATE.promises=listOf(r[4]);STATE.config=listOf(r[5])[0]||{};STATE.queue=listOf(r[6]);
       }
       function clientOf(id){return STATE.clients.find(function(c){return field(c,"id")===id})||{}}
       function invoiceOf(id){return STATE.invoices.find(function(i){return field(i,"id")===id})||{}}
-      function latestDraft(invId,statuses){
-        var ds=STATE.drafts.filter(function(d){return field(d,"invoice_id")===invId&&(!statuses||statuses.indexOf(field(d,"status"))>=0)});
-        ds.sort(function(a,b){return String(field(b,"created_at")).localeCompare(String(field(a,"created_at")))});
-        return ds[0];
-      }
+      function invoicesForClient(cid){return STATE.invoices.filter(function(i){return field(i,"client_id")===cid})}
+      function latestDraft(invId,st){var ds=STATE.drafts.filter(function(d){return field(d,"invoice_id")===invId&&(!st||st.indexOf(field(d,"status"))>=0)});ds.sort(function(a,b){return String(field(b,"created_at")).localeCompare(String(field(a,"created_at")))});return ds[0]}
       function pendingDrafts(){return STATE.drafts.filter(function(d){return field(d,"status")==="PENDING_REVIEW"})}
+      function replies(){return STATE.interactions.filter(function(e){return field(e,"kind")==="REPLY_RECEIVED"})}
+      function processingCount(){return (STATE.queue||[]).filter(function(q){return ["QUEUED","PROCESSING"].indexOf(field(q,"status"))>=0}).length}
 
-      // ---- live updates (no polling): re-fetch on any record change, debounced
-      var _t=null;
-      function subscribe(){
-        try{ if(client.datastore&&client.datastore.watchChanges){
-          client.datastore.watchChanges({onChange:function(){clearTimeout(_t);_t=setTimeout(async function(){await loadData();render(true)},700)}});
-        }}catch(e){}
-      }
+      var _t=null;function subscribe(){try{if(client.datastore&&client.datastore.watchChanges){client.datastore.watchChanges({onChange:function(){clearTimeout(_t);_t=setTimeout(async function(){await loadData();if(TAB!=="ask")render(true)},800)}})}}catch(e){}}
 
-      // ---- server actions
+      // Run a pod function through the SDK so auth (bearer OR cookie session) is handled
+      // correctly on local AND cloud. The old raw-fetch path used localStorage["lemma_token"],
+      // which is empty under a cloud cookie session — that broke every write action.
       async function invokeFn(name,input){
-        var cfg=window.__LEMMA_CONFIG__||{};var base=(cfg.apiUrl||location.origin).replace(/\/$/,"");
-        var tok="";try{tok=localStorage.getItem("lemma_token")||""}catch(e){}
+        if(client&&client.functions&&client.functions.run){
+          var r=await client.functions.run(name,{input:input||{}});
+          if(r==null)return r;
+          return (r.output_data!=null)?r.output_data:((r.outputData!=null)?r.outputData:r);
+        }
+        var cfg=window.__LEMMA_CONFIG__||{};var base=(cfg.apiUrl||location.origin).replace(/\/$/,"");var tok="";try{tok=localStorage.getItem("lemma_token")||""}catch(e){}
         var res=await fetch(base+"/pods/"+cfg.podId+"/functions/"+name+"/runs",{method:"POST",headers:{"Authorization":"Bearer "+tok,"Content-Type":"application/json"},body:JSON.stringify({input_data:input})});
-        if(!res.ok)throw new Error("action failed ("+res.status+")");
-        var j=await res.json();return j.output_data;
+        if(!res.ok)throw new Error(name+" failed ("+res.status+")");return (await res.json()).output_data;
       }
-      async function action(input,msg){
-        try{ var out=await invokeFn("app_action",input); await loadData(); render(true);
-          toast(msg||(out&&out.detail)||"Done"); return out;
-        }catch(e){toast("⚠ "+(e.message||"failed"))}
-      }
-      var doScan=function(){toast("Scanning…");action({action:"scan"},"Scan started")};
-      var doProcess=function(id){toast("Queued…");action({action:"process",invoice_id:id},"Queued for the agent")};
+      async function action(input,msg){try{var o=await invokeFn("app_action",input);await loadData();render(true);toast(msg||(o&&o.detail)||"Done");return o}catch(e){toast("⚠ "+(e.message||"failed"))}}
+      window.doScan=async function(){setBusy(true,"Scanning overdue invoices…");try{await invokeFn("app_action",{action:"scan"});await loadData();render(true);toast("Scan started — the agent is drafting follow-ups")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.doProcess=function(id){action({action:"process",invoice_id:id},"Queued for the agent")};
 
-      // ---- render
+      // ---- data tools
+      window.seedDemo=async function(){setBusy(true,"Seeding demo customers & invoices…");try{await invokeFn("seed_demo",{enqueue:true});await loadData();render(true);toast("Demo data seeded — agent is processing")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.seedReplies=async function(){setBusy(true,"Seeding customer replies…");try{await invokeFn("seed_replies",{});await loadData();render(true);toast("Replies seeded")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.sendDigest=async function(){setBusy(true,"Sending digest to team…");try{var o=await invokeFn("app_action",{action:"digest"});await loadData();render(true);toast(o&&o.detail||"Digest sent")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.logReply=function(){closeMenu();var opts=STATE.invoices.filter(function(i){return field(i,"status")==="ACTIVE"}).map(function(i){var c=clientOf(field(i,"client_id"));return '<option value="'+field(i,"id")+'">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</option>'}).join("");
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Inbound</div><h1 style="font-size:1.3rem">Log a customer reply</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db"><p class="muted" style="font-size:.82rem">Paste a reply — it is classified and the account updated (promise / dispute / paid / question), exactly like the live mailbox would.</p><label class="fld"><span class="lbl">Invoice</span><select id="lr_inv">'+opts+'</select></label><label class="fld"><span class="lbl">Reply text</span><textarea id="lr_body" placeholder="e.g. We will clear this by Friday."></textarea></label><button class="btn gold" onclick="submitReply()">Process reply</button></div>';openDrawerEl()};
+      window.submitReply=async function(){var id=$("lr_inv").value,body=$("lr_body").value.trim();if(!body)return toast("Paste the reply text");setBusy(true,"Reading the reply…");try{var o=await invokeFn("handle_reply",{invoice_id:id,body:body});await loadData();render(true);closeDrawer();toast("Reply classified: "+(o&&o.category)+" — "+(o&&o.detail))}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.resetData=async function(){if(!confirm("Delete ALL customers, invoices, drafts and history? (Settings are kept.)"))return;setBusy(true,"Resetting…");try{await invokeFn("reset_pod",{confirm:true});await loadData();render(true);toast("All data cleared")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.exportCSV=function(){
+        var rows=[["invoice_no","client_name","client_email","amount","currency","due_date","days_overdue","stage","status","risk_level","followup_count","payment_link"]];
+        STATE.invoices.forEach(function(i){var c=clientOf(field(i,"client_id"));rows.push([field(i,"invoice_no"),field(c,"name"),field(c,"email"),field(i,"amount"),field(i,"currency"),String(field(i,"due_date")||"").slice(0,10),field(i,"days_overdue"),field(i,"stage"),field(i,"status"),field(i,"risk_level")||"",field(i,"followup_count")||0,field(i,"payment_link")||""])});
+        var csv=rows.map(function(r){return r.map(function(x){x=String(x==null?"":x);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x}).join(",")}).join("\n");
+        var blob=new Blob([csv],{type:"text/csv"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="invoices_export.csv";a.click();toast("Exported "+STATE.invoices.length+" invoices");
+      };
+      window.pickCSV=function(){$("csvfile").click()};
+      function loadXLSX(){return new Promise(function(res,rej){if(window.XLSX)return res();var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";s.onload=function(){res()};s.onerror=function(){rej(new Error("couldn't load the Excel parser"))};document.head.appendChild(s)})}
+      $("csvfile").addEventListener("change",function(e){var f=e.target.files[0];if(!f)return;var name=(f.name||"").toLowerCase();
+        if(name.endsWith(".xlsx")||name.endsWith(".xls")){setBusy(true,"Reading spreadsheet…");loadXLSX().then(function(){var rd=new FileReader();rd.onload=function(){setBusy(false);try{var wb=XLSX.read(new Uint8Array(rd.result),{type:"array"});var ws=wb.Sheets[wb.SheetNames[0]];importCSV(XLSX.utils.sheet_to_csv(ws))}catch(err){toast("⚠ couldn't read Excel: "+err.message)}$("csvfile").value=""};rd.readAsArrayBuffer(f)}).catch(function(err){setBusy(false);toast("⚠ "+err.message)});}
+        else{var rd=new FileReader();rd.onload=function(){importCSV(rd.result);$("csvfile").value=""};rd.readAsText(f);}
+      });
+      function parseCSV(text){var lines=text.split(/\r?\n/).filter(function(l){return l.trim()});if(!lines.length)return[];function row(l){var out=[],cur="",q=false;for(var i=0;i<l.length;i++){var ch=l[i];if(q){if(ch==='"'){if(l[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}else{if(ch==='"')q=true;else if(ch===",")  {out.push(cur);cur=""}else cur+=ch}}out.push(cur);return out}var head=row(lines[0]).map(function(h){return h.trim().toLowerCase()});return lines.slice(1).map(function(l){var v=row(l),o={};head.forEach(function(h,i){o[h]=(v[i]||"").trim()});return o})}
+      async function importCSV(text){
+        var raw=parseCSV(text);if(!raw.length)return toast("CSV looks empty");
+        var rows=raw.map(function(o){return {invoice_no:o.invoice_no||o.invoice||"",client_name:o.client_name||o.client||o.name||"",client_email:o.client_email||o.email||"",amount:parseFloat(o.amount||"0")||0,currency:o.currency||"INR",due_date:o.due_date||o.due||"",payment_link:o.payment_link||"",status:(o.status||"ACTIVE").toUpperCase(),company:o.company||"",phone:o.phone||"",vip:/^(1|true|yes|y)$/i.test(o.vip||""),payment_behavior:(o.payment_behavior||"").toUpperCase()||null,notes:o.notes||""}}).filter(function(r){return r.invoice_no&&r.client_email&&r.due_date});
+        if(!rows.length)return toast("No valid rows (need invoice_no, client_email, due_date)");
+        setBusy(true,"Importing "+rows.length+" invoices…");
+        try{var o=await invokeFn("ingest_invoices",{rows:rows});await loadData();render(true);
+          toast("Imported "+(o.invoices_created+o.invoices_updated)+" invoices · "+o.clients_created+" new / "+o.clients_matched+" matched customers");
+          if(o.invoices_created+o.invoices_updated>0&&confirm("Imported. Run a scan now so the agent drafts follow-ups?"))doScan();
+        }catch(e){toast("⚠ "+e.message)}setBusy(false);
+      }
+
+      // ---- render shell
       function render(keep){
-        var p=pendingDrafts().length, legal=STATE.invoices.filter(function(i){return field(i,"status")==="LEGAL"}).length;
-        var nav=[["dashboard","Overview"],["invoices","Invoices"],["approvals","Approvals",p],["legal","Legal",legal],["activity","Activity"],["settings","Settings"]];
-        $("app").innerHTML='<div class="wrap">'+
-          '<div class="top"><div class="brand"><div><div class="eyebrow">Acme Finance · AR</div><h1>Collections Agent</h1></div></div>'+
-          '<div style="display:flex;gap:.5rem;align-items:center">'+
-            '<span class="pill"><span class="pip"></span> live</span>'+
-            '<button class="btn gold sm" onclick="doScan()">Run scan</button>'+
-            '<span class="pill"><button onclick="toggleTheme()">'+(theme()==="dark"?"☀":"☾")+'</button></span>'+
+        var p=pendingDrafts().length,legal=STATE.invoices.filter(function(i){return field(i,"status")==="LEGAL"}).length,rep=replies().length,proc=processingCount();
+        var nav=[["dashboard","Overview"],["invoices","Invoices"],["customers","Customers"],["approvals","Approvals",p],["replies","Replies",rep],["legal","Legal",legal],["ask","Ask agent"],["settings","Settings"]];
+        $("app").innerHTML='<div class="wrap"><div class="top"><div><div class="eyebrow">Acme Finance · Accounts Receivable</div><h1>Collections Agent</h1></div>'+
+          '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap"><span class="pill"><span class="pip"></span> live</span>'+
+          '<button class="btn gold sm" onclick="doScan()">Run scan</button>'+
+          '<div class="menu" id="datamenu"><button class="btn sm" onclick="document.getElementById(\'datamenu\').classList.toggle(\'open\')">Data ▾</button><div class="items">'+
+            '<button onclick="closeMenu();seedDemo()">✨ Seed demo data</button>'+
+            '<button onclick="closeMenu();seedReplies()">💬 Seed customer replies</button>'+
+            '<button onclick="closeMenu();sendDigest()">📊 Send daily digest</button>'+
+            '<button onclick="closeMenu();pickCSV()">⬆ Import CSV</button>'+
+            '<button onclick="closeMenu();exportCSV()">⬇ Export CSV</button>'+
+            '<button onclick="closeMenu();addInvoice()">＋ Add invoice</button><hr>'+
+            '<button onclick="closeMenu();resetData()" style="color:var(--high)">🗑 Reset data</button>'+
           '</div></div>'+
+          '<button class="btn sm" onclick="compose()">✎ Inform</button>'+
+          '<span class="pill"><button onclick="toggleTheme()">'+(theme()==="dark"?"☀":"☾")+'</button></span></div></div>'+
           '<div class="tabs">'+nav.map(function(n){var b=n[2]?(' <span class="badge'+(n[0]==="approvals"&&n[2]?" hot":"")+'">'+n[2]+'</span>'):"";return '<button class="'+(TAB===n[0]?"on":"")+'" onclick="go(\''+n[0]+'\')">'+n[1]+b+'</button>'}).join("")+'</div>'+
+          (proc?'<div class="working"><span class="spin" style="width:14px;height:14px;border-width:2px"></span> The agent is processing <b>&nbsp;'+proc+'&nbsp;</b> invoice(s) — drafts appear automatically.</div>':'')+
           '<div id="view"></div></div>';
         renderView();
       }
-      window.go=function(t){TAB=t;render()};
-      window.toggleTheme=function(){applyTheme(theme()==="dark"?"light":"dark");render()};
-      function renderView(){
-        var v=$("view");if(!v)return;
-        if(TAB==="dashboard")v.innerHTML=viewDashboard();
-        else if(TAB==="invoices")v.innerHTML=viewInvoices();
-        else if(TAB==="approvals")v.innerHTML=viewApprovals();
-        else if(TAB==="legal")v.innerHTML=viewLegal();
-        else if(TAB==="activity")v.innerHTML=viewActivity();
-        else if(TAB==="settings")v.innerHTML=viewSettings();
-      }
-
+      window.go=function(t){TAB=t;render()};window.toggleTheme=function(){applyTheme(theme()==="dark"?"light":"dark");render()};window.closeMenu=function(){var m=$("datamenu");if(m)m.classList.remove("open")};
+      function uc(who,what){return '<div class="usecase"><span>👥</span><div><span class="who">'+who+'</span> — '+what+'</div></div>'}
+      function renderView(){var v=$("view");if(!v)return;v.innerHTML=({dashboard:viewDashboard,invoices:viewInvoices,customers:viewCustomers,approvals:viewApprovals,replies:viewReplies,legal:viewLegal,activity:viewActivity,ask:viewAsk,settings:viewSettings}[TAB]||viewDashboard)()}
       function kpi(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'}
+      function ncard(n,l,sub,tab,c){return '<button class="acard" onclick="go(\''+tab+'\')" style="--ac:var('+c+')"><div class="acn">'+n+'</div><div class="acl">'+l+'</div><div class="acs">'+esc(sub)+'</div></button>'}
+
+      function emptyState(){return '<div class="panel"><div class="empty"><div class="big">No data yet</div><p>Seed a realistic demo book, or import your invoices.</p><div class="row-actions" style="justify-content:center;margin-top:1rem"><button class="btn gold" onclick="seedDemo()">✨ Seed demo data</button><button class="btn" onclick="pickCSV()">⬆ Import CSV</button></div></div></div>'}
+
       function viewDashboard(){
-        var inv=STATE.invoices;
-        var active=inv.filter(function(i){return field(i,"status")==="ACTIVE"});
+        if(!STATE.invoices.length)return uc("Everyone","one shared workspace — the AI triages overdue invoices, the team approves the sensitive ones, legal handles the rest.")+emptyState();
+        var inv=STATE.invoices,active=inv.filter(function(i){return field(i,"status")==="ACTIVE"});
         var outstanding=active.reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
         var overdue=active.filter(function(i){return Number(field(i,"days_overdue")||0)>0}).length;
-        var sent=STATE.drafts.filter(function(d){return["SENT","AUTO_SENT"].indexOf(field(d,"status"))>=0}).length;
-        var pend=pendingDrafts().length;
-        var legal=inv.filter(function(i){return field(i,"status")==="LEGAL"}).length;
-        var paid=inv.filter(function(i){return field(i,"status")==="PAID"}).length;
-        // stage distribution
-        var stages=["STAGE_1","STAGE_2","STAGE_3","STAGE_4","ESCALATED"];
-        var sc={};stages.forEach(function(s){sc[s]=inv.filter(function(i){return field(i,"stage")===s}).length});
-        var maxc=Math.max(1,Math.max.apply(null,stages.map(function(s){return sc[s]})));
-        var bars=stages.map(function(s){return '<div style="display:flex;align-items:center;gap:.6rem;margin:.35rem 0"><div style="width:78px;font-size:.76rem" class="muted">'+s.replace("STAGE_","Stage ")+'</div><div style="flex:1;background:var(--chip);border-radius:6px;overflow:hidden;height:18px"><div style="height:100%;width:'+(sc[s]/maxc*100)+'%;background:color-mix(in srgb,var('+(STAGE_C[s]||"--muted")+') 70%,transparent)"></div></div><b class="num">'+sc[s]+'</b></div>'}).join("");
-        var recent=STATE.interactions.slice(0,8).map(function(e){return '<div class="rec" style="display:flex;gap:.5rem;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--line)"><span class="chip" style="background:var(--chip)">'+esc(field(e,"kind")||"")+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(field(e,"summary")||"")+'</span><span class="muted num" style="font-size:.7rem">'+shortDate(field(e,"created_at"))+'</span></div>'}).join("")||'<div class="empty">No activity yet — hit “Run scan”.</div>';
-        return '<div class="stats">'+kpi(money(outstanding),"Outstanding (active)")+kpi(overdue,"Overdue accounts")+kpi('<span style="color:var(--med)">'+pend+'</span>',"Awaiting approval")+kpi('<span style="color:var(--purple)">'+legal+'</span>',"Legal")+kpi(sent,"Follow-ups sent")+kpi(paid,"Paid")+'</div>'+
-          '<div class="panel"><h2>Escalation pipeline</h2>'+bars+'</div>'+
-          '<div class="panel"><h2>Live activity</h2>'+recent+'</div>';
-      }
+        var legalInv=inv.filter(function(i){return field(i,"status")==="LEGAL"});
+        var legalAmt=legalInv.reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
+        var pending=pendingDrafts().length;
+        var sent=STATE.drafts.filter(function(d){return["SENT","AUTO_SENT"].indexOf(field(d,"status"))>=0});
+        var autoSent=sent.filter(function(d){return field(d,"status")==="AUTO_SENT"}).length;
+        var openProm=STATE.promises.filter(function(p){return field(p,"status")==="OPEN"}).length;
+        var disputes=inv.filter(function(i){return field(i,"status")==="DISPUTED"}).length;
+        var repl=replies().length;
 
-      function invRow(i){
-        var c=clientOf(field(i,"client_id"));var d=latestDraft(field(i,"id"),["AUTO_SENT","SENT","PENDING_REVIEW","FAILED"]);
-        var deliver=d?draftChip(field(d,"status")):'<span class="muted">—</span>';
-        return '<tr class="clickable" onclick="openInvoice(\''+field(i,"id")+'\')">'+
-          '<td><b>'+esc(field(i,"invoice_no"))+'</b><div class="muted" style="font-size:.76rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' ★':'')+'</div></td>'+
-          '<td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td>'+
-          '<td class="num">'+(Number(field(i,"days_overdue")||0))+'d</td>'+
-          '<td>'+stageChip(field(i,"stage"))+'</td>'+
-          '<td>'+riskChip(field(i,"risk_level"))+'</td>'+
-          '<td>'+statusChip(field(i,"status"))+'</td>'+
-          '<td>'+deliver+'</td></tr>';
-      }
-      function viewInvoices(){
-        var inv=STATE.invoices.slice().sort(function(a,b){return Number(field(b,"days_overdue")||0)-Number(field(a,"days_overdue")||0)});
-        if(!inv.length)return '<div class="panel"><div class="empty"><div class="big">No invoices yet</div>Seed the pod, then hit “Run scan”.</div></div>';
-        return '<div class="panel"><h2>Invoices <span class="muted" style="font-size:.8rem">· '+inv.length+'</span></h2>'+
-          '<table><thead><tr><th>Invoice / Client</th><th>Amount</th><th>Overdue</th><th>Stage</th><th>Risk</th><th>Status</th><th>Last follow-up</th></tr></thead><tbody>'+
-          inv.map(invRow).join("")+'</tbody></table></div>';
-      }
-
-      function viewApprovals(){
-        var ds=pendingDrafts();
-        if(!ds.length)return '<div class="panel"><div class="empty"><div class="big">Inbox zero ✓</div>No drafts waiting for approval.</div></div>';
-        return ds.map(function(d){
-          var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));
-          return '<div class="panel"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">'+
-            '<div><h2 style="margin-bottom:.2rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2>'+
-            '<div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+' days overdue · '+stageChip(field(i,"stage"))+' '+riskChip(field(d,"risk_level"))+(field(d,"fallback_used")?' <span class="chip" style="background:var(--chip)">template</span>':'')+'</div></div>'+
-            '<div class="row-actions"><button class="btn gold sm" onclick="approve(\''+field(d,"id")+'\')">Approve &amp; send</button>'+
-            '<button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Edit</button>'+
-            '<button class="btn sm danger" onclick="reject(\''+field(d,"id")+'\')">Reject</button>'+
-            '<button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\')">Legal</button></div></div>'+
-            '<div class="mail" style="margin-top:.8rem"><div class="subj">'+esc(field(d,"subject"))+'</div>'+esc(field(d,"body"))+'</div></div>';
-        }).join("");
-      }
-      window.approve=function(id){action({action:"approve",draft_id:id},"Approved & sent")};
-      window.reject=function(id){action({action:"reject",draft_id:id,note:"Rejected by reviewer"},"Draft rejected")};
-      window.flag=function(id){action({action:"flag",draft_id:id,note:"Escalated to legal"},"Flagged to legal")};
-
-      function viewLegal(){
-        var inv=STATE.invoices.filter(function(i){return field(i,"status")==="LEGAL"});
-        if(!inv.length)return '<div class="panel"><div class="empty"><div class="big">Nothing in legal</div>30+ day accounts and flagged invoices land here.</div></div>';
-        return '<div class="panel"><h2>Legal queue <span class="muted" style="font-size:.8rem">· '+inv.length+'</span></h2><table><thead><tr><th>Invoice / Client</th><th>Amount</th><th>Overdue</th></tr></thead><tbody>'+
-          inv.map(function(i){var c=clientOf(field(i,"client_id"));return '<tr class="clickable" onclick="openInvoice(\''+field(i,"id")+'\')"><td><b>'+esc(field(i,"invoice_no"))+'</b><div class="muted" style="font-size:.76rem">'+esc(field(c,"name")||"")+'</div></td><td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td><td class="num">'+(Number(field(i,"days_overdue")||0))+'d</td></tr>'}).join("")+'</tbody></table></div>';
-      }
-
-      function viewActivity(){
-        var ev=STATE.interactions;
-        if(!ev.length)return '<div class="panel"><div class="empty">No activity yet.</div></div>';
-        var lc={INFO:"--muted",SUCCESS:"--low",WARN:"--med",ERROR:"--high"};
-        return '<div class="panel"><h2>Activity &amp; audit</h2><div class="timeline">'+
-          ev.map(function(e){return '<div class="ev"><span class="dot" style="background:var('+(lc[field(e,"level")]||"--gold")+')"></span><div class="when">'+dt(field(e,"created_at"))+' · '+esc(field(e,"kind")||"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join("")+
+        // Hero — the one number that matters, with the three counts a collector watches.
+        var hero='<div class="hero"><div><div class="big">'+money(outstanding)+'</div><div class="sub">Outstanding · '+active.length+' active invoice'+(active.length===1?"":"s")+'</div></div>'+
+          '<div class="minis">'+
+          '<div class="mini"><div class="n" style="color:var(--high)">'+overdue+'</div><div class="l">Overdue</div></div>'+
+          '<div class="mini"><div class="n" style="color:var(--med)">'+pending+'</div><div class="l">To approve</div></div>'+
+          '<div class="mini"><div class="n" style="color:var(--purple)">'+legalInv.length+'</div><div class="l">In legal</div></div>'+
           '</div></div>';
+
+        // Needs you now — only what requires a human, each jumping to the right tab.
+        var cards=[];
+        if(pending)cards.push(ncard(pending,"Awaiting approval","Drafts to review before they send","approvals","--med"));
+        if(legalInv.length)cards.push(ncard(legalInv.length,"In legal",money(legalAmt)+" at risk","legal","--purple"));
+        if(openProm)cards.push(ncard(openProm,"Promises to pay","Payment dates to watch","replies","--low"));
+        if(disputes)cards.push(ncard(disputes,"Disputed","Dunning paused until resolved","invoices","--high"));
+        var needs=cards.length?'<div class="needs">'+cards.join("")+'</div>':
+          '<div class="allclear"><span style="font-size:1.15rem;color:var(--low)">✓</span><div><b>All clear.</b> <span class="muted">Nothing needs a human right now — the agent is handling the book.</span></div></div>';
+
+        // Escalation pipeline
+        var stages=["STAGE_1","STAGE_2","STAGE_3","STAGE_4","ESCALATED"],sc={};stages.forEach(function(s){sc[s]=inv.filter(function(i){return field(i,"stage")===s}).length});
+        var mx=Math.max(1,Math.max.apply(null,stages.map(function(s){return sc[s]})));
+        var bars=stages.map(function(s){return '<div style="display:flex;align-items:center;gap:.6rem;margin:.35rem 0"><div style="width:84px;font-size:.76rem" class="muted">'+s.replace("STAGE_","Stage ")+'</div><div style="flex:1;background:var(--chip);border-radius:6px;height:18px;overflow:hidden"><div style="height:100%;width:'+(sc[s]/mx*100)+'%;background:color-mix(in srgb,var('+(STAGE_C[s]||"--muted")+') 70%,transparent)"></div></div><b class="num">'+sc[s]+'</b></div>'}).join("");
+
+        // What the agent has done — outcome metrics, not a duplicate activity feed.
+        var autoPct=sent.length?Math.round(autoSent/sent.length*100):0;
+        var perf='<div class="stats" style="margin:0 0 .2rem">'+kpi(sent.length,"Follow-ups sent")+kpi(autoSent,"Auto-sent by AI")+kpi(repl,"Replies handled")+kpi(STATE.clients.length,"Customers")+'</div>'+
+          '<div class="muted" style="font-size:.78rem">'+(sent.length?autoPct+'% sent automatically · the rest reviewed by a person first.':'No follow-ups sent yet — run a scan to let the agent start drafting.')+'</div>';
+
+        // Recent activity — a few lines; the full log lives in the Activity tab.
+        var rec=STATE.interactions.slice(0,6).map(function(e){return '<div style="display:flex;gap:.5rem;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--line)"><span class="chip" style="background:var(--chip)">'+esc(field(e,"kind")||"")+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(field(e,"summary")||"")+'</span><span class="muted num" style="font-size:.7rem">'+shortDate(field(e,"created_at"))+'</span></div>'}).join("")||'<div class="empty">No activity yet.</div>';
+
+        return uc("Finance team","at-a-glance health of the book — the one number that matters, what needs you, and what the agent has handled on its own.")+
+          hero+needs+
+          '<div class="split"><div class="panel"><h2>Escalation pipeline</h2>'+bars+'</div><div class="panel"><h2>What the agent has done</h2>'+perf+'</div></div>'+
+          '<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Live activity</h2><button class="btn sm ghost" onclick="go(\'activity\')">View all →</button></div><div style="margin-top:.6rem">'+rec+'</div></div>';
       }
 
-      function viewSettings(){
-        var c=STATE.config;
-        function tg(k,l,d){return '<div class="toggle"><div><b>'+l+'</b><div class="muted" style="font-size:.76rem">'+d+'</div></div><label style="position:relative;display:inline-block;width:42px;height:24px"><input type="checkbox" id="cfg_'+k+'" '+(field(c,k)?"checked":"")+' style="opacity:0;width:0;height:0" onchange="saveCfg()"><span style="position:absolute;inset:0;background:'+(field(c,k)?"var(--gold)":"var(--line)")+';border-radius:999px;transition:.2s"></span><span style="position:absolute;top:3px;left:'+(field(c,k)?"21px":"3px")+';width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s"></span></label></div>'}
-        return '<div class="panel"><h2>Runtime settings</h2>'+
+      function invRow(i){var c=clientOf(field(i,"client_id"));var d=latestDraft(field(i,"id"),["AUTO_SENT","SENT","PENDING_REVIEW","FAILED"]);
+        return '<tr class="clickable" onclick="openInvoice(\''+field(i,"id")+'\')"><td><b>'+esc(field(i,"invoice_no"))+'</b><div class="muted" style="font-size:.76rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' ★':'')+'</div></td><td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td><td class="num">'+(Number(field(i,"days_overdue")||0))+'d</td><td>'+stageChip(field(i,"stage"))+'</td><td>'+riskChip(field(i,"risk_level"))+'</td><td>'+statusChip(field(i,"status"))+'</td><td>'+(d?draftChip(field(d,"status")):'<span class="muted">—</span>')+'</td></tr>'}
+      function viewInvoices(){if(!STATE.invoices.length)return emptyState();var inv=STATE.invoices.slice().sort(function(a,b){return Number(field(b,"days_overdue")||0)-Number(field(a,"days_overdue")||0)});
+        return uc("Collector","your working queue — every overdue account, its stage, risk, and the last follow-up. Click any row for the draft + history.")+'<div class="panel"><h2>Invoices · '+inv.length+'</h2><table><thead><tr><th>Invoice / Customer</th><th>Amount</th><th>Overdue</th><th>Stage</th><th>Risk</th><th>Status</th><th>Last follow-up</th></tr></thead><tbody>'+inv.map(invRow).join("")+'</tbody></table></div>'}
+
+      function viewCustomers(){
+        if(!STATE.clients.length)return emptyState();
+        var rows=STATE.clients.map(function(c){var cid=field(c,"id");var invs=invoicesForClient(cid);var out=invs.filter(function(i){return field(i,"status")==="ACTIVE"}).reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);var worst=invs.map(function(i){return field(i,"days_overdue")||0}).reduce(function(a,b){return Math.max(a,b)},0);return {c:c,invs:invs,out:out,worst:worst}}).sort(function(a,b){return b.out-a.out});
+        return uc("Account manager","one row per customer — identity tracked by email, so every invoice, email and reply for a customer rolls up here.")+
+          '<div class="panel"><h2>Customers · '+rows.length+'</h2><table><thead><tr><th>Customer</th><th>Invoices</th><th>Outstanding</th><th>Worst overdue</th><th>Behavior</th></tr></thead><tbody>'+
+          rows.map(function(r){return '<tr class="clickable" onclick="openCustomer(\''+field(r.c,"id")+'\')"><td><b>'+esc(field(r.c,"name"))+'</b>'+(field(r.c,"vip")?' <span style="color:var(--gold)">★</span>':'')+'<div class="muted" style="font-size:.74rem">'+esc(field(r.c,"email"))+'</div></td><td class="num">'+r.invs.length+'</td><td class="num">'+money(r.out)+'</td><td class="num">'+r.worst+'d</td><td>'+chip(field(r.c,"payment_behavior")||"AVERAGE",field(r.c,"payment_behavior")==="RISKY"?"--high":field(r.c,"payment_behavior")==="GOOD"?"--low":"--med")+'</td></tr>'}).join("")+'</tbody></table></div>';
+      }
+
+      function viewApprovals(){var ds=pendingDrafts();if(!ds.length)return uc("Finance lead","approve, edit, reject or escalate AI-written notices before they go out.")+'<div class="panel"><div class="empty"><div class="big">Inbox zero ✓</div>No drafts awaiting approval.</div></div>';
+        return uc("Finance lead","high-risk and final-notice drafts wait here for a human. Edit the wording, then approve — nothing sensitive sends on its own.")+ds.map(function(d){var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.2rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+'d overdue · '+stageChip(field(i,"stage"))+' '+riskChip(field(d,"risk_level"))+(field(d,"fallback_used")?' '+chip("template","--muted"):'')+'</div></div><div class="row-actions"><button class="btn gold sm" onclick="approve(\''+field(d,"id")+'\')">Approve &amp; send</button><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Edit</button><button class="btn sm danger" onclick="reject(\''+field(d,"id")+'\')">Reject</button><button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\')">Legal</button></div></div><div class="mail" style="margin-top:.8rem"><div class="subj">'+esc(field(d,"subject"))+'</div>'+esc(field(d,"body"))+'</div></div>'}).join("")}
+      window.approve=function(id){action({action:"approve",draft_id:id},"Approved & sent")};window.reject=function(id){action({action:"reject",draft_id:id,note:"Rejected by reviewer"},"Rejected")};window.flag=function(id){action({action:"flag",draft_id:id,note:"Escalated to legal"},"Flagged to legal")};
+
+      function viewReplies(){var rs=replies();
+        if(!rs.length)return uc("Collector","when customers reply, the AI reads each one — promise-to-pay, dispute, paid, or question — and updates the account.")+'<div class="panel"><div class="empty"><div class="big">No replies yet</div><p>With a mailbox connected, replies land here classified. Try it now:</p><div class="row-actions" style="justify-content:center;margin-top:.8rem"><button class="btn gold" onclick="logReply()">＋ Log a reply</button><button class="btn" onclick="seedReplies()">💬 Seed samples</button></div></div></div>';
+        var CC={PROMISE_TO_PAY:"--low",DISPUTE:"--high",PAID_CLAIM:"--blue",QUESTION:"--med",OTHER:"--muted"};
+        return uc("Collector","every customer reply, classified — promises become trackable, disputes pause dunning, paid-claims await reconciliation.")+
+          '<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Customer replies · '+rs.length+'</h2><button class="btn sm" onclick="logReply()">＋ Log a reply</button></div><table style="margin-top:.6rem"><thead><tr><th>Customer</th><th>Invoice</th><th>Type</th><th>Message</th><th>When</th></tr></thead><tbody>'+
+          rs.map(function(e){var det=field(e,"detail")||{};var cat=det.category||"OTHER";var c=clientOf(field(e,"client_id")),i=invoiceOf(field(e,"invoice_id"));return '<tr class="clickable" onclick="openInvoice(\''+field(e,"invoice_id")+'\')"><td><b>'+esc(field(c,"name")||"customer")+'</b></td><td class="num">'+esc(field(i,"invoice_no")||"")+'</td><td>'+chip(cat.replace(/_/g," "),CC[cat]||"--muted")+'</td><td style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(det.body||field(e,"summary")||"")+'</td><td class="muted num" style="font-size:.72rem">'+shortDate(field(e,"created_at"))+'</td></tr>'}).join("")+'</tbody></table></div>'+
+          (STATE.promises.length?'<div class="panel"><h2>Promises to pay · '+STATE.promises.length+'</h2><table><thead><tr><th>Customer</th><th>Invoice</th><th>Promised by</th><th>Status</th></tr></thead><tbody>'+STATE.promises.map(function(p){var c=clientOf(field(p,"client_id")),i=invoiceOf(field(p,"invoice_id"));return '<tr><td>'+esc(field(c,"name")||"")+'</td><td class="num">'+esc(field(i,"invoice_no")||"")+'</td><td class="num">'+String(field(p,"promised_date")||"").slice(0,10)+'</td><td>'+chip(field(p,"status"),field(p,"status")==="BROKEN"?"--high":field(p,"status")==="KEPT"?"--low":"--med")+'</td></tr>'}).join("")+'</tbody></table></div>':'');
+      }
+
+      function viewLegal(){var inv=STATE.invoices.filter(function(i){return field(i,"status")==="LEGAL"});
+        var head=uc("Legal / recovery team","accounts 30+ days overdue or escalated by finance — with full history and a one-click notice. These never get automated email.");
+        if(!inv.length)return head+'<div class="panel"><div class="empty"><div class="big">Nothing in legal</div>Escalated accounts will appear here.</div></div>';
+        var total=inv.reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
+        return head+'<div class="stats">'+kpi(inv.length,"Accounts in legal")+kpi(money(total),"Amount at risk")+'</div>'+
+          inv.map(function(i){var c=clientOf(field(i,"client_id"));var evs=STATE.interactions.filter(function(e){return field(e,"invoice_id")===field(i,"id")}).slice(0,4);return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.1rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+' days overdue · '+esc(field(c,"email")||"")+'</div></div><div class="row-actions"><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Full history</button><button class="btn sm gold" onclick="notifyLegal(\''+field(i,"invoice_no")+'\')">Notify legal team</button></div></div><div class="timeline" style="margin-top:.7rem">'+evs.map(function(e){return '<div class="ev"><span class="dot"></span><div class="when">'+dt(field(e,"created_at"))+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join("")+'</div></div>'}).join("");
+      }
+      window.notifyLegal=function(no){action({action:"notify",note:"legal",config:{message:"⚖️ Legal escalation: invoice "+no+" needs recovery action."}},"Legal team notified (or logged)")};
+
+      function viewActivity(){var ev=STATE.interactions;if(!ev.length)return '<div class="panel"><div class="empty">No activity yet.</div></div>';var lc={INFO:"--muted",SUCCESS:"--low",WARN:"--med",ERROR:"--high"};
+        return uc("Admin / audit","an immutable, time-stamped record of every action — by the agent and by people.")+'<div class="panel"><h2>Activity &amp; audit</h2><div class="timeline">'+ev.map(function(e){return '<div class="ev"><span class="dot" style="background:var('+(lc[field(e,"level")]||"--gold")+')"></span><div class="when">'+dt(field(e,"created_at"))+' · '+esc(field(e,"kind")||"")+(field(e,"actor_label")?' · '+esc(field(e,"actor_label")):"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join("")+'</div></div>'}
+
+      function viewAsk(){
+        return uc("Anyone","ask the Collections Agent about the book — overdue accounts, a customer's status, the legal queue, what's awaiting approval. It reads live pod data. This is the same agent your finance &amp; legal team can DM on Telegram.")+
+          '<div class="panel" style="padding:.4rem .5rem"><lemma-agent-thread agent="collections-concierge" style="display:block;min-height:62vh;--lemma-bg:var(--card);--lemma-accent:var(--gold);--lemma-radius:12px"></lemma-agent-thread></div>'+
+          '<p class="muted" style="font-size:.76rem;margin:.2rem .2rem 0">Try: &ldquo;biggest overdue accounts&rdquo; · &ldquo;what&rsquo;s in the legal queue?&rdquo; · &ldquo;what&rsquo;s waiting for approval?&rdquo; · &ldquo;what&rsquo;s going on with Acme Corp?&rdquo;</p>';
+      }
+
+      // ---- settings
+      function viewSettings(){var c=STATE.config;var mode=(field(c,"mail_mode")||"IN_APP");var ch=(field(c,"notify_channel")||"NONE");
+        function tg(k,l,d){var on=field(c,k);return '<div class="toggle"><div><b>'+l+'</b><div class="muted" style="font-size:.76rem">'+d+'</div></div><label style="position:relative;display:inline-block;width:42px;height:24px;flex:none"><input type="checkbox" id="cfg_'+k+'" '+(on?"checked":"")+' style="opacity:0;width:0;height:0"><span style="position:absolute;inset:0;background:'+(on?"var(--gold)":"var(--line)")+';border-radius:999px"></span><span style="position:absolute;top:3px;left:'+(on?"21px":"3px")+';width:18px;height:18px;background:#fff;border-radius:50%"></span></label></div>'}
+        function inp(k,l,ph){return '<label class="fld"><span class="lbl">'+l+'</span><input id="cfg_'+k+'" value="'+esc(field(c,k)||"")+'" placeholder="'+(ph||"")+'"></label>'}
+        return uc("Admin","configure behavior, real email (Gmail), team alerts (Slack), and the Telegram agent — all live, no redeploy.")+
+        '<div class="panel"><h2>Behavior</h2>'+
           tg("auto_dispatch","Auto-dispatch","Auto-send low-risk follow-ups (off → everything needs approval)")+
-          tg("human_in_loop","Human-in-the-loop","Route high-risk & stage-4 to approval")+
-          tg("review_high_risk","Review high risk","Always approve HIGH-risk drafts")+
-          tg("review_stage4","Review stage 4","Always approve final notices")+
-          tg("email_enabled","Send real email","Off = in-app only (safe demo). On = send via Gmail connector")+
-          '<label class="fld"><span class="lbl">Notify channel</span><select id="cfg_notify_channel" onchange="saveCfg()"><option '+(field(c,"notify_channel")==="NONE"?"selected":"")+'>NONE</option><option '+(field(c,"notify_channel")==="SLACK"?"selected":"")+'>SLACK</option><option '+(field(c,"notify_channel")==="WHATSAPP"?"selected":"")+'>WHATSAPP</option></select></label>'+
-          '<label class="fld"><span class="lbl">Company name</span><input id="cfg_company_name" value="'+esc(field(c,"company_name")||"")+'" onchange="saveCfg()"></label>'+
-          '<label class="fld"><span class="lbl">Sender identity</span><input id="cfg_sender_identity" value="'+esc(field(c,"sender_identity")||"")+'" onchange="saveCfg()"></label>'+
-          '</div>';
+          tg("human_in_loop","Human-in-the-loop","Route high-risk &amp; stage-4 to the approval inbox")+
+          tg("review_high_risk","Always review HIGH risk","High-risk drafts never auto-send")+
+          tg("review_stage4","Always review Stage 4","Final notices always need a human")+
+          '<div style="margin-top:.8rem"><button class="btn gold sm" onclick="saveBehavior()">Save behavior</button></div></div>'+
+        '<div class="panel"><h2>Email delivery</h2><div class="toggle"><div><b>Send real email</b><div class="muted" style="font-size:.76rem">Off = record-only (safe demo, drafts shown in-app). On = deliver through the Gmail connector.</div></div><label style="position:relative;display:inline-block;width:42px;height:24px;flex:none"><input type="checkbox" id="cfg_email_enabled" '+(field(c,"email_enabled")?"checked":"")+' style="opacity:0;width:0;height:0"><span style="position:absolute;inset:0;background:'+(field(c,"email_enabled")?"var(--gold)":"var(--line)")+';border-radius:999px"></span><span style="position:absolute;top:3px;left:'+(field(c,"email_enabled")?"21px":"3px")+';width:18px;height:18px;background:#fff;border-radius:50%"></span></label></div>'+
+          '<label class="fld"><span class="lbl">Mode</span><select id="cfg_mail_mode" onchange="render(true)">'+["IN_APP","GMAIL"].map(function(m){return '<option '+(mode===m?"selected":"")+'>'+m+'</option>'}).join("")+'</select></label>'+
+          inp("email_from","From name","Acme Finance")+
+          (mode==="GMAIL"?'<div class="guide">Gmail sends as <b>your connected Google account</b> — no passwords stored here. Connect once from the CLI:<ol><li><code>lemma connectors auth-configs create gmail --name workspace-gmail</code></li><li><code>lemma connectors connect-requests create gmail --auth-config-id &lt;id&gt;</code> → open the link, authorize Google.</li><li>Back here: flip <b>Send real email</b> on and hit <b>Send test</b>.</li></ol></div>':'<div class="guide">In-app mode: every follow-up is drafted, validated and recorded so you can demo the full pipeline safely — nothing leaves your inbox. Switch to Gmail to send for real.</div>')+
+          '<div style="margin-top:.8rem"><button class="btn gold sm" onclick="saveMail()">Save</button> <button class="btn sm" onclick="testEmail()">Send test</button></div></div>'+
+        '<div class="panel"><h2>Team &amp; legal alerts</h2>'+
+          '<label class="fld"><span class="lbl">Channel</span><select id="cfg_notify_channel" onchange="render(true)">'+["NONE","SLACK"].map(function(m){return '<option '+(ch===m?"selected":"")+'>'+m+'</option>'}).join("")+'</select></label>'+
+          (ch==="SLACK"?'<div class="grid2">'+inp("slack_channel","Team channel id","C0123ABC")+inp("slack_legal_channel","Legal channel id (optional)","C0456DEF")+'</div><div class="guide">Posts alerts to Slack through the Lemma Slack connector. Connect once from the CLI:<ol><li><code>lemma connectors auth-configs create slack --name workspace-slack</code></li><li><code>lemma connectors connect-requests create slack --auth-config-id &lt;id&gt;</code> → authorize Slack.</li><li>Paste the channel id(s) above, Save, then Send test.</li></ol></div>':'<div class="guide">No alerts. Pick Slack to push digests and legal escalations to a channel.</div>')+
+          '<div style="margin-top:.8rem"><button class="btn gold sm" onclick="saveNotify()">Save</button> '+(ch!=="NONE"?'<button class="btn sm" onclick="testNotify()">Send test</button>':'')+'</div></div>'+
+        '<div class="panel"><h2>Chat with your agent on Telegram</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .6rem">Lemma runs a managed Telegram bot — no bot token, no webhook. Your finance &amp; legal team can DM the Collections Agent (&ldquo;what&rsquo;s overdue for Acme?&rdquo;, &ldquo;show the legal queue&rdquo;) and it answers from this pod&rsquo;s live data.</p><div class="guide">Enable once from the CLI:<ol><li><code>lemma surfaces upsert telegram --agent collections-concierge</code></li><li><code>lemma surfaces setup telegram</code> → open the <b>t.me</b> link it prints and message the bot.</li></ol>That&rsquo;s it — no credentials. The same pod, a second front door.</div></div>'+
+        '<div class="panel"><h2>Identity &amp; model</h2>'+inp("company_name","Company name")+inp("sender_identity","Sender signature")+
+          '<div class="guide">Drafting runs on this pod&rsquo;s Lemma runtime. On lemma.work you can run on Lemma credits or pin your own provider via a runtime profile (<code>lemma runtime profiles</code>) — set per pod, no app change.</div></div>';
       }
-      window.saveCfg=function(){
-        var cfg={auto_dispatch:$("cfg_auto_dispatch").checked,human_in_loop:$("cfg_human_in_loop").checked,review_high_risk:$("cfg_review_high_risk").checked,review_stage4:$("cfg_review_stage4").checked,email_enabled:$("cfg_email_enabled").checked,notify_channel:$("cfg_notify_channel").value,company_name:$("cfg_company_name").value,sender_identity:$("cfg_sender_identity").value};
-        action({action:"save_config",config:cfg},"Settings saved");
+      function cfgVal(k){var e=$("cfg_"+k);if(!e)return undefined;return e.type==="checkbox"?e.checked:e.value}
+      async function saveCfg(keys,msg){var c={};keys.forEach(function(k){var v=cfgVal(k);if(v!==undefined)c[k]=v});await action({action:"save_config",config:c},msg||"Settings saved")}
+      window.saveBehavior=function(){saveCfg(["auto_dispatch","human_in_loop","review_high_risk","review_stage4"],"Behavior saved")};
+      window.saveMail=function(){saveCfg(["email_enabled","mail_mode","email_from"],"Mail settings saved")};
+      window.saveNotify=function(){saveCfg(["notify_channel","slack_channel","slack_legal_channel"],"Alert settings saved")};
+      window.testEmail=async function(){setBusy(true,"Sending test email…");try{var o=await invokeFn("test_channel",{kind:"email"});toast((o.ok?"✓ ":"⚠ ")+o.detail)}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.testNotify=async function(){setBusy(true,"Sending test alert…");try{var o=await invokeFn("test_channel",{kind:"notify"});toast((o.ok?"✓ ":"⚠ ")+o.detail)}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+
+      // ---- add invoice
+      window.addInvoice=function(){closeMenu();$("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">New invoice</div><h1 style="font-size:1.3rem">Add invoice</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db">'+
+        '<label class="fld"><span class="lbl">Invoice no *</span><input id="ai_no" placeholder="INV-2025-100"></label>'+
+        '<label class="fld"><span class="lbl">Customer name *</span><input id="ai_name"></label>'+
+        '<label class="fld"><span class="lbl">Customer email * (identity key)</span><input id="ai_email" placeholder="ap@customer.com"></label>'+
+        '<div class="grid2"><label class="fld"><span class="lbl">Amount *</span><input id="ai_amt" placeholder="50000"></label><label class="fld"><span class="lbl">Due date *</span><input id="ai_due" placeholder="2025-05-01" type="date"></label></div>'+
+        '<label class="fld"><span class="lbl">Payment link</span><input id="ai_link"></label>'+
+        '<div class="muted" style="font-size:.78rem;margin:.4rem 0">Same email = same customer (deduped automatically).</div>'+
+        '<button class="btn gold" onclick="submitInvoice()">Add &amp; queue</button></div>';openDrawerEl()};
+      window.submitInvoice=async function(){var row={invoice_no:$("ai_no").value.trim(),client_name:$("ai_name").value.trim(),client_email:$("ai_email").value.trim(),amount:parseFloat($("ai_amt").value)||0,due_date:$("ai_due").value,payment_link:$("ai_link").value.trim(),currency:"INR",status:"ACTIVE"};if(!row.invoice_no||!row.client_email||!row.due_date||!row.amount)return toast("Fill the required fields");setBusy(true,"Adding invoice…");try{await invokeFn("ingest_invoices",{rows:[row]});await invokeFn("app_action",{action:"process",invoice_id:""});}catch(e){}try{var inv=(await client.records.list("invoices",{limit:1000})).items.find(function(i){return field(i,"invoice_no")===row.invoice_no});if(inv)await invokeFn("app_action",{action:"process",invoice_id:field(inv,"id")});await loadData();render(true);closeDrawer();toast("Invoice added & queued")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+
+      // ---- compose / inform
+      window.compose=function(){
+        var opts=STATE.clients.map(function(c){return '<option value="'+field(c,"id")+'">'+esc(field(c,"name"))+' — '+esc(field(c,"email"))+'</option>'}).join("");
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Inform</div><h1 style="font-size:1.3rem">Compose &amp; send</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db">'+
+          '<label class="fld"><span class="lbl">Send to</span><select id="cmp_aud" onchange="composeMode()"><option value="customer">A customer (email)</option><option value="team">Team alert (Slack)</option><option value="legal">Legal alert (Slack)</option></select></label>'+
+          '<div id="cmp_customer"><label class="fld"><span class="lbl">Customer</span><select id="cmp_client">'+opts+'</select></label><label class="fld"><span class="lbl">Subject</span><input id="cmp_subj" value="A note about your account"></label></div>'+
+          '<label class="fld"><span class="lbl">Message</span><textarea id="cmp_body" placeholder="Type your message…"></textarea></label>'+
+          '<div class="guide" id="cmp_hint">Customer emails go out via Gmail when enabled (otherwise recorded in-app). Team &amp; legal alerts post to your Slack channel. Configure both in Settings.</div>'+
+          '<div style="margin-top:.8rem"><button class="btn gold" onclick="composeSend()">Send now</button> <span class="muted" style="font-size:.78rem">Tip: schedule recurring sends by resuming the daily-scan / heal schedules.</span></div></div>';
+        openDrawerEl();
+      };
+      window.composeMode=function(){var a=$("cmp_aud").value;$("cmp_customer").style.display=a==="customer"?"block":"none"};
+      window.composeSend=async function(){
+        var aud=$("cmp_aud").value,body=$("cmp_body").value.trim();if(!body)return toast("Write a message");
+        setBusy(true,"Sending…");
+        try{
+          if(aud==="customer"){var cid=$("cmp_client").value,subj=$("cmp_subj").value;await invokeFn("app_action",{action:"send_custom",config:{client_id:cid,subject:subj,body:body}})}
+          else{await invokeFn("app_action",{action:"notify",note:aud,config:{message:body}})}
+          await loadData();render(true);closeDrawer();toast("Sent (or logged if channel not configured)");
+        }catch(e){toast("⚠ "+e.message)}setBusy(false);
       };
 
-      // ---- invoice drawer
-      window.openInvoice=function(id){
-        var i=invoiceOf(id),c=clientOf(field(i,"client_id"));
-        var d=latestDraft(id,["PENDING_REVIEW","AUTO_SENT","SENT","FAILED","REJECTED"]);
-        var evs=STATE.interactions.filter(function(e){return field(e,"invoice_id")===id});
-        var pending=d&&field(d,"status")==="PENDING_REVIEW";
-        var mailHtml=d?('<div class="mail"><div class="subj">'+esc(field(d,"subject"))+'</div>'+(pending?'<textarea id="edit_body">'+esc(field(d,"body"))+'</textarea>':esc(field(d,"body")))+'</div>'):'<div class="muted">No draft yet.</div>';
-        var actions=pending?('<div class="row-actions" style="margin-top:.7rem"><button class="btn gold sm" onclick="approveEdited(\''+field(d,"id")+'\')">Approve &amp; send</button><button class="btn sm danger" onclick="reject(\''+field(d,"id")+'\');closeDrawer()">Reject</button><button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\');closeDrawer()">Legal</button></div>'):'';
-        var procBtn=(field(i,"status")==="ACTIVE")?'<button class="btn sm" onclick="doProcess(\''+id+'\')">Process now</button>':'';
-        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">'+esc(field(i,"invoice_no"))+'</div><h1 style="font-size:1.3rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' <span style="color:var(--gold)">★ VIP</span>':'')+'</h1></div><button class="x" onclick="closeDrawer()">×</button></div>'+
-          '<div class="db">'+
-          '<div class="kv"><span class="k">Amount</span><span class="num">'+money(field(i,"amount"),field(i,"currency"))+'</span>'+
-          '<span class="k">Due</span><span>'+esc(String(field(i,"due_date")||"").slice(0,10))+' · '+(Number(field(i,"days_overdue")||0))+' days overdue</span>'+
-          '<span class="k">Stage</span><span>'+stageChip(field(i,"stage"))+' '+riskChip(field(i,"risk_level"))+'</span>'+
-          '<span class="k">Status</span><span>'+statusChip(field(i,"status"))+'</span>'+
-          '<span class="k">Follow-ups</span><span>'+(field(i,"followup_count")||0)+'</span>'+
-          (field(c,"email")?'<span class="k">Email</span><span class="muted">'+esc(field(c,"email"))+'</span>':'')+
-          '</div>'+
-          '<div style="display:flex;gap:.4rem;margin-bottom:.8rem">'+procBtn+'</div>'+
-          '<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:.2rem 0 .5rem">Latest draft</h2>'+mailHtml+actions+
-          '<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:1.2rem 0 .3rem">History</h2>'+
-          '<div class="timeline">'+(evs.length?evs.map(function(e){return '<div class="ev"><span class="dot"></span><div class="when">'+dt(field(e,"created_at"))+' · '+esc(field(e,"kind")||"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join(""):'<div class="muted">No history yet.</div>')+'</div>'+
-          '</div>';
-        $("scrim").classList.add("on");$("drawer").classList.add("on");
-      };
       window.closeDrawer=function(){$("scrim").classList.remove("on");$("drawer").classList.remove("on")};
-      window.approveEdited=function(id){var t=$("edit_body");var body=t?t.value:null;action(body?{action:"approve",draft_id:id,edited_body:body}:{action:"approve",draft_id:id},"Approved & sent");closeDrawer()};
+      window.openInvoice=function(id){var i=invoiceOf(id),c=clientOf(field(i,"client_id"));var d=latestDraft(id,["PENDING_REVIEW","AUTO_SENT","SENT","FAILED","REJECTED"]);var evs=STATE.interactions.filter(function(e){return field(e,"invoice_id")===id});var pending=d&&field(d,"status")==="PENDING_REVIEW";
+        var mailHtml=d?('<div class="mail"><div class="subj">'+esc(field(d,"subject"))+'</div>'+(pending?'<textarea id="edit_body">'+esc(field(d,"body"))+'</textarea>':esc(field(d,"body")))+'</div>'):'<div class="muted">No draft yet.</div>';
+        var acts=pending?'<div class="row-actions" style="margin-top:.7rem"><button class="btn gold sm" onclick="approveEdited(\''+field(d,"id")+'\')">Approve &amp; send</button><button class="btn sm danger" onclick="reject(\''+field(d,"id")+'\');closeDrawer()">Reject</button><button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\');closeDrawer()">Legal</button></div>':'';
+        var proc=(field(i,"status")==="ACTIVE")?'<button class="btn sm" onclick="doProcess(\''+id+'\')">Process now</button> <button class="btn sm" onclick="doProcess(\''+id+'\')">Regenerate</button>':'';
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">'+esc(field(i,"invoice_no"))+'</div><h1 style="font-size:1.3rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' <span style="color:var(--gold)">★ VIP</span>':'')+'</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db"><div class="kv"><span class="k">Amount</span><span class="num">'+money(field(i,"amount"),field(i,"currency"))+'</span><span class="k">Due</span><span>'+String(field(i,"due_date")||"").slice(0,10)+' · '+(Number(field(i,"days_overdue")||0))+'d overdue</span><span class="k">Stage</span><span>'+stageChip(field(i,"stage"))+' '+riskChip(field(i,"risk_level"))+'</span><span class="k">Status</span><span>'+statusChip(field(i,"status"))+'</span><span class="k">Follow-ups</span><span>'+(field(i,"followup_count")||0)+'</span>'+(field(c,"email")?'<span class="k">Email</span><span class="muted">'+esc(field(c,"email"))+'</span>':"")+'</div><div style="display:flex;gap:.4rem;margin-bottom:.8rem">'+proc+'</div><h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:.2rem 0 .5rem">Latest draft</h2>'+mailHtml+acts+'<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:1.2rem 0 .3rem">History</h2><div class="timeline">'+(evs.length?evs.map(function(e){return '<div class="ev"><span class="dot"></span><div class="when">'+dt(field(e,"created_at"))+' · '+esc(field(e,"kind")||"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join(""):'<div class="muted">No history yet.</div>')+'</div></div>';openDrawerEl()};
+      window.approveEdited=function(id){var t=$("edit_body");var b=t?t.value:null;action(b?{action:"approve",draft_id:id,edited_body:b}:{action:"approve",draft_id:id},"Approved & sent");closeDrawer()};
+      window.openCustomer=function(cid){var c=clientOf(cid);var invs=invoicesForClient(cid);var evs=STATE.interactions.filter(function(e){return field(e,"client_id")===cid}).slice(0,12);var out=invs.filter(function(i){return field(i,"status")==="ACTIVE"}).reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Customer</div><h1 style="font-size:1.3rem">'+esc(field(c,"name"))+(field(c,"vip")?' <span style="color:var(--gold)">★</span>':'')+'</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db"><div class="kv"><span class="k">Email</span><span class="muted">'+esc(field(c,"email"))+'</span><span class="k">Outstanding</span><span class="num">'+money(out)+'</span><span class="k">Behavior</span><span>'+esc(field(c,"payment_behavior")||"AVERAGE")+'</span>'+(field(c,"notes")?'<span class="k">Notes</span><span>'+esc(field(c,"notes"))+'</span>':"")+'</div>'+
+          '<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:.2rem 0 .5rem">Invoices ('+invs.length+')</h2><table><tbody>'+invs.map(function(i){return '<tr class="clickable" onclick="openInvoice(\''+field(i,"id")+'\')"><td><b>'+esc(field(i,"invoice_no"))+'</b></td><td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td><td>'+stageChip(field(i,"stage"))+'</td><td>'+statusChip(field(i,"status"))+'</td></tr>'}).join("")+'</tbody></table>'+
+          '<h2 style="font-family:var(--serif);font-weight:500;font-size:1rem;margin:1.1rem 0 .3rem">Relationship history</h2><div class="timeline">'+(evs.length?evs.map(function(e){return '<div class="ev"><span class="dot"></span><div class="when">'+dt(field(e,"created_at"))+' · '+esc(field(e,"kind")||"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join(""):'<div class="muted">No history yet.</div>')+'</div></div>';openDrawerEl()};
     </script>
   </body>
 </html>

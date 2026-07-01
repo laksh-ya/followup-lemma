@@ -2,10 +2,11 @@
 #output_type_name: NotifyResult
 #function_name: notify
 
-"""Send a notification to a team/legal audience (daily digest, legal escalation) or a
-client (strict notice) over the pod's configured channel. Degrades gracefully: if no
-channel is configured (or the connector isn't wired yet), it records the notification
-as an interaction without failing the calling flow.
+"""Send a team/legal notification over the configured channel.
+  SLACK - real delivery via the Lemma Slack connector (delegated account)
+Telegram is offered as a managed agent *surface* (two-way chat), not an outbound
+push channel — see the README. Degrades gracefully: with no channel configured it
+records the notification as an interaction without failing the caller.
 """
 
 from typing import Optional
@@ -15,12 +16,11 @@ from lemma_sdk import FunctionContext, Pod
 
 
 class NotifyInput(BaseModel):
-    audience: str = "team"          # team | legal | client
+    audience: str = "team"            # team | legal
     message: str
-    channel: Optional[str] = None   # override; else pod_config.notify_channel
+    chat_id: Optional[str] = None     # explicit channel override
     invoice_id: Optional[str] = None
     client_id: Optional[str] = None
-    to: Optional[str] = None        # explicit recipient (phone/handle) for client notices
 
 
 class NotifyResult(BaseModel):
@@ -29,42 +29,34 @@ class NotifyResult(BaseModel):
     note: str
 
 
+def send_chat(cfg, audience, message, chat_id=None):
+    """Returns (channel, delivered, note). Lemma-native Slack connector only."""
+    channel = (cfg.get("notify_channel") or "NONE").upper()
+    if channel == "SLACK":
+        target = chat_id or (cfg.get("slack_legal_channel") if audience == "legal" else cfg.get("slack_channel")) or cfg.get("slack_channel") or ""
+        if not target:
+            return ("SLACK", False, "Slack channel id not set in Settings")
+        try:
+            Pod.from_env().connectors.execute("workspace-slack", "chat_post_message",
+                {"channel": target, "text": message})
+            return ("SLACK", True, "sent via Slack")
+        except Exception as exc:
+            return ("SLACK", False, "connect the Slack account first: " + str(exc)[:160])
+    return ("NONE", False, "no channel configured")
+
+
 async def notify(ctx: FunctionContext, data: NotifyInput) -> NotifyResult:
     pod = Pod.from_env()
-    cfg_items = pod.records.list("pod_config", limit=1).to_dict()["items"]
-    cfg = cfg_items[0] if cfg_items else {}
-    channel = (data.channel or cfg.get("notify_channel") or "NONE").upper()
-
-    delivered = False
-    note = ""
-
-    if channel in ("SLACK", "WHATSAPP"):
-        try:
-            # Wired in Phase 3 (connectors). Until a connector account exists this
-            # raises and we fall through to a logged-but-undelivered notification.
-            if channel == "SLACK":
-                pod.connectors.execute("workspace-slack", "chat_post_message",
-                                       {"text": data.message})
-            else:
-                pod.connectors.execute("workspace-whatsapp", "whatsapp_send_message",
-                                       {"to": data.to or "", "text": data.message})
-            delivered = True
-            note = f"sent via {channel}"
-        except Exception as exc:
-            note = f"{channel} not deliverable yet: {str(exc)[:200]}"
-    else:
-        note = "no channel configured"
+    cfg = (pod.records.list("pod_config", limit=1).to_dict()["items"] or [{}])[0]
+    channel, delivered, note = send_chat(cfg, data.audience, data.message, data.chat_id)
 
     pod.table("interactions").create({
-        "invoice_id": data.invoice_id,
-        "client_id": data.client_id,
+        "invoice_id": data.invoice_id, "client_id": data.client_id,
         "kind": "NOTIFICATION_SENT",
-        "channel": channel if channel in ("SLACK", "WHATSAPP") else "SYSTEM",
+        "channel": channel if channel in ("SLACK",) else "SYSTEM",
         "direction": "OUTBOUND",
         "summary": f"[{data.audience}] {data.message[:200]}",
-        "detail": {"delivered": delivered, "channel": channel, "note": note, "to": data.to},
-        "actor_label": "notify",
-        "level": "SUCCESS" if delivered else "WARN",
-    })
+        "detail": {"delivered": delivered, "channel": channel, "note": note},
+        "actor_label": "notify", "level": "SUCCESS" if delivered else "WARN"})
 
     return NotifyResult(delivered=delivered, channel=channel, note=note)

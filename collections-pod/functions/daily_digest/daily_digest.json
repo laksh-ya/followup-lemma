@@ -1,0 +1,14 @@
+{
+  "name": "daily_digest",
+  "description": "Compose and send a collections status digest to the team over the configured channel (Telegram/Slack/WhatsApp), or log it.",
+  "type": "API",
+  "code": { "$file": "code.py" },
+  "permissions": {
+    "grants": [
+      { "resource_type": "datastore_table", "resource_name": "invoices", "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "datastore_table", "resource_name": "drafts", "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "datastore_table", "resource_name": "pod_config", "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "datastore_table", "resource_name": "interactions", "permission_ids": ["datastore.table.read", "datastore.record.write"] }
+    ]
+  }
+}

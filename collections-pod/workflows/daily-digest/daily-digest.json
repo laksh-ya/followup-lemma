@@ -1,0 +1,10 @@
+{
+  "name": "daily-digest",
+  "description": "Scheduled team digest: compute collections stats and post them to the notification channel.",
+  "start": { "type": "MANUAL" },
+  "nodes": [
+    { "id": "digest", "type": "FUNCTION", "label": "Send digest", "config": { "function_name": "daily_digest", "input_mapping": {} } },
+    { "id": "end", "type": "END", "label": "Done" }
+  ],
+  "edges": [ { "id": "e_d_end", "source": "digest", "target": "end" } ]
+}

@@ -90,13 +90,13 @@ async def make_fallback_draft(ctx: FunctionContext, data: FallbackInput) -> Fall
     subject = SUBJECT_BY_STAGE[stage].format(**fmt)
     body = BODY_BY_STAGE[stage].format(**fmt)
 
-    # supersede older pending drafts
-    existing = pod.records.list("drafts", filter=[
+    # supersede any prior active draft for this invoice
+    prior = pod.records.list("drafts", limit=200, filter=[
         {"field": "invoice_id", "op": "eq", "value": data.invoice_id},
-        {"field": "status", "op": "eq", "value": "PENDING_REVIEW"},
     ]).to_dict()["items"]
-    if existing:
-        pod.records.bulk_update("drafts", [{"id": r["id"], "status": "SUPERSEDED"} for r in existing])
+    to_sup = [r["id"] for r in prior if r.get("status") in ("PENDING_REVIEW", "APPROVED", "AUTO_SENT", "SENT", "FAILED")]
+    if to_sup:
+        pod.records.bulk_update("drafts", [{"id": i, "status": "SUPERSEDED"} for i in to_sup])
 
     draft = pod.table("drafts").create({
         "invoice_id": data.invoice_id,

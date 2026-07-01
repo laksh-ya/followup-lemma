@@ -1,14 +1,14 @@
 {
-  "name": "notify",
-  "description": "Send a team/legal notification via the Lemma Slack connector, or log it as undelivered if no channel is wired. Never breaks the calling flow.",
+  "name": "test_channel",
+  "description": "Send a test email or test notification using the current Settings, for the operator to verify config.",
   "type": "API",
   "code": { "$file": "code.py" },
   "permissions": {
     "grants": [
       { "resource_type": "datastore_table", "resource_name": "pod_config",
         "permission_ids": ["datastore.table.read", "datastore.record.read"] },
-      { "resource_type": "datastore_table", "resource_name": "interactions",
-        "permission_ids": ["datastore.table.read", "datastore.record.write"] },
+      { "resource_type": "connector", "resource_name": "gmail",
+        "permission_ids": ["connector.use"] },
       { "resource_type": "connector", "resource_name": "slack",
         "permission_ids": ["connector.use"] }
     ]

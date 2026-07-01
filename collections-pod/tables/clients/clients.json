@@ -5,6 +5,8 @@
   "columns": [
     { "name": "name", "type": "TEXT", "required": true, "max_length": 200 },
     { "name": "email", "type": "TEXT", "required": true, "max_length": 320 },
+    { "name": "email_norm", "type": "TEXT", "unique": true, "max_length": 320,
+      "description": "Lowercased/trimmed email — the stable customer identity key used to dedupe across invoices, uploads, and replies" },
     { "name": "phone", "type": "TEXT", "max_length": 40 },
     { "name": "company", "type": "TEXT", "max_length": 200 },
     { "name": "vip", "type": "BOOLEAN", "default": false },

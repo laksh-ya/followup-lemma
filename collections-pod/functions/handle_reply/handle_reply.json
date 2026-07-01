@@ -1,0 +1,14 @@
+{
+  "name": "handle_reply",
+  "description": "Resolve an inbound customer reply to a customer/invoice (by email), classify it, log it, and apply the side effect (promise/dispute/paid).",
+  "type": "API",
+  "code": { "$file": "code.py" },
+  "permissions": {
+    "grants": [
+      { "resource_type": "datastore_table", "resource_name": "clients", "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "datastore_table", "resource_name": "invoices", "permission_ids": ["datastore.table.read", "datastore.record.read", "datastore.record.write"] },
+      { "resource_type": "datastore_table", "resource_name": "promises", "permission_ids": ["datastore.table.read", "datastore.record.write"] },
+      { "resource_type": "datastore_table", "resource_name": "interactions", "permission_ids": ["datastore.table.read", "datastore.record.write"] }
+    ]
+  }
+}

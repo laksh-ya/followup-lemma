@@ -1,0 +1,21 @@
+{
+  "name": "collections-concierge",
+  "description": "Read-only Q&A agent for the collections book, exposed on the Telegram surface. Answers finance/legal teammates' questions about overdue invoices, customers, the legal queue, pending approvals and promises — from live pod data.",
+  "instruction": { "$file": "instruction.md" },
+  "toolsets": ["POD"],
+  "agent_runtime": { "profile_id": "system:lemma" },
+  "permissions": {
+    "grants": [
+      { "resource_type": "datastore_table", "resource_name": "invoices",
+        "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "datastore_table", "resource_name": "clients",
+        "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "datastore_table", "resource_name": "drafts",
+        "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "datastore_table", "resource_name": "promises",
+        "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "datastore_table", "resource_name": "interactions",
+        "permission_ids": ["datastore.table.read", "datastore.record.read"] }
+    ]
+  }
+}

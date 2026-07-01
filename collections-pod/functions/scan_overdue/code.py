@@ -62,6 +62,11 @@ async def scan_overdue(ctx: FunctionContext, data: ScanInput) -> ScanResult:
         ]).to_dict()["items"]
         failed_ids = {str(d["invoice_id"]) for d in failed}
 
+    # invoices that already have a current draft — don't re-draft on an automatic scan
+    alldrafts = pod.records.list("drafts", limit=2000).to_dict()["items"]
+    active_draft_ids = {str(d["invoice_id"]) for d in alldrafts
+                        if d.get("status") in ("PENDING_REVIEW", "APPROVED", "AUTO_SENT", "SENT")}
+
     enqueued = skipped = refreshed = 0
     to_enqueue = []
     refresh_updates = []
@@ -88,6 +93,9 @@ async def scan_overdue(ctx: FunctionContext, data: ScanInput) -> ScanResult:
             skipped += 1
             continue
         if str(inv["id"]) in queued_ids:
+            skipped += 1
+            continue
+        if not data.force and str(inv["id"]) in active_draft_ids:
             skipped += 1
             continue
         if not data.force and not data.failed_only:

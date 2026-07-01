@@ -1,0 +1,25 @@
+╭─────────────── Details ────────────────╮
+│ App                                    │
+│   created_at:                          │
+│ 2026-06-30T19:50:00.526758Z            │
+│   id:                                  │
+│ 019f1a14-d44e-72bf-b574-796414870545   │
+│   name: collections-app                │
+│   pod_id:                              │
+│ 019f1a13-b975-737f-bc6a-32fe0c8fff1d   │
+│   public_slug: collections-app         │
+│   status: READY                        │
+│   updated_at:                          │
+│ 2026-06-30T22:28:09.483729Z            │
+│   url:                                 │
+│ https://collections-app.apps.lemma.wor │
+│ k                                      │
+│   user_id:                             │
+│ 729cba25-a8ff-4951-8854-2919a438d6b0   │
+│   current_release_id:                  │
+│ 019f1aa5-9e82-76a4-bd92-21097d936b8d   │
+│   source_archive_path:                 │
+│ source/archive.zip                     │
+│   visibility: POD                      │
+│ Message Bundle uploaded successfully   │
+╰────────────────────────────────────────╯

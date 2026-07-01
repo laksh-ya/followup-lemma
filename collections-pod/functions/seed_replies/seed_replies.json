@@ -1,0 +1,14 @@
+{
+  "name": "seed_replies",
+  "description": "Seed dummy inbound customer replies (promise/dispute/paid/question) tied to tracked customers, driving the right side effects.",
+  "type": "API",
+  "code": { "$file": "code.py" },
+  "permissions": {
+    "grants": [
+      { "resource_type": "datastore_table", "resource_name": "invoices", "permission_ids": ["datastore.table.read", "datastore.record.read", "datastore.record.write"] },
+      { "resource_type": "datastore_table", "resource_name": "clients", "permission_ids": ["datastore.table.read", "datastore.record.read"] },
+      { "resource_type": "datastore_table", "resource_name": "promises", "permission_ids": ["datastore.table.read", "datastore.record.write"] },
+      { "resource_type": "datastore_table", "resource_name": "interactions", "permission_ids": ["datastore.table.read", "datastore.record.write"] }
+    ]
+  }
+}

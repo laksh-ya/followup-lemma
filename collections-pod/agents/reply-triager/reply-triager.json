@@ -1,0 +1,29 @@
+{
+  "name": "reply-triager",
+  "description": "Classifies an inbound customer reply (promise/dispute/paid/question) and extracts promise details, for the live mailbox path.",
+  "instruction": { "$file": "instruction.md" },
+  "toolsets": ["POD"],
+  "agent_runtime": { "profile_id": "019f1a68-6538-72c3-a21a-67a907e13374" },
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "body": { "type": "string" },
+      "invoice_no": { "type": "string" },
+      "client_name": { "type": "string" }
+    },
+    "required": ["body"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "category": { "type": "string", "enum": ["PROMISE_TO_PAY", "DISPUTE", "PAID_CLAIM", "QUESTION", "OTHER"] },
+      "promised_date": { "type": "string" },
+      "promised_amount": { "type": "number" },
+      "sentiment": { "type": "string" },
+      "suggested_status": { "type": "string" },
+      "summary": { "type": "string" }
+    },
+    "required": ["category", "summary"]
+  },
+  "permissions": { "grants": [] }
+}
