@@ -131,7 +131,7 @@ async def validate_draft(ctx: FunctionContext, data: ValidateInput) -> ValidateR
         "kind": "DRAFT_GENERATED",
         "channel": "SYSTEM",
         "direction": "INTERNAL",
-        "summary": f"Draft generated for {inv.get('invoice_no')} ({data.stage}); validation {'passed' if passed else 'FAILED'}",
+        "summary": (f"Draft ready for approval · {inv.get('invoice_no')} ({data.stage})" if data.needs_review else f"Draft generated · {inv.get('invoice_no')} ({data.stage}) — clears to auto-send") + ("" if passed else " · validation FAILED"),
         "detail": {"errors": errors, "risk_level": data.risk_level},
         "actor_label": "validate_draft",
         "level": "INFO" if passed else "WARN",

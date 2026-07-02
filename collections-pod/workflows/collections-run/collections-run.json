@@ -20,7 +20,7 @@
       "config": {
         "rules": [
           { "condition": "classify.status != 'ACTIVE'", "next_node_id": "complete" },
-          { "condition": "classify.is_escalated == `true`", "next_node_id": "do_flag_legal" }
+          { "condition": "classify.is_escalated == `true`", "next_node_id": "complete" }
         ]
       }
     },
@@ -106,16 +106,6 @@
       }
     },
     {
-      "id": "do_flag_legal", "type": "FUNCTION", "label": "Flag legal",
-      "config": {
-        "function_name": "flag_legal",
-        "input_mapping": {
-          "invoice_id": { "type": "expression", "value": "classify.invoice_id" },
-          "reason": { "type": "literal", "value": "legal_escalation" }
-        }
-      }
-    },
-    {
       "id": "complete", "type": "FUNCTION", "label": "Complete queue item",
       "config": {
         "function_name": "complete_queue_item",
@@ -130,7 +120,7 @@
   "edges": [
     { "id": "e_classify_route", "source": "classify", "target": "route_classified" },
     { "id": "e_rc_default", "source": "route_classified", "target": "drafter", "label": "active, not escalated (default)" },
-    { "id": "e_rc_legal", "source": "route_classified", "target": "do_flag_legal", "label": "escalated" },
+    { "id": "e_rc_escalated", "source": "route_classified", "target": "complete", "label": "30+ escalated → reviewer handles (no auto email/legal)" },
     { "id": "e_rc_skip", "source": "route_classified", "target": "complete", "label": "not active" },
     { "id": "e_drafter_validate", "source": "drafter", "target": "validate" },
     { "id": "e_validate_route", "source": "validate", "target": "route_validated" },
@@ -140,7 +130,6 @@
     { "id": "e_rd_default", "source": "route_dispatch", "target": "auto_dispatch", "label": "auto (default)" },
     { "id": "e_rd_review", "source": "route_dispatch", "target": "complete", "label": "needs review (draft stays PENDING_REVIEW)" },
     { "id": "e_auto_complete", "source": "auto_dispatch", "target": "complete" },
-    { "id": "e_legal_complete", "source": "do_flag_legal", "target": "complete" },
     { "id": "e_complete_end", "source": "complete", "target": "end" }
   ]
 }

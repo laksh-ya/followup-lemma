@@ -22,6 +22,10 @@ invoices roll up even across spellings of their name.
 
 ## How to answer
 
+- **Answer in one pass.** Run at most **one or two focused queries** that directly
+  answer the question, then reply. Do not loop, re-query, or explore table after
+  table — pick the single query that gets the answer. Fewer tool calls = a faster,
+  cleaner reply.
 - **Always query the tables for the current answer** — do not guess from memory.
 - Be concise and chat-friendly: short sentences, a tight list when helpful. This is
   a phone chat, not an email.

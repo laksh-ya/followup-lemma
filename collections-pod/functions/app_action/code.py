@@ -40,11 +40,38 @@ def _log(pod, **kw):
 
 
 def _send_email(pod, cfg, to, subject, body):
-    """(provider, delivered, message_id, error). Lemma-native: IN_APP records only,
-    GMAIL delivers via the Gmail connector on the invoking user's account."""
+    """(provider, delivered, message_id, error). IN_APP records only; MAILTRAP sends to the
+    Mailtrap sandbox over SMTP (captures every recipient in one test inbox); GMAIL delivers
+    via the Gmail connector on the invoking user's account."""
     mode = (cfg.get("mail_mode") or "IN_APP").upper()
-    if not cfg.get("email_enabled") or mode != "GMAIL" or not to:
+    if not cfg.get("email_enabled") or mode == "IN_APP" or not to:
         return ("in_app", True, None, None)
+
+    if mode == "MAILTRAP":
+        host = cfg.get("mailtrap_host") or "sandbox.smtp.mailtrap.io"
+        port = int(cfg.get("mailtrap_port") or 2525)
+        user = cfg.get("mailtrap_user")
+        pw = cfg.get("mailtrap_pass")
+        if not user or not pw:
+            return ("mailtrap", False, None, "Mailtrap SMTP username/password not set (Setup guide)")
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.utils import formataddr
+            msg = MIMEText(body, "plain", "utf-8")
+            msg["Subject"] = subject
+            frm = cfg.get("email_from") or "Collections <collections@demo.test>"
+            msg["From"] = frm
+            msg["To"] = to
+            s = smtplib.SMTP(host, port, timeout=20)
+            s.starttls()
+            s.login(user, pw)
+            s.sendmail(frm, [to], msg.as_string())
+            s.quit()
+            return ("mailtrap", True, None, None)
+        except Exception as exc:
+            return ("mailtrap", False, None, str(exc)[:400])
+
     try:
         res = pod.connectors.execute("workspace-gmail", "gmail_send_email",
             {"recipient_email": to, "subject": subject, "body": body}).to_dict().get("result", {})
@@ -111,6 +138,31 @@ async def app_action(ctx: FunctionContext, data: AppActionInput) -> AppActionRes
         pod.table("followup_queue").create({"invoice_id": data.invoice_id, "reason": "manual", "status": "QUEUED"})
         return AppActionResult(ok=True, action=a, detail="enqueued for processing")
 
+    if a == "escalate":
+        # Reviewer escalates an account to legal directly (no draft needed — e.g. 30+ ESCALATED items).
+        if not data.invoice_id:
+            return AppActionResult(ok=False, action=a, detail="invoice_id required")
+        inv = pod.table("invoices").get(data.invoice_id)
+        if not inv:
+            return AppActionResult(ok=False, action=a, detail="invoice not found")
+        client = pod.table("clients").get(str(inv["client_id"])) if inv.get("client_id") else {}
+        pod.table("invoices").update(data.invoice_id, {"status": "LEGAL"})
+        cfg = (pod.records.list("pod_config", limit=1).to_dict()["items"] or [{}])[0]
+        lines = [f"⚖️ Legal escalation — {inv.get('invoice_no','')} · {(client or {}).get('name','')}"]
+        if inv.get("amount") is not None:
+            lines.append(f"Amount: ₹{int(inv.get('amount') or 0):,} · {inv.get('days_overdue','?')}d overdue")
+        if (client or {}).get("email"):
+            lines.append(f"Contact: {client['email']}")
+        if data.note:
+            lines.append(f"Reviewer note: {data.note}")
+        delivered, info = _notify(pod, cfg, "legal", "\n".join(lines))
+        _log(pod, invoice_id=data.invoice_id, client_id=inv.get("client_id"),
+             kind="LEGAL_FLAGGED", channel="SLACK" if delivered else "SYSTEM",
+             direction="OUTBOUND" if delivered else "INTERNAL",
+             summary=f"{inv.get('invoice_no','')} escalated to legal by reviewer" + (" · posted to #legal" if delivered else f" · #legal not sent ({info})"),
+             actor_user=ctx.user_id, actor_label="reviewer", level="ERROR")
+        return AppActionResult(ok=True, action=a, detail="escalated to legal" + (" · posted to #legal" if delivered else f" · {info}"))
+
     if a in ("approve", "reject", "flag"):
         draft = pod.table("drafts").get(data.draft_id) if data.draft_id else _latest_pending_draft(pod, data.invoice_id)
         if not draft:
@@ -138,7 +190,7 @@ async def app_action(ctx: FunctionContext, data: AppActionInput) -> AppActionRes
             _log(pod, invoice_id=invoice_id, client_id=inv.get("client_id") if inv else None, draft_id=str(draft["id"]),
                  kind="EMAIL_SENT" if delivered else "EMAIL_FAILED", channel=draft.get("channel", "EMAIL"),
                  direction="OUTBOUND",
-                 summary=(f"Approved & sent {inv.get('invoice_no') if inv else ''} via {provider}" + (" (edited)" if edited else "")) if delivered else f"Approved send FAILED via {provider}",
+                 summary=(f"Approved & sent follow-up to {to_email or 'customer'} · {inv.get('invoice_no') if inv else ''}" + (" (edited)" if edited else "")) if delivered else f"Approved send FAILED to {to_email or 'customer'} · {inv.get('invoice_no') if inv else ''}",
                  actor_user=ctx.user_id, actor_label="reviewer", level="SUCCESS" if delivered else "ERROR")
             return AppActionResult(ok=delivered, action=a, detail=f"{'sent' if delivered else 'failed'} via {provider}")
 
@@ -192,7 +244,29 @@ async def app_action(ctx: FunctionContext, data: AppActionInput) -> AppActionRes
              summary=(f"Manual message to {(client or {}).get('name', to)} via {provider}") if delivered else f"Manual send FAILED via {provider}: {err}",
              detail={"to": to, "subject": subject, "manual": True}, actor_user=ctx.user_id, actor_label="operator",
              level="SUCCESS" if delivered else "ERROR")
+        # If this reply was in answer to a logged inbound reply, tag that reply as resolved.
+        if data.note:
+            try:
+                rec = pod.table("interactions").get(str(data.note))
+                det = dict(rec.get("detail") or {}) if rec else {}
+                det.update({"reply_sent": body, "resolved": True})
+                pod.table("interactions").update(str(data.note), {"detail": det})
+            except Exception:
+                pass
         return AppActionResult(ok=delivered, action=a, detail=f"{'sent' if delivered else 'recorded'} via {provider}")
+
+    if a == "resolve_reply":
+        rid = data.note
+        if not rid:
+            return AppActionResult(ok=False, action=a, detail="reply id required")
+        try:
+            rec = pod.table("interactions").get(str(rid))
+            det = dict(rec.get("detail") or {}) if rec else {}
+            det["resolved"] = True
+            pod.table("interactions").update(str(rid), {"detail": det})
+            return AppActionResult(ok=True, action=a, detail="reply resolved")
+        except Exception as exc:
+            return AppActionResult(ok=False, action=a, detail=str(exc)[:200])
 
     if a == "notify":
         cfg = (pod.records.list("pod_config", limit=1).to_dict()["items"] or [{}])[0]
@@ -242,6 +316,8 @@ async def app_action(ctx: FunctionContext, data: AppActionInput) -> AppActionRes
         fields = data.config or {}
         allowed = {"auto_dispatch", "human_in_loop", "review_stage4", "review_high_risk",
                    "email_enabled", "mail_mode", "email_from",
+                   "mailtrap_host", "mailtrap_port", "mailtrap_user", "mailtrap_pass",
+                   "langfuse_public_key", "langfuse_secret_key", "langfuse_host",
                    "notify_channel", "slack_channel", "slack_legal_channel", "slack_account_id",
                    "telegram_bot_token", "telegram_team_chat_id", "telegram_legal_chat_id",
                    "company_name", "sender_identity"}

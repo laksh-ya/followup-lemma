@@ -6,107 +6,153 @@
     <title>Collections Agent</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-      :root{color-scheme:light;--paper:#f6f7f9;--card:#ffffff;--card2:#fbfcfe;--ink:#0f172a;--muted:#64748b;--line:#e6e9ef;--line2:#eef1f5;--accent:#4f46e5;--accent-ink:#ffffff;--accent-soft:#eef0fe;--sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;--chip:#f1f3f8;--low:#16a34a;--med:#d97706;--high:#dc2626;--blue:#2563eb;--purple:#7c3aed;--shadow:0 1px 2px rgba(15,23,42,.04),0 2px 8px rgba(15,23,42,.05);--shadow-lg:0 10px 30px rgba(15,23,42,.12);--serif:var(--sans);--gold:var(--accent);--glow:var(--card2);}
-      [data-theme="dark"]{color-scheme:dark;--paper:#0b0f17;--card:#141a24;--card2:#111722;--ink:#e6eaf2;--muted:#93a1b5;--line:#232c3a;--line2:#1c2431;--accent:#818cf8;--accent-ink:#0b0f17;--accent-soft:#1b2137;--chip:#1b232f;--shadow:0 1px 2px rgba(0,0,0,.3);--shadow-lg:0 12px 34px rgba(0,0,0,.5);}
+      /* Geist / Vercel design system. Variable names kept stable so inline styles keep working. */
+      :root{color-scheme:light;
+        --paper:#fafafa;--card:#ffffff;--card2:#fafafa;--ink:#171717;--muted:#666666;--faint:#8f8f8f;
+        --line:rgba(0,0,0,.10);--line2:rgba(0,0,0,.06);
+        --accent:#006bff;--accent-ink:#ffffff;--accent-soft:rgba(0,107,255,.10);
+        --primary:#171717;--primary-ink:#ffffff;
+        --chip:#f1f1f0;--low:#15803d;--med:#b45309;--high:#c81e1e;--blue:#1d4ed8;--purple:#334155;
+        --sans:"Hanken Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+        --shadow:0 1px 2px rgba(0,0,0,.04);--shadow-lg:0 8px 30px rgba(0,0,0,.12);
+        --serif:var(--sans);--gold:var(--accent);--glow:var(--card2);--accent-ink2:var(--accent-ink);}
+      [data-theme="dark"]{color-scheme:dark;
+        --paper:#0a0a0a;--card:#111111;--card2:#181818;--ink:#ededed;--muted:#a1a1a1;--faint:#707070;
+        --line:rgba(255,255,255,.13);--line2:rgba(255,255,255,.07);
+        --accent:#3b9eff;--accent-ink:#001227;--accent-soft:rgba(59,158,255,.14);
+        --primary:#ededed;--primary-ink:#0a0a0a;
+        --chip:#1f1f1f;--low:#3fb950;--med:#d29922;--high:#ff6166;--blue:#5b8def;--purple:#94a3b8;
+        --shadow:0 1px 2px rgba(0,0,0,.4);--shadow-lg:0 12px 40px rgba(0,0,0,.6);}
       *{box-sizing:border-box}
-      body{margin:0;min-height:100dvh;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
-      .wrap{max-width:1240px;margin:0 auto;padding:clamp(1rem,3vw,1.75rem)}
-      svg.ic{width:1em;height:1em;display:inline-block;vertical-align:-.14em;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+      body{margin:0;min-height:100dvh;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+      ::selection{background:var(--accent-soft)}
+      a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+      :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+      .wrap{max-width:1180px;margin:0 auto;padding:clamp(1rem,3vw,2rem)}
+      svg.ic{width:1em;height:1em;display:inline-block;vertical-align:-.14em;stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
       .top{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
       .brand{display:flex;align-items:center;gap:.7rem}
-      .brand .logo{width:38px;height:38px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:1.1rem;box-shadow:var(--shadow)}
-      .eyebrow{font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
-      h1{font-weight:700;font-size:clamp(1.15rem,2.4vw,1.4rem);letter-spacing:-.02em;margin:0;line-height:1.1}
-      .pill{display:inline-flex;align-items:center;gap:.4rem;font-size:.75rem;font-weight:500;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.34rem .7rem}
-      .pip{width:7px;height:7px;border-radius:50%;background:var(--low);box-shadow:0 0 0 3px color-mix(in srgb,var(--low) 22%,transparent)}
-      .btn{display:inline-flex;align-items:center;gap:.4rem;font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:.5rem .85rem;font-weight:600;font-size:.82rem;transition:.14s;box-shadow:var(--shadow);white-space:nowrap}
-      .btn:hover{border-color:color-mix(in srgb,var(--accent) 40%,var(--line));background:var(--card2)}
-      .btn.gold{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 1px 2px rgba(79,70,229,.25)} .btn.gold:hover{background:color-mix(in srgb,var(--accent) 88%,#000);border-color:transparent}
-      .btn.sm{padding:.34rem .6rem;font-size:.76rem;border-radius:8px} .btn.ghost{background:none;box-shadow:none;border-color:transparent} .btn.ghost:hover{background:var(--chip);border-color:transparent}
-      .btn.danger{color:var(--high)} .btn.danger:hover{border-color:var(--high);background:color-mix(in srgb,var(--high) 8%,transparent)}
-      .btn.good{color:var(--low)} .btn.good:hover{border-color:var(--low);background:color-mix(in srgb,var(--low) 9%,transparent)}
-      .btn:disabled{opacity:.5;cursor:default}
-      .iconbtn{display:inline-grid;place-items:center;width:34px;height:34px;padding:0;font-size:.98rem}
-      .iconbtn.on{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,var(--line));color:var(--accent)}
+      .brand .logo{width:36px;height:36px;border-radius:9px;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;font-size:1.05rem}
+      .eyebrow{font-size:.8rem;color:var(--muted);font-weight:400}
+      h1{font-weight:700;font-size:clamp(1.2rem,2.4vw,1.45rem);letter-spacing:-.025em;margin:0;line-height:1.1}
+      .pill{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;font-weight:500;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.3rem .65rem}
+      .pip{width:7px;height:7px;border-radius:50%;background:var(--low);box-shadow:0 0 0 3px color-mix(in srgb,var(--low) 20%,transparent)}
+      .btn{display:inline-flex;align-items:center;gap:.4rem;font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:7px;padding:.5rem .85rem;font-weight:500;font-size:.88rem;transition:.14s;white-space:nowrap;height:36px}
+      .btn:hover{background:var(--card2);border-color:color-mix(in srgb,var(--ink) 22%,var(--line))}
+      .btn.gold{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)} .btn.gold:hover{background:color-mix(in srgb,var(--primary) 85%,var(--paper));border-color:transparent}
+      .btn.sm{padding:.36rem .62rem;font-size:.83rem;height:32px} .btn.ghost{background:none;border-color:transparent} .btn.ghost:hover{background:var(--chip);border-color:transparent}
+      .btn.danger{color:var(--high)} .btn.danger:hover{border-color:color-mix(in srgb,var(--high) 45%,var(--line));background:color-mix(in srgb,var(--high) 8%,transparent)}
+      .btn.good{color:var(--low)} .btn.good:hover{border-color:color-mix(in srgb,var(--low) 45%,var(--line));background:color-mix(in srgb,var(--low) 9%,transparent)}
+      .btn:disabled{opacity:.45;cursor:default}
+      .iconbtn{display:inline-grid;place-items:center;width:34px;height:34px;padding:0;font-size:1rem;color:var(--muted)}
+      .iconbtn:hover{color:var(--ink)} .iconbtn.on{background:var(--chip);color:var(--ink);border-color:var(--line)}
       .menu{position:relative;display:inline-block}
-      .menu .items{position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:.4rem;min-width:220px;z-index:20;display:none}
+      .menu .items{position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:.35rem;min-width:230px;z-index:20;display:none}
       .menu.open .items{display:block}
-      .menu .items button{display:flex;align-items:center;gap:.55rem;width:100%;text-align:left;font:inherit;font-weight:500;font-size:.83rem;background:none;border:none;color:var(--ink);padding:.5rem .55rem;border-radius:8px;cursor:pointer}
-      .menu .items button:hover{background:var(--chip)} .menu .items button svg.ic{color:var(--muted)} .menu .items hr{border:none;border-top:1px solid var(--line);margin:.3rem 0}
-      .tabs{display:flex;gap:.15rem;flex-wrap:wrap;margin:1.25rem 0 1.1rem;border-bottom:1px solid var(--line)}
-      .tabs button{display:inline-flex;align-items:center;gap:.45rem;font:inherit;font-size:.84rem;font-weight:600;cursor:pointer;border:none;background:none;color:var(--muted);padding:.55rem .8rem;position:relative;border-radius:8px 8px 0 0}
-      .tabs button svg.ic{opacity:.8}
-      .tabs button:hover{color:var(--ink);background:var(--card2)}
-      .tabs button.on{color:var(--accent)} .tabs button.on::after{content:"";position:absolute;left:.5rem;right:.5rem;bottom:-1px;height:2px;background:var(--accent);border-radius:2px}
-      .tabs .badge{display:inline-block;min-width:18px;text-align:center;font-size:.68rem;font-weight:700;background:var(--chip);border-radius:999px;padding:.05rem .4rem;color:var(--muted)}
-      .tabs button.on .badge{background:var(--accent-soft);color:var(--accent)}
+      .menu .items button{display:flex;align-items:center;gap:.6rem;width:100%;text-align:left;font:inherit;font-weight:400;font-size:.85rem;background:none;border:none;color:var(--ink);padding:.5rem .55rem;border-radius:7px;cursor:pointer}
+      .menu .items button:hover{background:var(--chip)} .menu .items button svg.ic{color:var(--faint)} .menu .items hr{border:none;border-top:1px solid var(--line2);margin:.3rem 0}
+      .tabs{display:flex;gap:.1rem;flex-wrap:wrap;margin:1.4rem 0 .2rem;border-bottom:1px solid var(--line)}
+      .tabs button{display:inline-flex;align-items:center;gap:.45rem;font:inherit;font-size:.94rem;font-weight:500;cursor:pointer;border:none;background:none;color:var(--muted);padding:.65rem .9rem;position:relative}
+      .tabs button svg.ic{opacity:.75;font-size:.95rem}
+      .tabs button:hover{color:var(--ink)}
+      .tabs button.on{color:var(--ink)} .tabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink)}
+      .tabs .badge{display:inline-block;min-width:17px;text-align:center;font-size:.66rem;font-weight:600;background:var(--chip);border-radius:999px;padding:.05rem .38rem;color:var(--muted)}
+      .tabs button.on .badge{background:var(--ink);color:var(--paper)}
       .tabs .badge.hot{background:var(--high);color:#fff}
-      .usecase{display:flex;gap:.55rem;align-items:center;color:var(--muted);border-radius:10px;padding:.1rem .1rem .9rem;margin-bottom:.4rem;font-size:.82rem}
-      .usecase svg.ic{color:var(--accent);font-size:1rem}
-      .usecase .who{font-weight:700;color:var(--ink)}
-      .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;margin-bottom:1.1rem}
-      .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;box-shadow:var(--shadow)}
-      .stat .n{font-size:1.55rem;font-weight:700;line-height:1;letter-spacing:-.02em} .stat .l{font-size:.72rem;color:var(--muted);margin-top:.4rem;font-weight:500}
-      .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.1rem 1.2rem;margin-bottom:1rem;box-shadow:var(--shadow)}
-      .panel h2{font-weight:700;font-size:.98rem;letter-spacing:-.01em;margin:0 0 .8rem;display:flex;align-items:center;gap:.5rem} .panel h2 svg.ic{color:var(--muted);font-size:1rem}
-      table{width:100%;border-collapse:collapse;font-size:.84rem} th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:.5rem .55rem;border-bottom:1px solid var(--line)}
-      td{padding:.6rem .55rem;border-bottom:1px solid var(--line2);vertical-align:middle}
+      .subnav{display:flex;gap:.3rem;flex-wrap:wrap;margin:1.1rem 0 1.2rem}
+      .subnav button{font:inherit;font-size:.9rem;font-weight:500;cursor:pointer;border:1px solid transparent;background:none;color:var(--muted);padding:.45rem .9rem;border-radius:999px}
+      .subnav button:hover{color:var(--ink);background:var(--chip)} .subnav button.on{background:var(--ink);color:var(--paper)}
+      .subnav .grow{flex:1}
+      .usecase{display:none}
+      .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.7rem;margin-bottom:1.1rem}
+      .stat{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.9rem 1rem}
+      .stat .n{font-size:1.9rem;font-weight:700;line-height:1;letter-spacing:-.03em} .stat .l{font-size:.8rem;color:var(--muted);margin-top:.5rem}
+      .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1.15rem 1.3rem;margin-bottom:1.1rem}
+      .panel h2{font-weight:600;font-size:1.05rem;letter-spacing:-.015em;margin:0 0 .9rem;display:flex;align-items:center;gap:.5rem} .panel h2 svg.ic{color:var(--faint);font-size:1.05rem}
+      table{width:100%;border-collapse:collapse;font-size:.9rem} th{text-align:left;font-size:.74rem;font-weight:500;color:var(--faint);padding:.55rem .6rem;border-bottom:1px solid var(--line)}
+      td{padding:.7rem .6rem;border-bottom:1px solid var(--line2);vertical-align:middle}
       tbody tr:last-child td{border-bottom:none}
-      tr.clickable{cursor:pointer;transition:background .12s} tr.clickable:hover td{background:var(--card2)}
+      tr.clickable{cursor:pointer;transition:background .1s} tr.clickable:hover td{background:var(--card2)}
       .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
-      .chip{display:inline-flex;align-items:center;gap:.25rem;font-size:.68rem;font-weight:600;padding:.16rem .5rem;border-radius:6px;white-space:nowrap;line-height:1.2}
+      .chip{display:inline-flex;align-items:center;gap:.25rem;font-size:.7rem;font-weight:500;padding:.14rem .5rem;border-radius:999px;white-space:nowrap;line-height:1.3;border:1px solid transparent}
       .muted{color:var(--muted)} .row-actions{display:flex;gap:.35rem;flex-wrap:wrap;align-items:center}
-      .empty{text-align:center;color:var(--muted);padding:2.4rem 1rem} .empty .big{font-size:1.15rem;font-weight:700;color:var(--ink);margin-bottom:.35rem;letter-spacing:-.01em}
-      .empty svg.ic{font-size:1.9rem;color:var(--line);margin-bottom:.4rem;stroke-width:1.6}
-      .scrim{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.2s;z-index:40} .scrim.on{opacity:1;pointer-events:auto}
+      .empty{text-align:center;color:var(--muted);padding:2.6rem 1rem} .empty .big{font-size:1.1rem;font-weight:600;color:var(--ink);margin-bottom:.35rem;letter-spacing:-.01em}
+      .empty svg.ic{font-size:1.8rem;color:var(--line);margin-bottom:.5rem;stroke-width:1.5}
+      .scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.2s;z-index:40} .scrim.on{opacity:1;pointer-events:auto}
       .drawer{position:fixed;top:0;right:0;height:100dvh;width:min(600px,96vw);background:var(--paper);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .24s cubic-bezier(.4,0,.2,1);z-index:50;overflow-y:auto} .drawer.on{transform:none}
-      .drawer .dh{position:sticky;top:0;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:1rem 1.2rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;z-index:2} .drawer .db{padding:1.1rem 1.2rem}
-      .x{display:grid;place-items:center;width:32px;height:32px;font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:8px;font-size:1.1rem;color:var(--muted);line-height:1} .x:hover{color:var(--ink);border-color:var(--muted)}
-      .kv{display:grid;grid-template-columns:auto 1fr;gap:.45rem 1rem;font-size:.84rem;margin:.4rem 0 1rem} .kv .k{color:var(--muted)}
-      .mail{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;white-space:pre-wrap;font-size:.85rem;line-height:1.6} .mail .subj{font-weight:700;margin-bottom:.5rem;font-size:.95rem}
-      .timeline{margin:.5rem 0 0;padding-left:.2rem} .timeline .ev{position:relative;padding:.35rem 0 .7rem .95rem;border-left:2px solid var(--line);margin-left:.2rem} .timeline .ev:last-child{border-color:transparent} .timeline .ev .dot{position:absolute;left:-6px;top:.5rem;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--paper)} .timeline .ev .when{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums} .timeline .ev .what{font-size:.85rem}
-      textarea,input,select{font:inherit;font-size:.85rem;width:100%;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:.5rem .65rem;transition:.12s} textarea:focus,input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+      .drawer .dh{position:sticky;top:0;background:color-mix(in srgb,var(--paper) 90%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:1rem 1.2rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;z-index:2} .drawer .db{padding:1.1rem 1.2rem}
+      .x{display:grid;place-items:center;width:32px;height:32px;font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:7px;font-size:1rem;color:var(--muted);line-height:1} .x:hover{color:var(--ink)}
+      .kv{display:grid;grid-template-columns:auto 1fr;gap:.5rem 1rem;font-size:.85rem;margin:.4rem 0 1rem} .kv .k{color:var(--muted)}
+      .mail{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:.95rem 1.05rem;white-space:pre-wrap;font-size:.86rem;line-height:1.65} .mail .subj{font-weight:600;margin-bottom:.5rem;font-size:.95rem}
+      .timeline{margin:.3rem 0 0} .timeline .ev{display:grid;grid-template-columns:16px 1fr;gap:.6rem;padding:.3rem 0} .timeline .ev .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);margin:.35rem auto 0;position:relative} .timeline .ev .dot::after{content:"";position:absolute;left:50%;top:12px;transform:translateX(-50%);width:1px;height:calc(100% + .6rem);background:var(--line2)} .timeline .ev:last-child .dot::after{display:none} .timeline .ev .when{font-size:.72rem;color:var(--faint);font-variant-numeric:tabular-nums} .timeline .ev .what{font-size:.85rem;margin-top:.05rem}
+      textarea,input,select{font:inherit;font-size:.85rem;width:100%;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:.5rem .65rem;transition:.12s} textarea:focus,input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
       textarea{min-height:120px;resize:vertical;line-height:1.55}
-      label.fld{display:block;margin:.7rem 0} label.fld .lbl{font-size:.74rem;font-weight:600;color:var(--muted);margin-bottom:.3rem;display:block}
-      .toggle{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.6rem 0;border-bottom:1px solid var(--line2);font-size:.86rem} .toggle:last-child{border-bottom:none}
-      .sw{position:relative;display:inline-block;width:40px;height:23px;flex:none;cursor:pointer} .sw input{opacity:0;width:0;height:0} .sw .tk{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.16s} .sw .tk::before{content:"";position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.16s;box-shadow:0 1px 2px rgba(0,0,0,.2)} .sw input:checked+.tk{background:var(--accent)} .sw input:checked+.tk::before{transform:translateX(17px)}
+      label.fld{display:block;margin:.75rem 0} label.fld .lbl{font-size:.76rem;font-weight:500;color:var(--muted);margin-bottom:.3rem;display:block}
+      .toggle{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem 0;border-bottom:1px solid var(--line2);font-size:.87rem} .toggle:last-child{border-bottom:none} .toggle b{font-weight:500}
+      .sw{position:relative;display:inline-block;width:40px;height:23px;flex:none;cursor:pointer} .sw input{opacity:0;width:0;height:0} .sw .tk{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.16s} .sw .tk::before{content:"";position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.16s;box-shadow:0 1px 2px rgba(0,0,0,.25)} .sw input:checked+.tk{background:var(--accent)} .sw input:checked+.tk::before{transform:translateX(17px)}
       .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem} @media(max-width:680px){.grid2{grid-template-columns:1fr}}
-      .guide{background:var(--card2);border:1px solid var(--line2);border-radius:10px;padding:.75rem .9rem;font-size:.8rem;line-height:1.6;margin-top:.5rem} .guide code{font-family:var(--mono);font-size:.92em;background:var(--chip);padding:.08rem .35rem;border-radius:5px} .guide ol{margin:.3rem 0 0 1rem;padding:0}
+      .guide{background:var(--card2);border:1px solid var(--line2);border-radius:8px;padding:.8rem .9rem;font-size:.8rem;line-height:1.65;margin-top:.5rem;color:var(--muted)} .guide code{font-family:var(--mono);font-size:.9em;background:var(--chip);color:var(--ink);padding:.1rem .35rem;border-radius:5px} .guide ol{margin:.3rem 0 0 1rem;padding:0}
       .center{min-height:80dvh;display:grid;place-items:center;text-align:center}
-      .toast{position:fixed;bottom:1.3rem;left:50%;transform:translateX(-50%) translateY(2rem);background:var(--ink);color:var(--paper);padding:.65rem 1.1rem;border-radius:10px;font-size:.84rem;font-weight:500;opacity:0;transition:.24s;z-index:80;box-shadow:var(--shadow-lg)} .toast.on{opacity:1;transform:translateX(-50%)}
-      .busy{position:fixed;inset:0;background:rgba(15,23,42,.4);backdrop-filter:blur(3px);display:none;place-items:center;z-index:90} .busy.on{display:grid}
-      .busy .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.4rem 1.8rem;text-align:center;min-width:220px;box-shadow:var(--shadow-lg)}
-      .spin{display:inline-block;width:22px;height:22px;border:2.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite} @keyframes sp{to{transform:rotate(360deg)}}
-      .working{display:flex;align-items:center;gap:.55rem;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);color:color-mix(in srgb,var(--accent) 80%,var(--ink));border-radius:10px;padding:.55rem .85rem;margin-bottom:1rem;font-size:.83rem;font-weight:500}
-      .hero{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1.2rem;background:linear-gradient(120deg,var(--accent) 0%,color-mix(in srgb,var(--accent) 78%,var(--purple)) 100%);color:#fff;border-radius:16px;padding:1.3rem 1.5rem;margin-bottom:1rem;box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 28%,transparent)}
-      .hero .big{font-size:clamp(1.8rem,4.5vw,2.5rem);font-weight:800;line-height:1;letter-spacing:-.025em}
-      .hero .sub{font-size:.78rem;opacity:.85;margin-top:.5rem;font-weight:500}
-      .hero .minis{display:flex;gap:1.6rem}
-      .hero .mini .n{font-size:1.5rem;line-height:1;font-weight:700}
-      .hero .mini .l{font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;opacity:.8;margin-top:.35rem;font-weight:600}
-      .needs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.75rem;margin-bottom:1rem}
-      .acard{cursor:pointer;text-align:left;font:inherit;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem;transition:.14s;box-shadow:var(--shadow);position:relative;overflow:hidden}
-      .acard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac,var(--accent))}
-      .acard:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
-      .acard .acn{font-size:1.6rem;line-height:1;font-weight:700;color:var(--ac,var(--ink));letter-spacing:-.02em}
-      .acard .acl{font-weight:700;font-size:.85rem;margin-top:.35rem;display:flex;align-items:center;gap:.4rem} .acard .acl svg.ic{color:var(--ac,var(--muted))}
-      .acard .acs{font-size:.74rem;color:var(--muted);margin-top:.15rem}
-      .allclear{display:flex;align-items:center;gap:.7rem;background:color-mix(in srgb,var(--low) 9%,transparent);border:1px solid color-mix(in srgb,var(--low) 28%,transparent);border-radius:12px;padding:.9rem 1.1rem;margin-bottom:1rem;font-size:.86rem} .allclear svg.ic{color:var(--low);font-size:1.2rem}
+      .toast{position:fixed;bottom:1.4rem;left:50%;transform:translateX(-50%) translateY(2rem);background:var(--ink);color:var(--paper);padding:.65rem 1.1rem;border-radius:8px;font-size:.84rem;font-weight:500;opacity:0;transition:.24s;z-index:120;box-shadow:var(--shadow-lg)} .toast.on{opacity:1;transform:translateX(-50%)}
+      .busy{position:fixed;inset:0;background:color-mix(in srgb,var(--paper) 70%,transparent);backdrop-filter:blur(4px);display:none;place-items:center;z-index:110} .busy.on{display:grid}
+      .busy .box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1.5rem 1.8rem;text-align:center;min-width:240px;box-shadow:var(--shadow-lg)}
+      .busy .box p{margin:.9rem 0 0;font-weight:500;font-size:.9rem} .busy .box .sub{margin-top:.25rem;font-weight:400;font-size:.78rem;color:var(--muted)}
+      .spin{display:inline-block;width:26px;height:26px;border:2.5px solid var(--line);border-top-color:var(--ink);border-radius:50%;animation:sp .7s linear infinite} @keyframes sp{to{transform:rotate(360deg)}}
+      .dots span{display:inline-block;width:6px;height:6px;margin:0 2px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite both} .dots span:nth-child(2){animation-delay:.2s} .dots span:nth-child(3){animation-delay:.4s} @keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+      .working{display:flex;align-items:center;gap:.55rem;background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.6rem .85rem;margin-bottom:1rem;font-size:.84rem}
+      .skel{background:linear-gradient(90deg,var(--chip) 25%,color-mix(in srgb,var(--chip) 50%,var(--card)) 50%,var(--chip) 75%);background-size:200% 100%;animation:shim 1.3s infinite;border-radius:5px} @keyframes shim{to{background-position:-200% 0}}
+      .hero{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1.4rem;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1.4rem 1.6rem;margin-bottom:1rem}
+      .hero .big{font-size:clamp(2rem,5vw,2.9rem);font-weight:600;line-height:1;letter-spacing:-.035em}
+      .hero .sub{font-size:.8rem;color:var(--muted);margin-top:.55rem}
+      .hero .minis{display:flex;gap:1.8rem}
+      .hero .mini .n{font-size:1.5rem;line-height:1;font-weight:600;letter-spacing:-.02em}
+      .hero .mini .l{font-size:.7rem;color:var(--muted);margin-top:.4rem}
+      .needs{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.7rem;margin-bottom:1rem}
+      .acard{cursor:pointer;text-align:left;font:inherit;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem 1.05rem;transition:.14s;position:relative}
+      .acard:hover{border-color:color-mix(in srgb,var(--ink) 25%,var(--line));transform:translateY(-1px)}
+      .acard .acn{font-size:1.7rem;line-height:1;font-weight:600;color:var(--ac,var(--ink));letter-spacing:-.03em}
+      .acard .acl{font-weight:500;font-size:.86rem;margin-top:.4rem;display:flex;align-items:center;gap:.4rem} .acard .acl svg.ic{color:var(--ac,var(--faint))}
+      .acard .acs{font-size:.75rem;color:var(--muted);margin-top:.2rem}
+      .allclear{display:flex;align-items:center;gap:.7rem;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem 1.15rem;margin-bottom:1rem;font-size:.87rem} .allclear svg.ic{color:var(--low);font-size:1.2rem}
       .split{display:grid;grid-template-columns:1fr 1fr;gap:1rem}@media(max-width:760px){.split{grid-template-columns:1fr}}
-      .seg{display:inline-flex;background:var(--chip);border-radius:9px;padding:3px;gap:2px} .seg button{border:none;background:none;font:inherit;font-weight:600;font-size:.8rem;color:var(--muted);padding:.35rem .7rem;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem} .seg button.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
-      .field-in{width:auto;display:inline-flex;align-items:center;gap:.4rem;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.3rem .55rem}
-      .conn{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:600;padding:.2rem .5rem;border-radius:6px} .conn.ok{background:color-mix(in srgb,var(--low) 12%,transparent);color:var(--low)} .conn.no{background:var(--chip);color:var(--muted)}
+      .seg{display:inline-flex;background:var(--chip);border-radius:8px;padding:3px;gap:2px} .seg button{border:none;background:none;font:inherit;font-weight:500;font-size:.8rem;color:var(--muted);padding:.35rem .7rem;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem} .seg button.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+      .conn{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:500;padding:.2rem .5rem;border-radius:999px} .conn.ok{background:color-mix(in srgb,var(--low) 12%,transparent);color:var(--low)} .conn.no{background:var(--chip);color:var(--muted)}
+      /* onboarding modal */
+      .modal{position:fixed;inset:0;display:none;place-items:center;z-index:130;padding:1rem} .modal.on{display:grid}
+      .modal .mcard{background:var(--card);border:1px solid var(--line);border-radius:14px;max-width:520px;width:100%;padding:1.6rem 1.7rem;box-shadow:var(--shadow-lg);animation:pop .2s ease}
+      @keyframes pop{from{opacity:0;transform:scale(.97) translateY(6px)}to{opacity:1;transform:none}}
+      .modal h2{font-size:1.3rem;font-weight:600;letter-spacing:-.02em;margin:.2rem 0 .3rem}
+      .step{display:flex;gap:.8rem;padding:.65rem 0;border-top:1px solid var(--line2)} .step .si{flex:none;width:30px;height:30px;border-radius:7px;background:var(--chip);color:var(--ink);display:grid;place-items:center} .step .st{font-weight:500;font-size:.88rem} .step .sd{font-size:.8rem;color:var(--muted);margin-top:.1rem}
+      /* bottom-docked assistant */
+      .askbtn{position:fixed;right:1.4rem;bottom:1.4rem;height:48px;padding:0 1.05rem;gap:.5rem;border-radius:999px;background:var(--primary);color:var(--primary-ink);border:none;display:inline-flex;align-items:center;font:inherit;font-weight:500;font-size:.86rem;cursor:pointer;box-shadow:var(--shadow-lg);z-index:70;transition:.15s} .askbtn:hover{transform:translateY(-1px)} .askbtn svg.ic{font-size:1.05rem}
+      .askpanel{position:fixed;right:1.4rem;bottom:1.4rem;width:min(400px,calc(100vw - 2rem));height:min(620px,calc(100dvh - 2rem));background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);z-index:75;display:none;flex-direction:column;overflow:hidden} .askpanel.on{display:flex}
+      .askpanel .ah{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1rem;border-bottom:1px solid var(--line)} .askpanel .ah .t{font-weight:600;font-size:.9rem;display:flex;align-items:center;gap:.5rem} .askpanel .ab{flex:1;min-height:0;overflow:auto;background:var(--card)}
+      .askpanel lemma-agent-thread{display:block;height:100%;--lemma-bg:var(--card);--lemma-fg:var(--ink);--lemma-text:var(--ink);--lemma-color:var(--ink);--lemma-muted:var(--muted);--lemma-border:var(--line);--lemma-accent:var(--accent);--lemma-radius:8px;color:var(--ink)}
+      .askmsgs{flex:1;min-height:0;overflow:auto;padding:.9rem 1rem;display:flex;flex-direction:column;gap:.6rem}
+      .askempty{font-size:.86rem;line-height:1.7;color:var(--muted);margin:auto 0}
+      .amsg{max-width:88%;padding:.55rem .8rem;border-radius:13px;font-size:.9rem;line-height:1.55;word-wrap:break-word;overflow-wrap:anywhere}
+      .amsg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+      .amsg.bot{align-self:flex-start;background:var(--chip);color:var(--ink);border-bottom-left-radius:4px}
+      .amsg.bot strong{font-weight:700} .amsg.bot em{font-style:italic} .amsg.bot code{font-family:var(--mono);font-size:.86em;background:color-mix(in srgb,var(--ink) 8%,transparent);padding:.05rem .3rem;border-radius:4px} .amsg.bot ul{margin:.35rem 0;padding-left:1.15rem} .amsg.bot li{margin:.12rem 0} .amsg.bot a{color:var(--accent);text-decoration:underline}
+      .athink{align-self:flex-start;color:var(--muted);font-size:.85rem;display:inline-flex;gap:.5rem;align-items:center;padding:.3rem .2rem}
+      .acompose{display:flex;gap:.5rem;padding:.6rem;border-top:1px solid var(--line);background:var(--card)} .acompose input{flex:1} .acompose button{flex:none}
     </style>
   </head>
   <body>
-    <div id="app"><div class="center"><p>Loading Collections Agent…</p></div></div>
+    <div id="app"><div class="center"><div class="spin"></div></div></div>
     <div class="scrim" id="scrim" onclick="closeDrawer()"></div>
     <div class="drawer" id="drawer"></div>
     <div class="toast" id="toast"></div>
-    <div class="busy" id="busy"><div class="box"><div class="spin"></div><p id="busymsg" style="margin:.7rem 0 0">Working…</p></div></div>
+    <div class="busy" id="busy"><div class="box"><div class="spin"></div><p id="busymsg">Working…</p><p class="sub" id="busysub"></p></div></div>
+    <div class="modal" id="onboard"></div>
+    <button class="askbtn" id="askbtn" onclick="toggleAsk(true)" style="display:none"></button>
+    <div class="askpanel" id="askpanel">
+      <div class="ah"><div><div class="t"></div><div class="asub muted" style="font-size:.72rem;margin-top:.1rem"></div></div><button class="x" onclick="toggleAsk(false)">&times;</button></div>
+      <div class="ab" id="askbody"></div>
+    </div>
     <input type="file" id="csvfile" accept=".csv,.xlsx,.xls" style="display:none" />
 
     <script>
@@ -120,7 +166,7 @@
       function theme(){try{return localStorage.getItem("ca-theme")||"light"}catch(e){return "light"}}
       function applyTheme(t){document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("ca-theme",t)}catch(e){}}
       function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(function(){t.classList.remove("on")},2600)}
-      function setBusy(on,msg){$("busy").classList.toggle("on",!!on);if(msg)$("busymsg").textContent=msg}
+      function setBusy(on,msg,sub){$("busy").classList.toggle("on",!!on);if(msg)$("busymsg").textContent=msg;var s=$("busysub");if(s)s.textContent=(on?(sub||""):"")}
       function money(v,cur){cur=cur||"INR";return (cur==="INR"?"₹":cur+" ")+Number(v||0).toLocaleString("en-IN")}
       // Full timestamp everywhere (date + time). ts = long, dt = same (kept for call-sites).
       function ts(s){if(!s)return"—";var d=new Date(s);return isNaN(d)?String(s):d.toLocaleString(undefined,{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}
@@ -158,6 +204,7 @@
         play:'<path d="M6 3l14 9-14 9z"/>',
         x:'<path d="M18 6 6 18M6 6l12 12"/>',
         chevron:'<path d="m6 9 6 6 6-6"/>',
+        help:'<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
         hash:'<path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>',
         dollar:'<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
         bolt:'<path d="M13 2 3 14h7l-1 8 10-12h-7z"/>',
@@ -177,7 +224,100 @@
       function statusChip(s){return chip(s,STATUS_C[s]||"--muted")}
       function draftChip(s){var m={AUTO_SENT:"--low",SENT:"--low",PENDING_REVIEW:"--med",REJECTED:"--muted",FAILED:"--high"};return chip(s.replace("_"," "),m[s]||"--muted")}
 
-      async function boot(){applyTheme(theme());try{client=new window.LemmaClient.LemmaClient();var a=await client.initialize();if(a.status!=="authenticated")return signIn();ME=a.user||{};await loadData();render();subscribe();}catch(e){fatal((e&&e.message)||"error")}}
+      async function boot(){applyTheme(theme());try{client=new window.LemmaClient.LemmaClient();var a=await client.initialize();if(a.status!=="authenticated")return signIn();ME=a.user||{};await loadData();render();subscribe();initAsk();maybeOnboard();}catch(e){fatal((e&&e.message)||"error")}}
+
+      // ---- bottom-docked assistant (created once, survives re-renders & theme toggles)
+      var ASK={conv:null,msgs:[],busy:false,custom:false};
+      // tiny, safe markdown → HTML (escapes first). bold/italic/code/links/bullets/headings.
+      function md(t){
+        t=esc(String(t==null?"":t));
+        t=t.replace(/`([^`]+)`/g,'<code>$1</code>');
+        t=t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+        t=t.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+        var lines=t.split(/\r?\n/),out=[],inList=false;
+        lines.forEach(function(l){
+          var m=l.match(/^\s*[-*•]\s+(.*)$/);
+          if(m){if(!inList){out.push("<ul>");inList=true;}out.push("<li>"+m[1]+"</li>");return;}
+          if(inList){out.push("</ul>");inList=false;}
+          var h=l.match(/^\s*#{1,4}\s+(.*)$/);
+          if(h){out.push("<strong>"+h[1]+"</strong>");return;}
+          out.push(l);
+        });
+        if(inList)out.push("</ul>");
+        return out.join("\n").replace(/\n(?!<\/?ul>|<li>)/g,"<br>").replace(/\n/g,"");
+      }
+      function initAsk(){
+        var b=$("askbtn");b.innerHTML=ic("chat")+' Ask';b.style.display='inline-flex';
+        $("askpanel").querySelector(".ah .t").innerHTML=ic("chat")+' Collections Concierge';
+        $("askpanel").querySelector(".ah .asub").textContent='Ask about overdue accounts, the legal queue, or a customer.';
+        try{ASK.custom=!!(client&&client.conversations&&client.conversations.create&&client.conversations.messages&&client.conversations.messages.list&&client.conversations.sendMessageStream)}catch(e){ASK.custom=false}
+        var body=$("askbody");
+        if(ASK.custom){
+          body.style.cssText="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--card)";
+          body.innerHTML='<div id="askmsgs" class="askmsgs"></div><form class="acompose" onsubmit="askSend(event)"><input id="askinput" placeholder="Ask about the book…" autocomplete="off"><button class="btn gold sm" type="submit" title="Send">'+ic("send")+'</button></form>';
+          renderAskMsgs();
+        } else if(!body.querySelector("lemma-agent-thread")){
+          body.innerHTML='<lemma-agent-thread agent="collections-concierge"></lemma-agent-thread>';
+        }
+        try{if(sessionStorage.getItem("ca-ask")==="1")toggleAsk(true)}catch(e){}
+      }
+      function renderAskMsgs(scroll){
+        var box=$("askmsgs");if(!box)return;
+        var html=ASK.msgs.length?ASK.msgs.map(function(m){return m.role==="user"?'<div class="amsg user">'+esc(m.text)+'</div>':'<div class="amsg bot">'+md(m.text)+'</div>'}).join("")
+          :'<div class="askempty">Hi — I\'m the <b>Collections Concierge</b>. Try:<br>• biggest overdue accounts<br>• what\'s in the legal queue?<br>• what\'s waiting for approval?<br>• what\'s going on with a customer?</div>';
+        if(ASK.busy)html+='<div class="athink"><span class="dots"><span></span><span></span><span></span></span> thinking…</div>';
+        box.innerHTML=html;box.scrollTop=box.scrollHeight;
+      }
+      window.askSend=async function(e){
+        if(e&&e.preventDefault)e.preventDefault();
+        var inp=$("askinput");if(!inp||ASK.busy)return;var q=inp.value.trim();if(!q)return;inp.value="";
+        ASK.msgs.push({role:"user",text:q});ASK.busy=true;renderAskMsgs(true);
+        try{
+          if(!ASK.conv){var c=await client.conversations.create({agent_name:"collections-concierge"});ASK.conv=(c&&(c.id||c.conversation_id||(c.data&&c.data.id)))||c;}
+          var cid=ASK.conv;
+          var s=await client.conversations.sendMessageStream(cid,{content:q});
+          if(s&&typeof s[Symbol.asyncIterator]==="function"){try{for await(var _ of s){}}catch(se){}}
+          var ans=await _askPoll(cid);
+          ASK.busy=false;ASK.msgs.push({role:"bot",text:ans||"(no answer)"});renderAskMsgs(true);
+        }catch(err){
+          // API shape unexpected — fall back to the proven component and forward the question
+          ASK.busy=false;ASK.custom=false;
+          var body=$("askbody");body.style.cssText="";body.innerHTML='<lemma-agent-thread agent="collections-concierge"></lemma-agent-thread>';
+          var el=body.querySelector("lemma-agent-thread");setTimeout(function(){try{el.send&&el.send(q)}catch(e2){}},350);
+        }
+      };
+      async function _askPoll(cid){
+        for(var i=0;i<24;i++){
+          await new Promise(function(r){setTimeout(r,1400)});
+          try{
+            var r=await client.conversations.messages.list(cid);var items=listOf(r);
+            var finals=items.filter(function(m){var role=field(m,"role");var meta=field(m,"metadata")||{};return role==="assistant"&&(meta.is_final_answer||field(m,"kind")==="text"||field(m,"kind")==="TEXT");});
+            if(finals.length){var last=finals[finals.length-1];var txt=field(last,"text")||field(last,"content")||"";if(txt&&String(txt).trim())return String(txt);}
+          }catch(e){}
+        }
+        return "The assistant is taking longer than usual — please try again.";
+      }
+      window.toggleAsk=function(open){
+        var p=$("askpanel"),b=$("askbtn");
+        var show=(open===undefined)?!p.classList.contains("on"):open;
+        p.classList.toggle("on",show);b.style.display=show?"none":"inline-flex";
+        try{sessionStorage.setItem("ca-ask",show?"1":"0")}catch(e){}
+      };
+      // ---- onboarding
+      function maybeOnboard(){try{if(!localStorage.getItem("ca-onboarded"))openOnboarding()}catch(e){}}
+      window.openOnboarding=function(){
+        function step(n,t,d){return '<div class="step"><div class="si">'+n+'</div><div><div class="st">'+t+'</div><div class="sd">'+d+'</div></div></div>'}
+        $("onboard").innerHTML='<div class="mcard"><div class="eyebrow">Welcome</div><h2>Your AI collections desk</h2>'+
+          '<p class="muted" style="font-size:.88rem;margin:.2rem 0 1rem;line-height:1.55">This agent chases overdue invoices for you — it drafts the right follow-up for each account, sends the safe ones automatically, and hands the sensitive ones to you.</p>'+
+          step(1,"Load your invoices","Data → Import from Google Sheets or CSV.")+
+          step(2,"The agent works the queue","It drafts and auto-sends low-risk follow-ups; risky ones wait in Approvals for you.")+
+          step(3,"Escalate &amp; track","Send an account to Legal (posts to Slack #legal); replies are read and classified automatically.")+
+          step(4,"Stay informed","A daily digest goes to Slack &amp; Telegram, and you can ask the assistant anything, anytime.")+
+          '<div style="margin-top:1.3rem;display:flex;gap:.5rem;justify-content:flex-end"><button class="btn gold" onclick="closeOnboarding()">Get started</button></div></div>';
+        $("onboard").classList.add("on");
+        $("onboard").onclick=function(e){if(e.target===$("onboard"))closeOnboarding()};
+      };
+      window.closeOnboarding=function(){$("onboard").classList.remove("on");try{localStorage.setItem("ca-onboarded","1")}catch(e){}};
       function signIn(){$("app").innerHTML='<div class="center"><div><div class="eyebrow">Collections Agent</div><h1>Welcome.</h1><p class="muted" style="margin:.6rem 0 1rem">Sign in to open the desk.</p><button class="btn gold" id="si">Sign in</button></div></div>';$("si").onclick=function(){client.auth.redirectToAuth()}}
 
       async function loadData(){
@@ -216,7 +356,12 @@
         var res=await fetch(base+"/pods/"+cfg.podId+"/functions/"+name+"/runs",{method:"POST",headers:{"Authorization":"Bearer "+tok,"Content-Type":"application/json"},body:JSON.stringify({input_data:input})});
         if(!res.ok)throw new Error(name+" failed ("+res.status+")");return (await res.json()).output_data;
       }
-      async function action(input,msg){try{var o=await invokeFn("app_action",input);await loadData();render(true);toast(msg||(o&&o.detail)||"Done");return o}catch(e){toast("⚠ "+(e.message||"failed"))}}
+      async function action(input,msg){
+        var bm={approve:["Sending follow-up…","Delivering the email and updating the account"],flag:["Escalating to legal…","Posting to Slack #legal"],reject:["Updating draft…",""],change_status:["Updating invoice…",""],notify:["Posting to Slack…",""]}[input.action]||["Working…",""];
+        setBusy(true,bm[0],bm[1]);
+        try{var o=await invokeFn("app_action",input);await loadData();render(true);setBusy(false);toast(msg||(o&&o.detail)||"Done");return o}
+        catch(e){setBusy(false);toast("⚠ "+(e.message||"failed"))}
+      }
       window.doScan=async function(){setBusy(true,"Scanning overdue invoices…");try{await invokeFn("app_action",{action:"scan"});await loadData();render(true);toast("Scan started — the agent is drafting follow-ups")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
       window.doProcess=function(id){action({action:"process",invoice_id:id},"Queued for the agent")};
 
@@ -261,11 +406,12 @@
 
       // ---- render shell
       function render(keep){
-        var p=pendingReal().length,legal=mainInvoices().filter(function(i){return field(i,"status")==="LEGAL"}).length,rep=repliesReal().length,proc=processingCount();
+        var p=pendingReal().length,escN=escalationInv().length,legal=mainInvoices().filter(function(i){return field(i,"status")==="LEGAL"}).length,rep=replyTasks().length,proc=processingCount();
         var enabledChans=STATE.statsChannels.filter(function(r){return field(r,"enabled")}).length;
-        var nav=[["dashboard","Overview","dashboard"],["invoices","Invoices","file"],["approvals","Approvals","inbox",p+legal,p>0],["replies","Replies","reply",rep],["customers","Customers","users"],["schedule","Schedule","calendar",enabledChans]];
-        function uicon(tab,icn,title){return '<button class="btn iconbtn'+(TAB===tab?' on':'')+'" title="'+title+'" onclick="go(\''+tab+'\')">'+ic(icn)+'</button>'}
-        $("app").innerHTML='<div class="wrap"><div class="top"><div class="brand"><div class="logo">'+ic("dollar")+'</div><div><div class="eyebrow">Acme Finance · Accounts Receivable</div><h1>Collections Agent</h1></div></div>'+
+        var mainNav=[["dashboard","Overview","dashboard"],["invoices","Invoices","file"],["approvals","Approvals","inbox",p+escN,p>0],["replies","Replies","reply",rep,rep>0]];
+        var sideNav=[["legal","Legal","scale",legal],["schedule","Schedule","calendar",enabledChans]];
+        function tabBtn(n){var b=n[3]?(' <span class="badge'+(n[4]?" hot":"")+'">'+n[3]+'</span>'):"";return '<button class="'+(TAB===n[0]?"on":"")+'" onclick="go(\''+n[0]+'\')">'+ic(n[2])+n[1]+b+'</button>'}
+        $("app").innerHTML='<div class="wrap"><div class="top"><div class="brand"><div class="logo">'+ic("dollar")+'</div><div><div class="eyebrow">Acme Finance</div><h1>Collections</h1></div></div>'+
           '<div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap"><span class="pill"><span class="pip"></span> Live</span>'+
           '<button class="btn gold sm" onclick="doScan()">'+ic("scan")+' Run scan</button>'+
           '<div class="menu" id="datamenu"><button class="btn sm" onclick="document.getElementById(\'datamenu\').classList.toggle(\'open\')">'+ic("upload")+' Data '+ic("chevron")+'</button><div class="items">'+
@@ -277,20 +423,23 @@
             '<button onclick="closeMenu();seedReplies()">'+ic("reply")+' Seed customer replies</button><hr>'+
             '<button onclick="closeMenu();resetData()" style="color:var(--high)">'+ic("trash")+' Reset all data</button>'+
           '</div></div>'+
-          '<span style="width:1px;height:24px;background:var(--line);margin:0 .15rem"></span>'+
-          uicon("ask","chat","Ask the agent")+
-          '<button class="btn iconbtn" title="Setup guide" onclick="openSetupGuide()">'+ic("book")+'</button>'+
-          uicon("settings","settings","Settings")+
+          '<span style="width:1px;height:22px;background:var(--line);margin:0 .2rem"></span>'+
+          '<button class="btn iconbtn" title="AI insights" onclick="openInsights()">'+ic("chart")+'</button>'+
+          '<button class="btn iconbtn" title="What is this?" onclick="openOnboarding()">'+ic("help")+'</button>'+
+          '<button class="btn iconbtn'+(TAB==="settings"?' on':'')+'" title="Settings" onclick="go(\'settings\')">'+ic("settings")+'</button>'+
           '<button class="btn iconbtn" title="Theme" onclick="toggleTheme()">'+ic(theme()==="dark"?"sun":"moon")+'</button>'+
           '</div></div>'+
-          '<div class="tabs">'+nav.map(function(n){var b=n[3]?(' <span class="badge'+(n[4]?" hot":"")+'">'+n[3]+'</span>'):"";return '<button class="'+(TAB===n[0]?"on":"")+'" onclick="go(\''+n[0]+'\')">'+ic(n[2])+n[1]+b+'</button>'}).join("")+'</div>'+
-          (proc?'<div class="working"><span class="spin" style="width:14px;height:14px;border-width:2px"></span> The agent is processing <b>&nbsp;'+proc+'&nbsp;</b> invoice(s) — drafts appear automatically.</div>':'')+
+          '<div class="tabs"><div style="display:flex;gap:.1rem;flex-wrap:wrap">'+mainNav.map(tabBtn).join("")+'</div><div style="display:flex;gap:.1rem;flex-wrap:wrap;margin-left:auto">'+sideNav.map(tabBtn).join("")+'</div></div>'+
+          (proc?'<div class="working"><span class="spin" style="width:15px;height:15px;border-width:2px"></span> Processing <b>'+proc+'</b> invoice'+(proc===1?"":"s")+' — drafts appear automatically.</div>':'')+
           '<div id="view"></div></div>';
         renderView();
       }
-      window.go=function(t){TAB=t;render()};window.toggleTheme=function(){applyTheme(theme()==="dark"?"light":"dark");render()};window.closeMenu=function(){var m=$("datamenu");if(m)m.classList.remove("open")};
-      function uc(who,what){return '<div class="usecase">'+ic("users")+'<div><span class="who">'+who+'</span> — '+what+'</div></div>'}
-      function renderView(){var v=$("view");if(!v)return;v.innerHTML=({dashboard:viewDashboard,invoices:viewInvoices,approvals:viewApprovals,replies:viewReplies,customers:viewCustomers,schedule:viewSchedule,ask:viewAsk,settings:viewSettings}[TAB]||viewDashboard)()}
+      window.go=function(t){TAB=t;render();window.scrollTo(0,0)};window.toggleTheme=function(){applyTheme(theme()==="dark"?"light":"dark");render()};window.closeMenu=function(){var m=$("datamenu");if(m)m.classList.remove("open")};
+      function uc(){return ""}
+      function subnav(items){return '<div class="subnav">'+items.map(function(it){return '<button class="'+(it[2]?"on":"")+'" onclick="'+it[1]+'">'+esc(it[0])+'</button>'}).join("")+'</div>'}
+      function renderView(){var v=$("view");if(!v)return;v.innerHTML=({dashboard:viewDashboard,invoices:viewInvoices,approvals:viewApprovals,replies:viewReplies,legal:viewLegal,schedule:viewSchedule,settings:viewSettings}[TAB]||viewDashboard)()}
+      // Replies that still need a human = REPLY_RECEIVED not yet actioned (a task in the Replies to-do).
+      function replyTasks(){return repliesReal().filter(function(e){var d=field(e,"detail")||{};return !d.auto_replied&&!d.resolved})}
       function kpi(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'}
       function ncard(n,l,sub,tab,c,icn){return '<button class="acard" onclick="go(\''+tab+'\')" style="--ac:var('+c+')"><div class="acn">'+n+'</div><div class="acl">'+(icn?ic(icn):"")+l+'</div><div class="acs">'+esc(sub)+'</div></button>'}
 
@@ -324,19 +473,21 @@
         // Hero — the one number that matters, with the three counts a collector watches.
         var hero='<div class="hero"><div><div class="big">'+money(outstanding)+'</div><div class="sub">Outstanding · '+active.length+' active invoice'+(active.length===1?"":"s")+'</div></div>'+
           '<div class="minis">'+
-          '<div class="mini"><div class="n">'+overdue+'</div><div class="l">Overdue</div></div>'+
-          '<div class="mini"><div class="n">'+pending+'</div><div class="l">To approve</div></div>'+
-          '<div class="mini"><div class="n">'+legalInv.length+'</div><div class="l">In legal</div></div>'+
+          '<div class="mini"><div class="n" style="color:'+(overdue?"var(--high)":"var(--ink)")+'">'+overdue+'</div><div class="l">Overdue</div></div>'+
+          '<div class="mini"><div class="n" style="color:'+(pending?"var(--med)":"var(--ink)")+'">'+pending+'</div><div class="l">To approve</div></div>'+
+          '<div class="mini"><div class="n" style="color:'+(legalInv.length?"var(--purple)":"var(--ink)")+'">'+legalInv.length+'</div><div class="l">In legal</div></div>'+
           '</div></div>';
 
         // Needs you now — only what requires a human, each jumping to the right tab.
+        var escCount=escalationInv().length;
         var cards=[];
         if(pending)cards.push(ncard(pending,"Awaiting approval","Drafts to review before they send","approvals","--med","inbox"));
-        if(legalInv.length)cards.push(ncard(legalInv.length,"In legal",money(legalAmt)+" at risk","approvals","--purple","scale"));
+        if(escCount)cards.push(ncard(escCount,"To escalate","30+ days — decide on legal","approvals","--high","scale"));
+        if(legalInv.length)cards.push(ncard(legalInv.length,"In legal",money(legalAmt)+" at risk","legal","--purple","scale"));
         if(openProm)cards.push(ncard(openProm,"Promises to pay","Payment dates to watch","replies","--low","clock"));
         if(disputes)cards.push(ncard(disputes,"Disputed","Dunning paused until resolved","invoices","--high","bolt"));
         var needs=cards.length?'<div class="needs">'+cards.join("")+'</div>':
-          '<div class="allclear">'+ic("checkc")+'<div><b>All clear.</b> <span class="muted">Nothing needs a human right now — the agent is handling the book.</span></div></div>';
+          '<div class="allclear">'+ic("checkc")+'<div><b>All clear.</b> <span class="muted">Nothing needs your attention right now.</span></div></div>';
 
         // Escalation pipeline
         var stages=["STAGE_1","STAGE_2","STAGE_3","STAGE_4","ESCALATED"],sc={};stages.forEach(function(s){sc[s]=inv.filter(function(i){return field(i,"stage")===s}).length});
@@ -352,13 +503,12 @@
         var acts=STATE.interactions.filter(function(e){var iid=field(e,"invoice_id");return !iid||!isDemoId(iid)});
         var showAll=!!STATE.dashAllLog;var shown=showAll?acts:acts.slice(0,8);
         var lc={INFO:"--muted",SUCCESS:"--low",WARN:"--med",ERROR:"--high"};
-        var rec=shown.length?'<div class="timeline">'+shown.map(function(e){return '<div class="ev"><span class="dot" style="background:var('+(lc[field(e,"level")]||"--gold")+')"></span><div class="when">'+dt(field(e,"created_at"))+' · '+esc(field(e,"kind")||"")+(field(e,"actor_label")?' · '+esc(field(e,"actor_label")):"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join("")+'</div>':'<div class="empty">No activity yet.</div>';
-        var moreBtn=acts.length>8?'<button class="btn sm ghost" onclick="STATE.dashAllLog='+(!showAll)+';renderView()">'+(showAll?'Show less ↑':'Full activity log ('+acts.length+') ↓')+'</button>':'';
+        var rec=shown.length?'<div class="timeline">'+shown.map(function(e){return '<div class="ev"><span class="dot" style="background:var('+(lc[field(e,"level")]||"--accent")+')"></span><div><div class="when">'+ts(field(e,"created_at"))+' · '+esc((field(e,"kind")||"").replace(/_/g," ").toLowerCase())+(field(e,"actor_label")?' · '+esc(field(e,"actor_label")):"")+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div></div>'}).join("")+'</div>':'<div class="empty">'+ic("clock")+'<div>No activity yet.</div></div>';
+        var moreBtn=acts.length>8?'<button class="btn sm ghost" onclick="STATE.dashAllLog='+(!showAll)+';renderView()">'+(showAll?'Show less':'View all '+acts.length)+'</button>':'';
 
-        return uc("Finance team","at-a-glance health of the book — the one number that matters, what needs you, and what the agent has handled on its own.")+
-          hero+needs+
-          '<div class="split"><div class="panel"><h2>Escalation pipeline</h2>'+bars+'</div><div class="panel"><h2>What the agent has done</h2>'+perf+'</div></div>'+
-          '<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Activity &amp; audit</h2>'+moreBtn+'</div><div style="margin-top:.6rem">'+rec+'</div></div>';
+        return hero+needs+
+          '<div class="split"><div class="panel"><h2>Escalation pipeline</h2>'+bars+'</div><div class="panel"><h2>Agent activity</h2>'+perf+'</div></div>'+
+          '<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem"><h2 style="margin:0">'+ic("clock")+'Recent activity</h2>'+moreBtn+'</div>'+rec+'</div>';
       }
 
       function invRow(i){var c=clientOf(field(i,"client_id"));var d=latestDraft(field(i,"id"),["AUTO_SENT","SENT","PENDING_REVIEW","FAILED"]);
@@ -369,12 +519,15 @@
         return '<tr class="clickable" onclick="openInvoice(\''+iid+'\')"><td><b>'+esc(field(i,"invoice_no"))+'</b><div class="muted" style="font-size:.76rem">'+esc(field(c,"name")||"")+(field(c,"vip")?' <span class="chip" style="background:var(--accent-soft);color:var(--accent);font-size:.6rem">VIP</span>':'')+'</div></td><td class="num">'+money(field(i,"amount"),field(i,"currency"))+'</td><td class="num">'+(Number(field(i,"days_overdue")||0))+'d</td><td>'+stageChip(field(i,"stage"))+'</td><td>'+riskChip(field(i,"risk_level"))+'</td><td>'+statusChip(st)+'</td><td>'+lastCell+'</td><td class="row-actions" onclick="event.stopPropagation()">'+paid+'</td></tr>'}
       window.markPaid=function(id){if(!confirm("Mark this invoice as PAID? This stops all follow-ups."))return;action({action:"change_status",invoice_id:id,config:{status:"PAID"}},"Invoice marked paid")};
       function viewInvoices(){
-        if(!mainInvoices().length)return realEmptyState();
         var sub=STATE.invSub||"all";
-        var invToggle='<div class="seg" style="margin:.2rem 0 1rem">'+
-          '<button class="'+(sub==="all"?"on":"")+'" onclick="STATE.invSub=\'all\';renderView()">'+ic("file")+' All invoices</button>'+
-          '<button class="'+(sub==="sent"?"on":"")+'" onclick="STATE.invSub=\'sent\';renderView()">'+ic("send")+' Sent history</button></div>';
-        if(sub==="sent")return invToggle+viewSent();
+        var nav=subnav([
+          ["All invoices","STATE.invSub='all';renderView()",sub==="all"],
+          ["Sent history","STATE.invSub='sent';renderView()",sub==="sent"],
+          ["Customers","STATE.invSub='customers';renderView()",sub==="customers"]
+        ]);
+        if(!mainInvoices().length)return nav+realEmptyState();
+        if(sub==="sent")return nav+viewSent();
+        if(sub==="customers")return nav+viewCustomers();
         var allInv=mainInvoices();
         var searchVal = (STATE.invoicesSearch || "").toLowerCase();
         var filterStage = STATE.invoicesFilterStage || "ALL";
@@ -409,7 +562,7 @@
           var label = st === "ALL" ? "All Statuses" : st.charAt(0)+st.slice(1).toLowerCase();
           return '<option value="'+st+'" '+(filterStatus===st?'selected':'')+'>'+label+'</option>';
         }).join('');
-        return invToggle+uc("Collector","your working queue — every overdue account, its stage, risk, and the last follow-up. Click any row for the draft + history.")+
+        return nav+
           '<div class="panel">'+
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;gap:1rem;flex-wrap:wrap">'+
             '<h2 style="margin:0">Invoices · '+filtered.length+' / '+allInv.length+'</h2>'+
@@ -512,63 +665,72 @@
           }).join("") : '<tr><td colspan="5" class="empty">No matching customers found.</td></tr>')+'</tbody></table></div>';
       }
 
+      function escalationInv(){return mainInvoices().filter(function(i){return field(i,"stage")==="ESCALATED"&&field(i,"status")==="ACTIVE"})}
       function viewApprovals(){
         var ds=pendingReal();
-        var apprv = ds.length
-          ? '<h2 style="font-size:1rem;margin:.2rem 0 .6rem;display:flex;align-items:center;gap:.5rem">'+ic("inbox")+'Awaiting approval · '+ds.length+'</h2>'+ds.map(function(d){var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.2rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+'d overdue · '+stageChip(field(i,"stage"))+' '+riskChip(field(d,"risk_level"))+(field(d,"fallback_used")?' '+chip("template","--muted"):'')+'</div></div><div class="row-actions"><button class="btn gold sm" onclick="approve(\''+field(d,"id")+'\')">'+ic("send")+' Approve &amp; send</button><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">'+ic("edit")+' Edit</button><button class="btn sm" onclick="reject(\''+field(d,"id")+'\')">Reject</button><button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\')">'+ic("scale")+' Legal</button></div></div><div class="mail" style="margin-top:.8rem"><div class="subj">'+esc(field(d,"subject"))+'</div>'+esc(field(d,"body"))+'</div></div>'}).join("")
-          : '<div class="panel"><h2 style="margin:0 0 .4rem;display:flex;align-items:center;gap:.5rem">'+ic("inbox")+'Awaiting approval</h2><div class="empty" style="padding:1.2rem 1rem">'+ic("checkc")+'<div class="big">Inbox zero</div>No drafts waiting — the agent auto-sent the safe ones.</div></div>';
-        return uc("Finance &amp; legal","the two things only a human owns — approve or edit the AI drafts that never auto-send, or hit <b>Legal</b> to escalate: the account drops out of this queue into Legal &amp; recovery below and the escalation is posted to Slack <b>#legal</b>.")+apprv+legalSection();
+        var escList=escalationInv();
+        var sub=STATE.apprSub||"pending";
+        var nav='<div class="subnav"><button class="'+(sub==="pending"?"on":"")+'" onclick="STATE.apprSub=\'pending\';renderView()">Pending review'+(ds.length?" ("+ds.length+")":"")+'</button>'+
+          '<button class="'+(sub==="escalation"?"on":"")+'" onclick="STATE.apprSub=\'escalation\';renderView()">Escalation'+(escList.length?" ("+escList.length+")":"")+'</button></div>';
+        if(sub==="escalation"){
+          if(!escList.length)return nav+'<div class="panel"><div class="empty">'+ic("scale")+'<div class="big">Nothing to escalate</div>Accounts 30+ days overdue land here (no email is sent). You decide whether to escalate them to the legal team.</div></div>';
+          return nav+'<div class="muted" style="margin:0 0 1rem;font-size:.9rem">'+escList.length+' account'+(escList.length===1?"":"s")+' 30+ days overdue — the agent stopped emailing these. Escalate to the legal team, or reactivate to resume follow-ups.</div>'+
+            escList.map(function(i){var c=clientOf(field(i,"client_id"));return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.25rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+' '+chip("30+ days","--high")+'</h2><div class="muted" style="font-size:.84rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+'d overdue · '+esc(field(c,"email")||"")+'</div></div><div class="row-actions"><button class="btn gold sm" onclick="escalate(\''+field(i,"id")+'\')">'+ic("scale")+' Escalate to legal</button><button class="btn sm" onclick="reactivate(\''+field(i,"id")+'\')">'+ic("reset")+' Reactivate</button><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Open</button></div></div></div>'}).join("");
+        }
+        if(!ds.length)return nav+'<div class="panel"><div class="empty">'+ic("checkc")+'<div class="big">All caught up</div>No drafts waiting for review — the agent auto-sent the safe ones.</div></div>';
+        return nav+'<div class="muted" style="margin:0 0 1rem;font-size:.9rem">'+ds.length+' draft'+(ds.length===1?"":"s")+' need your review (Stage 4 &amp; high-risk). Approve to send, edit, reject, or escalate to legal.</div>'+
+          ds.map(function(d){var i=invoiceOf(field(d,"invoice_id")),c=clientOf(field(d,"client_id"));return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.25rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.84rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+'d overdue · '+stageChip(field(i,"stage"))+' '+riskChip(field(d,"risk_level"))+(field(d,"fallback_used")?' '+chip("template","--muted"):'')+'</div></div><div class="row-actions"><button class="btn gold sm" onclick="approve(\''+field(d,"id")+'\')">'+ic("send")+' Approve &amp; send</button><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">'+ic("edit")+' Edit</button><button class="btn sm" onclick="reject(\''+field(d,"id")+'\')">Reject</button><button class="btn sm danger" onclick="flag(\''+field(d,"id")+'\')">'+ic("scale")+' Escalate to legal</button></div></div><div class="mail" style="margin-top:.85rem"><div class="subj">'+esc(field(d,"subject"))+'</div>'+esc(field(d,"body"))+'</div></div>'}).join("");
       }
-      function legalSection(){var inv=mainInvoices().filter(function(i){return field(i,"status")==="LEGAL"});
-        var head='<h2 style="font-size:1rem;margin:1.5rem 0 .6rem;display:flex;align-items:center;gap:.5rem">'+ic("scale")+'Legal &amp; recovery · '+inv.length+'</h2>';
-        if(!inv.length)return head+'<div class="panel"><div class="empty" style="padding:1.2rem 1rem">Nothing in legal. When you hit <b>Legal</b> on a draft in Approvals, the account moves here and the escalation is posted to Slack <b>#legal</b> — these never get automated email.</div></div>';
+      function viewLegal(){var inv=mainInvoices().filter(function(i){return field(i,"status")==="LEGAL"});
+        if(!inv.length)return '<div class="panel"><div class="empty">'+ic("scale")+'<div class="big">Legal queue is empty</div>Accounts escalated from Approvals land here for the legal team, already posted to Slack #legal.</div></div>';
         var total=inv.reduce(function(a,i){return a+Number(field(i,"amount")||0)},0);
-        return head+'<div class="stats">'+kpi(inv.length,"Accounts in legal")+kpi(money(total),"Amount at risk")+'</div>'+
-          inv.map(function(i){var c=clientOf(field(i,"client_id"));var evs=STATE.interactions.filter(function(e){return field(e,"invoice_id")===field(i,"id")}).slice(0,4);return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.1rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+'</h2><div class="muted" style="font-size:.8rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+' days overdue · '+esc(field(c,"email")||"")+'</div></div><div class="row-actions"><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Full history</button><button class="btn sm gold" onclick="notifyLegal(\''+field(i,"invoice_no")+'\')">Notify legal team</button></div></div><div class="timeline" style="margin-top:.7rem">'+evs.map(function(e){return '<div class="ev"><span class="dot"></span><div class="when">'+dt(field(e,"created_at"))+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div>'}).join("")+'</div></div>'}).join("");
+        return '<div class="muted" style="margin:.2rem 0 1rem;font-size:.9rem">The legal team’s queue — every account here was escalated and posted to Slack #legal. Open one to review its full invoice history.</div>'+
+          '<div class="stats">'+kpi(inv.length,"Accounts in legal")+kpi(money(total),"Amount at risk")+'</div>'+
+          inv.map(function(i){var c=clientOf(field(i,"client_id"));var evs=STATE.interactions.filter(function(e){return field(e,"invoice_id")===field(i,"id")}).slice(0,4);return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><h2 style="margin-bottom:.2rem">'+esc(field(i,"invoice_no"))+' · '+esc(field(c,"name")||"")+' <span class="conn ok" style="vertical-align:middle">'+ic("check")+'Sent to legal</span></h2><div class="muted" style="font-size:.84rem">'+money(field(i,"amount"),field(i,"currency"))+' · '+(Number(field(i,"days_overdue")||0))+' days overdue · '+esc(field(c,"email")||"")+'</div></div><div class="row-actions"><button class="btn sm" onclick="openInvoice(\''+field(i,"id")+'\')">Full history</button><button class="btn sm" onclick="notifyLegal(\''+field(i,"invoice_no")+'\')">Re-notify Slack</button><button class="btn sm good" onclick="markPaid(\''+field(i,"id")+'\')">'+ic("check")+' Recovered</button></div></div><div class="timeline" style="margin-top:.8rem">'+evs.map(function(e){return '<div class="ev"><span class="dot"></span><div><div class="when">'+ts(field(e,"created_at"))+'</div><div class="what">'+esc(field(e,"summary")||"")+'</div></div></div>'}).join("")+'</div></div>'}).join("");
       }
       window.approve=function(id){action({action:"approve",draft_id:id},"Approved & sent")};window.reject=function(id){action({action:"reject",draft_id:id,note:"Rejected by reviewer"},"Rejected")};window.flag=function(id){action({action:"flag",draft_id:id,note:"Escalated to legal"})};
+      window.reactivate=function(id){action({action:"change_status",invoice_id:id,config:{status:"ACTIVE"}},"Reactivated")};
+      window.escalate=function(id){if(!confirm("Escalate this account to the legal team? It will be posted to Slack #legal and moved to the Legal tab."))return;action({action:"escalate",invoice_id:id,note:"Escalated by reviewer"})};
+      window.composeInvoiceMsg=function(invId){var i=invoiceOf(invId),c=clientOf(field(i,"client_id"));
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Message customer</div><h1 style="font-size:1.25rem">'+esc(field(c,"name")||"Customer")+'</h1></div><button class="x" onclick="closeDrawer()">&times;</button></div><div class="db">'+
+          '<div class="muted" style="font-size:.84rem;margin-bottom:.6rem">'+esc(field(i,"invoice_no")||"")+' · '+esc(field(c,"email")||"")+'</div>'+
+          '<label class="fld"><span class="lbl">Message</span><textarea id="im_body" placeholder="Write a message to the customer…">'+esc(field(i,"payment_link")?"Hi "+(field(c,"name")||"")+",\n\nRegarding "+(field(i,"invoice_no")||"your invoice")+", here is the secure payment link: "+field(i,"payment_link")+"\n\nThank you.":"")+'</textarea></label>'+
+          '<button class="btn gold" onclick="sendInvoiceMsg(\''+invId+'\')">'+ic("send")+' Send</button></div>';openDrawerEl();};
+      window.sendInvoiceMsg=async function(invId){var body=$("im_body").value.trim();if(!body)return toast("Write a message");setBusy(true,"Sending…");try{await invokeFn("app_action",{action:"send_custom",invoice_id:invId,edited_body:body});await loadData();render(true);closeDrawer();toast("Message sent")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
 
-      function viewReplies(){var rs=repliesReal();
-        var searchVal = (STATE.repliesSearch || "").toLowerCase();
-        var filterCategory = STATE.repliesFilterCategory || "ALL";
-        var filteredReplies = rs.filter(function(e){
-          var det=field(e,"detail")||{};
-          var cat=det.category||"OTHER";
-          var c=clientOf(field(e,"client_id")),i=invoiceOf(field(e,"invoice_id"));
-          var matchesSearch = !searchVal ||
-            (field(c,"name") || "").toLowerCase().indexOf(searchVal) >= 0 ||
-            (field(i,"invoice_no") || "").toLowerCase().indexOf(searchVal) >= 0 ||
-            (det.body || field(e,"summary") || "").toLowerCase().indexOf(searchVal) >= 0;
-          var matchesCategory = filterCategory === "ALL" || cat === filterCategory;
-          return matchesSearch && matchesCategory;
-        });
-        if(!rs.length)return uc("Collector","when customers reply, the AI reads each one — promise-to-pay, dispute, paid, or question — and updates the account.")+'<div class="panel"><div class="empty">'+ic("reply")+'<div class="big">No replies yet</div><p>With a mailbox connected, replies land here classified. Log one manually to see it in action.</p><div class="row-actions" style="justify-content:center;margin-top:.8rem"><button class="btn gold" onclick="logReply()">'+ic("plus")+' Log a reply</button></div></div></div>';
-        var catOpts = ["ALL", "PROMISE_TO_PAY", "PAID_CLAIM", "DISPUTE", "QUESTION", "OTHER"].map(function(c){
-          var label = c === "ALL" ? "All Categories" : c.replace(/_/g," ").replace(/\b\w/g, function(ch){return ch.toUpperCase()});
-          return '<option value="'+c+'" '+(filterCategory===c?'selected':'')+'>'+label+'</option>';
-        }).join('');
-        var CC={PROMISE_TO_PAY:"--low",DISPUTE:"--high",PAID_CLAIM:"--blue",QUESTION:"--med",OTHER:"--muted"};
-        return uc("Collector","every customer reply, classified — promises become trackable, disputes pause dunning, paid-claims await reconciliation.")+
-          '<div class="panel">'+
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;gap:1rem;flex-wrap:wrap">'+
-            '<h2 style="margin:0">Customer replies · '+filteredReplies.length+' / '+rs.length+'</h2>'+
-            '<div style="display:flex;gap:.5rem;align-items:center">'+
-              '<input type="text" placeholder="Search..." value="'+esc(STATE.repliesSearch||"")+'" oninput="STATE.repliesSearch=this.value;renderView()" style="width:160px;padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+
-              '<select onchange="STATE.repliesFilterCategory=this.value;renderView()" style="padding:.3rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-size:.84rem">'+catOpts+'</select>'+
-              '<button class="btn sm" onclick="logReply()">'+ic("plus")+' Log a reply</button>'+
-            '</div>'+
-          '</div>'+
-          '<table><thead><tr><th>Customer</th><th>Invoice</th><th>Type</th><th>Message</th><th>When</th></tr></thead><tbody>'+
-          (filteredReplies.length ? filteredReplies.map(function(e){
-            var det=field(e,"detail")||{};
-            var cat=det.category||"OTHER";
-            var c=clientOf(field(e,"client_id")),i=invoiceOf(field(e,"invoice_id"));
-            return '<tr class="clickable" onclick="openInvoice(\''+field(e,"invoice_id")+'\')"><td><b>'+esc(field(c,"name")||"customer")+'</b></td><td class="num">'+esc(field(i,"invoice_no")||"")+'</td><td>'+chip(cat.replace(/_/g," "),CC[cat]||"--muted")+'</td><td style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(det.body||field(e,"summary")||"")+'</td><td class="muted num" style="font-size:.72rem">'+shortDate(field(e,"created_at"))+'</td></tr>';
-          }).join("") : '<tr><td colspan="5" class="empty">No matching replies found.</td></tr>')+'</tbody></table></div>'+
-          (function(){var proms=STATE.promises.filter(function(p){return !isDemoId(field(p,"invoice_id"))});return proms.length?'<div class="panel"><h2>Promises to pay · '+proms.length+'</h2><table><thead><tr><th>Customer</th><th>Invoice</th><th>Promised by</th><th>Status</th></tr></thead><tbody>'+proms.map(function(p){var c=clientOf(field(p,"client_id")),i=invoiceOf(field(p,"invoice_id"));return '<tr><td>'+esc(field(c,"name")||"")+'</td><td class="num">'+esc(field(i,"invoice_no")||"")+'</td><td class="num">'+String(field(p,"promised_date")||"").slice(0,10)+'</td><td>'+chip(field(p,"status"),field(p,"status")==="BROKEN"?"--high":field(p,"status")==="KEPT"?"--low":"--med")+'</td></tr>'}).join("")+'</tbody></table></div>':''})();
+      var REPLY_CC={PROMISE_TO_PAY:"--low",DISPUTE:"--high",PAID_CLAIM:"--blue",QUESTION:"--med",OTHER:"--muted"};
+      function replyCard(e,sent){
+        var det=field(e,"detail")||{};var cat=det.category||"OTHER";
+        var c=clientOf(field(e,"client_id")),i=invoiceOf(field(e,"invoice_id"));
+        var actions=sent
+          ? '<span class="conn ok">'+ic("check")+(det.auto_replied?"Auto-replied":"Resolved")+'</span>'
+          : '<button class="btn sm gold" onclick="composeReply(\''+field(e,"id")+'\')">'+ic("send")+' Reply</button><button class="btn sm" onclick="openInvoice(\''+field(e,"invoice_id")+'\')">Open</button><button class="btn sm" onclick="resolveReply(\''+field(e,"id")+'\')">Mark done</button>';
+        return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:flex-start"><div><div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.15rem"><b>'+esc(field(c,"name")||"Customer")+'</b>'+chip(cat.replace(/_/g," ").toLowerCase(),REPLY_CC[cat]||"--muted")+'</div><div class="muted" style="font-size:.82rem">'+esc(field(i,"invoice_no")||"")+' · '+ts(field(e,"created_at"))+'</div></div><div class="row-actions">'+actions+'</div></div>'+
+          '<div class="mail" style="margin-top:.75rem">'+esc(det.body||field(e,"summary")||"")+'</div>'+
+          (det.reply_sent?'<div class="mail" style="margin-top:.5rem;border-color:var(--accent)"><div class="subj" style="color:var(--accent)">'+ic("send")+' Our reply</div>'+esc(det.reply_sent)+'</div>':'')+'</div>';
       }
+      function viewReplies(){
+        var sub=STATE.repSub||"todo";
+        var todo=replyTasks(), sent=repliesReal().filter(function(e){var d=field(e,"detail")||{};return d.auto_replied||d.resolved});
+        var nav='<div class="subnav"><button class="'+(sub==="todo"?"on":"")+'" onclick="STATE.repSub=\'todo\';renderView()">To-do'+(todo.length?" ("+todo.length+")":"")+'</button>'+
+          '<button class="'+(sub==="sent"?"on":"")+'" onclick="STATE.repSub=\'sent\';renderView()">Sent'+(sent.length?" ("+sent.length+")":"")+'</button>'+
+          '<span class="grow"></span><button class="btn sm" onclick="logReply()">'+ic("plus")+' Log reply</button></div>';
+        if(sub==="sent")return nav+(sent.length?sent.map(function(e){return replyCard(e,true)}).join(""):'<div class="panel"><div class="empty">'+ic("send")+'<div class="big">No replies sent yet</div>Auto-answered and resolved replies show up here.</div></div>');
+        var body=todo.length?todo.map(function(e){return replyCard(e,false)}).join("")
+          :'<div class="panel"><div class="empty">'+ic("checkc")+'<div class="big">Nothing to reply to</div>Customer replies that need a human land here. Log one to try it.</div></div>';
+        var proms=STATE.promises.filter(function(p){return field(p,"status")==="OPEN"&&!isDemoId(field(p,"invoice_id"))});
+        var promPanel=proms.length?'<div class="panel"><h2>'+ic("clock")+'Promises to pay · '+proms.length+'</h2><table><thead><tr><th>Customer</th><th>Invoice</th><th>Promised by</th><th>Status</th></tr></thead><tbody>'+proms.map(function(p){var c=clientOf(field(p,"client_id")),i=invoiceOf(field(p,"invoice_id"));return '<tr><td>'+esc(field(c,"name")||"")+'</td><td class="num">'+esc(field(i,"invoice_no")||"")+'</td><td class="num">'+ts(field(p,"promised_date"))+'</td><td>'+chip(field(p,"status").toLowerCase(),field(p,"status")==="BROKEN"?"--high":field(p,"status")==="KEPT"?"--low":"--med")+'</td></tr>'}).join("")+'</tbody></table></div>':'';
+        return nav+body+promPanel;
+      }
+      window.resolveReply=function(id){action({action:"resolve_reply",note:id},"Marked done")};
+      window.composeReply=function(id){var e=STATE.interactions.find(function(x){return field(x,"id")===id});if(!e)return;var i=invoiceOf(field(e,"invoice_id")),c=clientOf(field(e,"client_id"));var det=field(e,"detail")||{};
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Reply to customer</div><h1 style="font-size:1.25rem">'+esc(field(c,"name")||"Customer")+'</h1></div><button class="x" onclick="closeDrawer()">&times;</button></div><div class="db">'+
+          '<div class="muted" style="font-size:.84rem;margin-bottom:.3rem">'+esc(field(i,"invoice_no")||"")+' · they wrote:</div><div class="mail" style="margin-bottom:1rem">'+esc(det.body||field(e,"summary")||"")+'</div>'+
+          '<label class="fld"><span class="lbl">Your reply</span><textarea id="rp_body" placeholder="Type your response…">'+esc(field(i,"payment_link")?"Hi "+(field(c,"name")||"")+",\n\nHere is the secure payment link for "+(field(i,"invoice_no")||"your invoice")+": "+field(i,"payment_link")+"\n\nThank you.":"")+'</textarea></label>'+
+          '<button class="btn gold" onclick="sendReply(\''+id+'\')">'+ic("send")+' Send reply</button></div>';openDrawerEl();};
+      window.sendReply=async function(id){var e=STATE.interactions.find(function(x){return field(x,"id")===id});var body=$("rp_body").value.trim();if(!body)return toast("Write a reply");setBusy(true,"Sending reply…");try{await invokeFn("app_action",{action:"send_custom",invoice_id:field(e,"invoice_id"),edited_body:body,note:id});await loadData();render(true);closeDrawer();toast("Reply sent")}catch(err){toast("⚠ "+err.message)}setBusy(false)};
 
-      window.notifyLegal=function(no){action({action:"notify",note:"legal",config:{message:"⚖️ Legal escalation: invoice "+no+" needs recovery action."}},"Legal team notified (or logged)")};
+      window.notifyLegal=function(no){action({action:"notify",note:"legal",config:{message:"Legal escalation: invoice "+no+" needs recovery action."}},"Posted to Slack #legal")};
 
       function viewAsk(){
         return uc("Anyone","ask the Collections Agent about the book — overdue accounts, a customer's status, the legal queue, what's awaiting approval. It reads live pod data. This is the same agent your finance &amp; legal team can DM on Telegram.")+
@@ -585,20 +747,20 @@
         var slackOn=!!field(c,"slack_account_id");
         var tgOn=!!field(c,"telegram_bot_token");
         return uc("Admin","the everyday preferences — how the agent behaves, whether email goes out for real, and your company identity. Connecting Slack, Telegram &amp; Gmail lives in the "+'<b>Setup</b> guide (no technical fields here).')+
-        '<div class="panel"><h2>'+ic("settings")+'Automation behavior</h2>'+
-          tg("auto_dispatch","Auto-dispatch","Auto-send low-risk follow-ups (off → everything needs approval)")+
-          tg("human_in_loop","Human-in-the-loop","Route high-risk &amp; stage-4 to the approval inbox")+
-          tg("review_high_risk","Always review HIGH risk","High-risk drafts never auto-send")+
-          tg("review_stage4","Always review Stage 4","Final notices always need a human")+
-          '<div style="margin-top:.9rem"><button class="btn gold sm" onclick="saveBehavior()">'+ic("check")+' Save behavior</button></div></div>'+
+        '<div class="panel"><h2>'+ic("settings")+'Sending rules</h2>'+
+          tg("auto_dispatch","Auto-send follow-ups","On: the agent sends reminders on its own. Off: every follow-up waits for your approval.")+
+          '<div class="toggle"><div><b>Require approval for Stage 4 &amp; Legal</b><div class="muted" style="font-size:.8rem">Final notices and high-risk accounts never auto-send — they wait in Approvals.</div></div>'+sw("cfg_review_risky",(field(c,"review_high_risk")||field(c,"review_stage4")||field(c,"human_in_loop")))+'</div>'+
+          '<div style="margin-top:.9rem"><button class="btn gold sm" onclick="saveBehavior()">'+ic("check")+' Save</button></div></div>'+
         '<div class="panel"><h2>'+ic("send")+'Email delivery</h2>'+
-          '<div class="toggle"><div><b>Send real email</b><div class="muted" style="font-size:.76rem">Off = record-only (drafts shown in-app, nothing sent). On = deliver via Gmail.</div></div>'+sw("cfg_email_enabled",field(c,"email_enabled"))+'</div>'+
-          '<label class="fld"><span class="lbl">Mode</span><select id="cfg_mail_mode" onchange="render(true)">'+["IN_APP","GMAIL"].map(function(m){return '<option '+(mode===m?"selected":"")+'>'+(m==="IN_APP"?"In-app (record only)":"Gmail (send real)")+'</option>'}).join("")+'</select></label>'+
+          '<div class="toggle"><div><b>Send real email</b><div class="muted" style="font-size:.8rem">Off = record-only (drafts shown in-app, nothing leaves). On = deliver via the mode below.</div></div>'+sw("cfg_email_enabled",field(c,"email_enabled"))+'</div>'+
+          '<label class="fld"><span class="lbl">Delivery mode</span><select id="cfg_mail_mode" onchange="render(true)">'+[["IN_APP","In-app (record only)"],["MAILTRAP","Mailtrap sandbox (captures test mail)"],["GMAIL","Gmail (real send)"]].map(function(m){return '<option value="'+m[0]+'" '+(mode===m[0]?"selected":"")+'>'+m[1]+'</option>'}).join("")+'</select></label>'+
           inp("email_from","From name","Acme Finance")+
-          (mode==="GMAIL"&&!gmailOn?'<div class="guide">Gmail isn\'t connected yet — open the '+ic("book")+' <b>Setup</b> guide to connect a Google account, then flip <b>Send real email</b> on.</div>':'')+
+          (mode==="GMAIL"&&!gmailOn?'<div class="guide">Gmail isn\'t connected — open the Setup guide to connect a Google account.</div>':'')+
+          (mode==="MAILTRAP"&&!field(c,"mailtrap_token")?'<div class="guide">Mailtrap isn\'t connected — open the Setup guide to paste your sandbox token &amp; inbox ID.</div>':'')+
           '<div style="margin-top:.9rem"><button class="btn gold sm" onclick="saveMail()">'+ic("check")+' Save</button> <button class="btn sm" onclick="testEmail()">Send test</button></div></div>'+
-        '<div class="panel"><h2>'+ic("hash")+'Integrations</h2><p class="muted" style="font-size:.8rem;margin:.1rem 0 .3rem">Status only — connect or change these from the Setup guide.</p>'+
-          connRow("Gmail","send",gmailOn,"Sends real follow-up emails")+
+        '<div class="panel"><h2>'+ic("hash")+'Integrations</h2><p class="muted" style="font-size:.82rem;margin:.1rem 0 .3rem">Status only — connect or change these from the Setup guide.</p>'+
+          connRow("Mailtrap","send",!!field(c,"mailtrap_user"),"Sandbox inbox for demo emails")+
+          connRow("Gmail","send",gmailOn,"Real follow-up delivery")+
           connRow("Slack","hash",slackOn,"#legal escalations &amp; #daily-stats digest")+
           connRow("Telegram","telegram",tgOn,"Stats digest to Telegram (chat is always on)")+
           '<div style="margin-top:.9rem"><button class="btn sm" onclick="openSetupGuide()">'+ic("book")+' Open Setup guide</button></div></div>'+
@@ -607,10 +769,11 @@
       }
       function cfgVal(k){var e=$("cfg_"+k);if(!e)return undefined;return e.type==="checkbox"?e.checked:e.value}
       async function saveCfg(keys,msg){var c={};keys.forEach(function(k){var v=cfgVal(k);if(v!==undefined)c[k]=v});await action({action:"save_config",config:c},msg||"Settings saved")}
-      window.saveBehavior=function(){saveCfg(["auto_dispatch","human_in_loop","review_high_risk","review_stage4"],"Behavior saved")};
+      window.saveBehavior=function(){var risky=cfgVal("review_risky");action({action:"save_config",config:{auto_dispatch:cfgVal("auto_dispatch"),review_high_risk:risky,review_stage4:risky,human_in_loop:risky}},"Settings saved")};
       window.saveMail=function(){saveCfg(["email_enabled","mail_mode","email_from"],"Mail settings saved")};
       window.saveIdentity=function(){saveCfg(["company_name","sender_identity"],"Identity saved")};
-      window.testEmail=async function(){setBusy(true,"Sending test email…");try{var o=await invokeFn("test_channel",{kind:"email"});toast((o.ok?"✓ ":"⚠ ")+o.detail)}catch(e){toast("⚠ "+e.message)}setBusy(false)};
+      window.saveMailtrap=function(){saveCfg(["mailtrap_user","mailtrap_pass"],"Mailtrap saved")};
+      window.testEmail=async function(){setBusy(true,"Sending test email…");try{var o=await invokeFn("app_action",{action:"send_custom",config:{to:"test-customer@demo.test",subject:"Collections — test email",body:"This is a test email from your Collections Agent. If you can read this in your Mailtrap sandbox, delivery works."}});toast(o&&o.detail?("Test "+o.detail):"Sent")}catch(e){toast("⚠ "+e.message)}setBusy(false)};
       window.testNotify=async function(){setBusy(true,"Sending test alert…");try{var o=await invokeFn("test_channel",{kind:"notify"});toast((o.ok?"✓ ":"⚠ ")+o.detail)}catch(e){toast("⚠ "+e.message)}setBusy(false)};
 
       // ---- add invoice
@@ -643,7 +806,7 @@
         return '<div class="panel">'+
           '<div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap"><h2 style="margin:0">'+ic(def.icon)+def.name+'</h2><div style="display:flex;align-items:center;gap:.7rem">'+status+scSwitch(ch,enabled)+'</div></div>'+
           '<div class="lbl" style="margin-top:.8rem">What to send</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem">'+metrics+'</div>'+
-          '<div class="lbl" style="margin-top:.9rem">When to send</div><div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center"><select id="sc_'+ch+'_freq" style="width:auto">'+freqOpts+'</select><span class="muted" style="font-size:.8rem">at</span><select id="sc_'+ch+'_send_hour" style="width:auto">'+hourOpts+'</select><select id="sc_'+ch+'_send_minute" style="width:auto">'+minOpts+'</select><span class="muted" style="font-size:.8rem">on</span><select id="sc_'+ch+'_weekly_dow" style="width:auto">'+dowOpts+'</select><span class="muted" style="font-size:.74rem">(Weekly only)</span></div>'+
+          '<div class="lbl" style="margin-top:.9rem">When to send</div><div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center"><select id="sc_'+ch+'_freq" style="width:auto" onchange="document.getElementById(\'sc_'+ch+'_dow_wrap\').style.display=this.value===\'WEEKLY\'?\'inline-flex\':\'none\'">'+freqOpts+'</select><span class="muted" style="font-size:.8rem" id="sc_'+ch+'_at">at</span><select id="sc_'+ch+'_send_hour" style="width:auto">'+hourOpts+'</select><select id="sc_'+ch+'_send_minute" style="width:auto">'+minOpts+'</select><span id="sc_'+ch+'_dow_wrap" style="display:'+(freq==="WEEKLY"?"inline-flex":"none")+';gap:.5rem;align-items:center"><span class="muted" style="font-size:.8rem">on</span><select id="sc_'+ch+'_weekly_dow" style="width:auto">'+dowOpts+'</select></span></div>'+
           '<div style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn gold sm" onclick="saveScheduleChannel(\''+ch+'\')">'+ic("check")+' Save</button><button class="btn sm" onclick="sendStatsNow(\''+ch+'\')">'+ic("send")+' Send now</button><button class="btn sm ghost" onclick="sendStatsTest(\''+ch+'\')">Send test</button></div>'+
         '</div>';
       }
@@ -703,7 +866,12 @@
         $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Setup</div><h1 style="font-size:1.3rem">Set everything up</h1></div><button class="x" onclick="closeDrawer()">'+ic("x")+'</button></div><div class="db">'+
           '<p class="muted" style="font-size:.82rem">The technical wiring lives here so the rest of the app stays clean. On this pod, Slack (#legal, #daily-stats, #chat) and Telegram chat are <b>already connected</b> — these steps are for reconnecting or setting up a fresh copy. Run them where the Lemma CLI is signed in.</p>'+
           sec("sheet","Google Sheets — import invoices",'Load real data.<ol><li><code>lemma connectors auth-configs create google_sheets --name workspace-sheets</code></li><li><code>lemma connectors connect-requests create google_sheets --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Data menu ▸ <b>Import from Google Sheets</b>, paste the link.</li></ol>')+
-          sec("send","Gmail — send real follow-ups",'<ol><li><code>lemma connectors auth-configs create gmail --name workspace-gmail</code></li><li><code>lemma connectors connect-requests create gmail --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Settings ▸ Email delivery ▸ Mode = Gmail, flip <b>Send real email</b> on.</li></ol>')+
+          sec("send","Mailtrap — email sandbox (recommended for demo)",'Captures every follow-up (to any recipient) in one test inbox — no domain, no real delivery. In Mailtrap ▸ <b>Email Sandbox</b> ▸ your inbox ▸ <b>SMTP Settings</b>, copy the username &amp; password, paste below:'+
+            '<div style="margin-top:.6rem"><label class="fld"><span class="lbl">SMTP username</span><input id="cfg_mailtrap_user" value="'+esc(field(STATE.config,"mailtrap_user")||"")+'" placeholder="e.g. 1a2b3c4d5e6f7g"></label>'+
+            '<label class="fld"><span class="lbl">SMTP password</span><input id="cfg_mailtrap_pass" value="'+esc(field(STATE.config,"mailtrap_pass")||"")+'" placeholder="paste the sandbox password"></label>'+
+            '<div style="display:flex;gap:.5rem;margin-top:.3rem"><button class="btn gold sm" onclick="saveMailtrap()">'+ic("check")+' Save</button><button class="btn sm" onclick="testEmail()">Send test</button></div>'+
+            '<div class="muted" style="font-size:.78rem;margin-top:.5rem">Then Settings ▸ Email delivery ▸ set mode to <b>Mailtrap sandbox</b> and turn <b>Send real email</b> on.</div></div>')+
+          sec("send","Gmail — real delivery (optional)",'<ol><li><code>lemma connectors auth-configs create gmail --name workspace-gmail</code></li><li><code>lemma connectors connect-requests create gmail --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Settings ▸ Email delivery ▸ Mode = Gmail, flip <b>Send real email</b> on.</li></ol>')+
           sec("hash","Slack — #legal &amp; #daily-stats posts",'One connector powers the legal escalations and the stats digest, pinned to a fixed workspace account.<ol><li><code>lemma connectors auth-configs create slack --name slack</code> → connect an account.</li><li>Invite the app to <b>#legal</b> and <b>#daily-stats</b>.</li><li>Wire the ids (admin, one-time): <code>save_config</code> → <code>slack_account_id</code>, <code>slack_legal_channel</code>; <code>save_stats_channel</code> → SLACK <code>destination</code> = #daily-stats id.</li></ol>')+
           sec("chat","Slack #chat — chat with the pod",'A Slack <b>surface</b> routes a channel to the concierge agent.<ol><li><code>lemma surfaces upsert slack --agent collections-concierge --account &lt;slack-account-id&gt;</code></li><li><code>lemma surfaces channels slack --channel-id &lt;C…&gt; --channel-name chat --agent collections-concierge</code></li><li><code>lemma surfaces setup slack</code> → paste the webhook URL into your Slack app&rsquo;s Event Subscriptions, then message <b>#chat</b>.</li></ol>')+
           sec("telegram","Telegram — chat &amp; stats digest",'<b>Chat</b> (no token): <code>lemma surfaces upsert telegram --agent collections-concierge</code> → <code>lemma surfaces setup telegram</code>, open the <b>t.me</b> link, message the bot.<br><br><b>Stats digest</b> needs a bot token (the connector has no send op): <b>@BotFather</b> ▸ <code>/newbot</code> ▸ store the token via <code>save_config</code> → <code>telegram_bot_token</code>, and the chat id via <code>save_stats_channel</code> → TELEGRAM <code>destination</code>.')+
@@ -711,6 +879,40 @@
         '</div>';openDrawerEl();
       };
 
+      // ---- AI insights / explainability
+      window.openInsights=function(){closeMenu();
+        var c=STATE.config;
+        var drafts=realDrafts();
+        var sentD=drafts.filter(function(d){return["SENT","AUTO_SENT"].indexOf(field(d,"status"))>=0});
+        var auto=drafts.filter(function(d){return field(d,"status")==="AUTO_SENT"}).length;
+        var human=drafts.filter(function(d){return field(d,"status")==="SENT"}).length;
+        var pending=pendingReal().length;
+        var fb=drafts.filter(function(d){return field(d,"fallback_used")}).length;
+        var confs=drafts.map(function(d){return field(d,"confidence_score")}).filter(function(x){return x!=null});
+        var avgConf=confs.length?Math.round(confs.reduce(function(a,b){return a+Number(b)},0)/confs.length*100):null;
+        // Rough token estimate: output ≈ chars/4, plus ~650 prompt tokens/draft (system + policy + invoice context).
+        var outTok=drafts.reduce(function(a,d){return a+Math.round(((field(d,"subject")||"").length+(field(d,"body")||"").length)/4)},0);
+        var promptTok=drafts.length*650;
+        var totalTok=outTok+promptTok;
+        var estCost=(totalTok/1000000*0.30); // ~ $0.30 / 1M tokens (Llama-70B class)
+        var autoPct=sentD.length?Math.round(auto/sentD.length*100):0;
+        var lfOn=!!(field(c,"langfuse_public_key")&&field(c,"langfuse_secret_key"));
+        function stat(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'}
+        var recent=drafts.slice(0,8).map(function(d){var i=invoiceOf(field(d,"invoice_id"));var conf=field(d,"confidence_score");var dec=field(d,"status")==="AUTO_SENT"?["Auto-sent","--low"]:field(d,"status")==="PENDING_REVIEW"?["Needs review","--med"]:field(d,"status")==="SENT"?["Human-approved","--blue"]:[field(d,"status")||"—","--muted"];
+          return '<tr><td class="num">'+esc(field(i,"invoice_no")||"")+'</td><td>'+stageChip(field(i,"stage"))+'</td><td class="num">'+(conf!=null?Math.round(conf*100)+"%":"—")+'</td><td>'+chip(dec[0],dec[1])+'</td><td>'+(field(d,"fallback_used")?chip("template","--muted"):'<span class="muted">model</span>')+'</td></tr>'}).join("");
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Explainability</div><h1 style="font-size:1.3rem">AI insights</h1></div><button class="x" onclick="closeDrawer()">'+ic("x")+'</button></div><div class="db">'+
+          '<p class="muted" style="font-size:.85rem;margin:.1rem 0 .9rem">How the agent has been deciding — and what it cost. Token figures are estimates from message size; connect Langfuse below for exact traces.</p>'+
+          '<div class="stats">'+stat(sentD.length,"Follow-ups sent")+stat(autoPct+"%","Sent automatically")+stat(pending,"Held for review")+stat(avgConf!=null?avgConf+"%":"—","Avg confidence")+'</div>'+
+          '<div class="stats">'+stat("~"+totalTok.toLocaleString(),"Est. tokens used")+stat("~$"+estCost.toFixed(3),"Est. cost")+stat(fb,"Template fallbacks")+stat(drafts.length,"Total drafts")+'</div>'+
+          '<div class="panel" style="box-shadow:none;margin:.4rem 0 1rem"><h2>Recent decisions</h2><table><thead><tr><th>Invoice</th><th>Stage</th><th>Confidence</th><th>Decision</th><th>Source</th></tr></thead><tbody>'+(recent||'<tr><td colspan="5" class="empty">No drafts yet — run a scan.</td></tr>')+'</tbody></table></div>'+
+          '<div class="panel" style="box-shadow:none"><h2>'+ic("external")+'Connect Langfuse '+(lfOn?'<span class="conn ok" style="margin-left:.4rem">'+ic("check")+'Connected</span>':'')+'</h2>'+
+          '<p class="muted" style="font-size:.82rem;margin:.1rem 0 .5rem">Add your Langfuse keys to stream full LLM traces (exact tokens, latency, prompt/response) to your Langfuse project. Free tier at cloud.langfuse.com.</p>'+
+          '<div class="grid2"><label class="fld"><span class="lbl">Public key</span><input id="cfg_langfuse_public_key" value="'+esc(field(c,"langfuse_public_key")||"")+'" placeholder="pk-lf-…"></label><label class="fld"><span class="lbl">Secret key</span><input id="cfg_langfuse_secret_key" value="'+esc(field(c,"langfuse_secret_key")||"")+'" placeholder="sk-lf-…"></label></div>'+
+          '<label class="fld"><span class="lbl">Host</span><input id="cfg_langfuse_host" value="'+esc(field(c,"langfuse_host")||"https://cloud.langfuse.com")+'"></label>'+
+          '<div style="margin-top:.5rem"><button class="btn gold sm" onclick="saveLangfuse()">'+ic("check")+' Save</button></div></div>'+
+        '</div>';openDrawerEl();
+      };
+      window.saveLangfuse=function(){saveCfg(["langfuse_public_key","langfuse_secret_key","langfuse_host"],"Langfuse keys saved")};
       function openDrawerEl(){$("scrim").classList.add("on");$("drawer").classList.add("on")}
       window.closeDrawer=function(){$("scrim").classList.remove("on");$("drawer").classList.remove("on")};
       window.changeStatus=async function(id, status){

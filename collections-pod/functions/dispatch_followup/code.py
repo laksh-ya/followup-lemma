@@ -79,8 +79,8 @@ async def dispatch_followup(ctx: FunctionContext, data: DispatchInput) -> Dispat
         "invoice_id": invoice_id, "client_id": inv.get("client_id") if inv else None, "draft_id": data.draft_id,
         "kind": "EMAIL_SENT" if delivered else "EMAIL_FAILED", "channel": draft.get("channel", "EMAIL"),
         "direction": "OUTBOUND",
-        "summary": (f"{'Auto-sent' if data.auto else 'Approved & sent'} {inv.get('invoice_no') if inv else ''} via {provider}" + (" (edited)" if edited else "")) if delivered
-                   else f"Send FAILED via {provider}: {err}",
+        "summary": (f"{'Auto-sent' if data.auto else 'Sent'} follow-up to {to_email or 'customer'} · {inv.get('invoice_no') if inv else ''}" + (" (edited)" if edited else "")) if delivered
+                   else f"Send FAILED to {to_email or 'customer'} · {inv.get('invoice_no') if inv else ''}: {err}",
         "detail": {"to": to_email, "provider": provider, "message_id": mid},
         "actor_label": "dispatch_followup", "level": "SUCCESS" if delivered else "ERROR"})
 
