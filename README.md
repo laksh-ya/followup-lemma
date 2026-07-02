@@ -109,6 +109,9 @@ One `slack` connector powers the legal escalations and the daily digest; a Slack
 ![Schedule — daily digest](docs/screenshots/schedule-digest.jpeg)
 *Schedule — the daily stats digest to Slack #daily-stats and Telegram. Pick what to send and when; send manually any time. Both channels show "Connected".*
 
+![Telegram push notification](docs/screenshots/telegram-notification.jpeg)
+*Telegram push notification — the daily digest lands on the team's phones via the Collections Bot, showing outstanding amount, overdue accounts, follow-ups sent today, approvals pending, legal queue count, and the top overdue invoice.*
+
 - **Slack** (Lemma connector) — `#legal` escalations, `#daily-stats` digest, and a `#chat` surface routed to the concierge. Posts pin a fixed workspace account so scheduled/unattended sends work.
 - **Telegram** (Lemma surface) — DM the bot to chat with the pod; digest pushed via a bot token.
 - **Google Sheets** (Lemma connector) — import invoices from a sheet.
