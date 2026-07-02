@@ -6,9 +6,17 @@ An AI accounts-receivable desk built as a **Lemma pod**. It watches overdue invo
 
 **Live app:** https://collections-app.apps.lemma.work · *(private — pod members only)*
 
-<!-- ![Dashboard](docs/screenshots/dashboard.png) -->
+![Overview dashboard](docs/screenshots/overview-dashboard.jpeg)
+*Overview — the one number that matters, what needs a human, the escalation pipeline, and what the agent has done on its own.*
 
---->
+---
+
+## Architecture
+
+![Architecture](docs/screenshots/architecture.png)
+*End-to-end architecture — ingestion → typed Lemma tables → schedules/triggers → the durable per-invoice `collections-run` workflow (classify → draft → validate → auto-send or human review) → outbound email & inbound replies → Slack/Telegram notifications & chat surfaces → the single-file operator app, with observability and Lemma's zero-access-by-default security throughout.*
+
+---
 
 ## The problem
 
@@ -39,6 +47,12 @@ Finance teams chase overdue invoices by hand: inconsistent tone, no audit trail,
 
 Top-right: **AI insights**, **Setup guide**, **Settings**, **theme**, and a docked **Ask** assistant.
 
+![Invoices](docs/screenshots/invoices.jpeg)
+*Invoices — the working queue. Each row shows amount, overdue, stage, risk, status, last follow-up, and a one-click Paid.*
+
+![Invoice detail](docs/screenshots/invoice-detail.jpeg)
+*Per-invoice drawer — status actions (Paid / Pause / Dispute / Legal), the latest AI draft, and full history.*
+
 ---
 
 ## Escalation logic
@@ -52,6 +66,66 @@ Top-right: **AI insights**, **Setup guide**, **Settings**, **theme**, and a dock
 | Escalated | 30+ | No email | **Human decision** (Approvals ▸ Escalation) → reviewer escalates to Legal |
 
 Stage 4 and high-risk drafts route to review when human-in-the-loop is on. **30+ day invoices skip email entirely and stay ACTIVE/ESCALATED** in the reviewer's Escalation queue — a person (not the agent) escalates them to the legal team, which posts to Slack `#legal` and moves them to the Legal tab. Reviewers can always override the agent (reactivate, edit, reply).
+
+![Approvals — pending review](docs/screenshots/approvals-pending.jpeg)
+*Approvals ▸ Pending — Stage-4 & high-risk drafts wait here. Approve & send, edit, reject, or escalate to legal.*
+
+![Approvals — escalation](docs/screenshots/approvals-escalation.jpeg)
+*Approvals ▸ Escalation — 30+ day accounts the agent stopped emailing. The reviewer decides: escalate to legal, or reactivate.*
+
+![Escalate to legal](docs/screenshots/escalate-confirm.jpeg)
+*Escalating an account — it posts to Slack #legal and moves to the Legal tab.*
+
+---
+
+## Reliability — anti-hallucination
+
+The drafter must echo the invoice's real `invoice_no`, `client_name`, `amount`, and `days_overdue` in its output; `validate_draft` cross-checks them against the source record in code (not just prompt instructions), rejects placeholders, and retries. Exhausted retries fall to a deterministic template that always routes to human review. Every email is grounded in stored data — never invented.
+
+![Sent history](docs/screenshots/sent-history.jpeg)
+*Sent history — every dispatch is audit-trailed with method (auto-sent vs human-approved), stage, and the exact email content, grounded in the real invoice figures.*
+
+---
+
+## Human loop, replies & audit
+
+Customer replies are read and classified (promise-to-pay / dispute / paid / question). Safe asks (e.g. "send me the payment link") can be answered; anything needing a decision becomes a task in the Replies queue. Every action — auto-send, approval, escalation, reply — is written to an immutable, human-readable audit log.
+
+![Simulate reply](docs/screenshots/simulate-reply.jpeg)
+*Replies — paste a customer reply; the AI classifies it and takes the correct side effect (promise / dispute / paid / question).*
+
+![Audit log](docs/screenshots/audit-log.jpeg)
+*The audit trail reads in plain English — "Auto-sent follow-up to … · INV-…", "Draft ready for approval …", "INV-… escalated to legal by reviewer · posted to #legal".*
+
+---
+
+## Integrations & services
+
+One `slack` connector powers the legal escalations and the daily digest; a Slack surface powers `#chat`. Telegram runs a managed chat surface plus a bot for the digest. Google Sheets imports invoices; Gmail or a Mailtrap sandbox delivers email.
+
+![Slack #legal](docs/screenshots/slack-legal.jpeg)
+*Slack #legal — every reviewer escalation is posted here for the legal team, with the account, amount, contact and the escalated draft.*
+
+![Schedule — daily digest](docs/screenshots/schedule-digest.jpeg)
+*Schedule — the daily stats digest to Slack #daily-stats and Telegram. Pick what to send and when; send manually any time. Both channels show "Connected".*
+
+- **Slack** (Lemma connector) — `#legal` escalations, `#daily-stats` digest, and a `#chat` surface routed to the concierge. Posts pin a fixed workspace account so scheduled/unattended sends work.
+- **Telegram** (Lemma surface) — DM the bot to chat with the pod; digest pushed via a bot token.
+- **Google Sheets** (Lemma connector) — import invoices from a sheet.
+- **Email** — `IN_APP` (record-only, safe default) · **Mailtrap sandbox** (SMTP — captures every email to any recipient in one test inbox) · **Gmail** (real delivery).
+- **Langfuse** (optional) — paste keys in AI Insights for full LLM traces.
+
+---
+
+## Chat with the pod & explainability
+
+The `collections-concierge` agent answers questions over live pod data — on Slack `#chat`, on Telegram, or the docked in-app assistant (rendered as markdown, tool-call noise filtered out).
+
+![Concierge chat](docs/screenshots/concierge-chat.jpeg)
+*The Collections Concierge — ask "is any invoice escalated to legal?" and get a live, formatted answer straight from the tables.*
+
+![AI insights](docs/screenshots/ai-insights.jpeg)
+*AI insights — how the agent is deciding: auto vs held-for-review, confidence, template fallbacks, estimated tokens & cost, and a per-decision table. Connect Langfuse for exact traces.*
 
 ---
 
@@ -89,28 +163,23 @@ followup_queue INSERT
 
 ---
 
-## Integrations & services
+## Settings & setup
 
-- **Slack** (Lemma connector) — legal escalations to `#legal`, daily digest to `#daily-stats`, and a `#chat` surface routed to the concierge agent. Posts pin a fixed workspace account so scheduled/unattended sends work.
-  <!-- ![Slack](docs/screenshots/slack.png) -->
-- **Telegram** (Lemma surface) — DM the bot to chat with the pod; daily digest also pushed via a bot token.
-- **Google Sheets** (Lemma connector) — import invoices from a sheet.
-- **Email delivery** — `IN_APP` (record-only, safe default) · **Mailtrap sandbox** (SMTP — captures every email to any recipient in one test inbox, ideal for demos) · **Gmail** connector for real delivery.
-  <!-- ![Mailtrap](docs/screenshots/mailtrap.png) -->
-- **Langfuse** (optional) — paste keys in AI Insights to stream full LLM traces; otherwise the app shows estimated token/cost figures.
-  <!-- ![Insights](docs/screenshots/insights.png) -->
+Everyday preferences live in Settings; the one-time technical wiring lives in the Setup guide, so the rest of the app stays clean.
 
----
+![Settings — sending rules](docs/screenshots/settings-sending.jpeg)
+*Settings — two clear sending rules (auto-send on/off, require approval for Stage 4 & Legal) and the email-delivery mode.*
 
-## Reliability — anti-hallucination
+![Settings — integrations](docs/screenshots/settings-integrations.jpeg)
+*Settings — a read-only integration status board (Mailtrap, Gmail, Slack, Telegram).*
 
-The drafter must echo the invoice's real `invoice_no`, `client_name`, `amount`, and `days_overdue` in its output; `validate_draft` cross-checks them against the source record in code (not just prompt instructions), rejects placeholders, and retries. Exhausted retries fall to a deterministic template that always routes to human review. Every email is grounded in stored data — never invented.
+![Setup guide](docs/screenshots/setup-guide.jpeg)
+*Setup guide — self-serve wiring for Google Sheets, Mailtrap, Gmail, Slack and Telegram, kept out of the everyday UI.*
 
----
+The UI also has modern loading states so long actions feel responsive:
 
-## Explainability
-
-The **AI insights** panel (top-right) shows, from data the pod already stores: follow-ups sent, % auto vs held-for-review, average draft confidence, template-fallback rate, and an **estimated** token/cost figure. Connect **Langfuse** keys there for exact per-call traces — a clean upgrade path without changing the pipeline.
+![Sending state](docs/screenshots/loading-send.jpeg) ![Scanning state](docs/screenshots/loading-scan.jpeg)
+*Contextual loading — "Sending follow-up…" while an email dispatches, "Scanning overdue invoices…" during a scan.*
 
 ---
 
@@ -123,14 +192,9 @@ The **AI insights** panel (top-right) shows, from data the pod already stores: f
 2. **Team members are invited to the pod** and given permissions — they then open the same app at the live URL and sign in with their Lemma account.
 3. Everyone works one shared workspace: the **collector** works Invoices/Replies, the **reviewer** works Approvals, the **legal team** works the Legal tab, the **finance lead** owns Schedule/Settings.
 
-**Adding a user:**
-```bash
-lemma pods members            # list current members
-# invite a teammate to the pod (org admin), then they open the app URL and sign in
-```
-Each member acts under their **own delegated identity** (Lemma's model), so RLS and connector calls resolve to that person where relevant.
+**Adding a user:** invite a teammate to the pod (org admin), then they open the app URL and sign in. Each member acts under their **own delegated identity** (Lemma's model), so RLS and connector calls resolve to that person where relevant.
 
-**Do users each need their own integrations?** No. **Slack, Google Sheets, and the digest are org/pod-level** — connected once by an admin and shared. The only per-user piece is **Gmail** *if* you choose real per-sender delivery (each sender connects their own Google account); for the demo, Mailtrap sandbox or IN_APP needs nothing per-user.
+**Do users each need their own integrations?** No. **Slack, Google Sheets, and the digest are pod-level** — connected once by an admin and shared. The only per-user piece is **Gmail** *if* you choose real per-sender delivery; for the demo, Mailtrap sandbox or IN_APP needs nothing per-user.
 
 ---
 
@@ -140,7 +204,7 @@ Each member acts under their **own delegated identity** (Lemma's model), so RLS 
 # target the pod (set once)
 lemma config set-default-org <followup-lemma-org> && lemma config set-default-pod <collections-agent-pod>
 
-lemma functions run seed_demo --data '{"enqueue":true,"count":30}'   # realistic mixed book
+lemma functions run seed_demo --data '{"enqueue":true,"count":26}'   # realistic mixed book
 # ~1 min later, the pipeline has auto-sent the safe ones and queued the rest:
 lemma query run "select status,count(*) from invoices group by status"
 lemma query run "select status,count(*) from drafts group by status"     # AUTO_SENT + PENDING_REVIEW
