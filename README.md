@@ -47,11 +47,12 @@ Finance teams chase overdue invoices by hand: inconsistent tone, no audit trail,
 
 Top-right: **AI insights**, **Setup guide**, **Settings**, **theme**, and a docked **Ask** assistant.
 
-![Invoices](docs/screenshots/invoices.jpeg)
-*Invoices — the working queue. Each row shows amount, overdue, stage, risk, status, last follow-up, and a one-click Paid.*
-
-![Invoice detail](docs/screenshots/invoice-detail.jpeg)
-*Per-invoice drawer — status actions (Paid / Pause / Dispute / Legal), the latest AI draft, and full history.*
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/invoices.jpeg" width="100%" alt="Invoices"/><br/><em>Invoices — the working queue. Each row shows amount, overdue, stage, risk, status, last follow-up, and a one-click Paid.</em></td>
+<td width="50%"><img src="docs/screenshots/invoice-detail.jpeg" width="100%" alt="Invoice detail"/><br/><em>Per-invoice drawer — status actions (Paid / Pause / Dispute / Legal), the latest AI draft, and full history.</em></td>
+</tr>
+</table>
 
 ---
 
@@ -67,14 +68,13 @@ Top-right: **AI insights**, **Setup guide**, **Settings**, **theme**, and a dock
 
 Stage 4 and high-risk drafts route to review when human-in-the-loop is on. **30+ day invoices skip email entirely and stay ACTIVE/ESCALATED** in the reviewer's Escalation queue — a person (not the agent) escalates them to the legal team, which posts to Slack `#legal` and moves them to the Legal tab. Reviewers can always override the agent (reactivate, edit, reply).
 
-![Approvals — pending review](docs/screenshots/approvals-pending.jpeg)
-*Approvals ▸ Pending — Stage-4 & high-risk drafts wait here. Approve & send, edit, reject, or escalate to legal.*
-
-![Approvals — escalation](docs/screenshots/approvals-escalation.jpeg)
-*Approvals ▸ Escalation — 30+ day accounts the agent stopped emailing. The reviewer decides: escalate to legal, or reactivate.*
-
-![Escalate to legal](docs/screenshots/escalate-confirm.jpeg)
-*Escalating an account — it posts to Slack #legal and moves to the Legal tab.*
+<table>
+<tr>
+<td width="33%"><img src="docs/screenshots/approvals-pending.jpeg" width="100%" alt="Approvals — pending review"/><br/><em>Approvals ▸ Pending — Stage-4 & high-risk drafts wait here. Approve & send, edit, reject, or escalate to legal.</em></td>
+<td width="33%"><img src="docs/screenshots/approvals-escalation.jpeg" width="100%" alt="Approvals — escalation"/><br/><em>Approvals ▸ Escalation — 30+ day accounts the agent stopped emailing. The reviewer decides: escalate to legal, or reactivate.</em></td>
+<td width="33%"><img src="docs/screenshots/escalate-confirm.jpeg" width="100%" alt="Escalate to legal"/><br/><em>Escalating an account — it posts to Slack #legal and moves to the Legal tab.</em></td>
+</tr>
+</table>
 
 ---
 
@@ -91,11 +91,12 @@ The drafter must echo the invoice's real `invoice_no`, `client_name`, `amount`, 
 
 Customer replies are read and classified (promise-to-pay / dispute / paid / question). Safe asks (e.g. "send me the payment link") can be answered; anything needing a decision becomes a task in the Replies queue. Every action — auto-send, approval, escalation, reply — is written to an immutable, human-readable audit log.
 
-![Simulate reply](docs/screenshots/simulate-reply.jpeg)
-*Replies — paste a customer reply; the AI classifies it and takes the correct side effect (promise / dispute / paid / question).*
-
-![Audit log](docs/screenshots/audit-log.jpeg)
-*The audit trail reads in plain English — "Auto-sent follow-up to … · INV-…", "Draft ready for approval …", "INV-… escalated to legal by reviewer · posted to #legal".*
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/simulate-reply.jpeg" width="100%" alt="Simulate reply"/><br/><em>Replies — paste a customer reply; the AI classifies it and takes the correct side effect (promise / dispute / paid / question).</em></td>
+<td width="50%"><img src="docs/screenshots/audit-log.jpeg" width="100%" alt="Audit log"/><br/><em>The audit trail reads in plain English — "Auto-sent follow-up to … · INV-…", "Draft ready for approval …", "INV-… escalated to legal by reviewer · posted to #legal".</em></td>
+</tr>
+</table>
 
 ---
 
@@ -103,14 +104,13 @@ Customer replies are read and classified (promise-to-pay / dispute / paid / ques
 
 One `slack` connector powers the legal escalations and the daily digest; a Slack surface powers `#chat`. Telegram runs a managed chat surface plus a bot for the digest. Google Sheets imports invoices; Gmail or a Mailtrap sandbox delivers email.
 
-![Slack #legal](docs/screenshots/slack-legal.jpeg)
-*Slack #legal — every reviewer escalation is posted here for the legal team, with the account, amount, contact and the escalated draft.*
-
-![Schedule — daily digest](docs/screenshots/schedule-digest.jpeg)
-*Schedule — the daily stats digest to Slack #daily-stats and Telegram. Pick what to send and when; send manually any time. Both channels show "Connected".*
-
-![Telegram push notification](docs/screenshots/telegram-notification.jpeg)
-*Telegram push notification — the daily digest lands on the team's phones via the Collections Bot, showing outstanding amount, overdue accounts, follow-ups sent today, approvals pending, legal queue count, and the top overdue invoice.*
+<table>
+<tr>
+<td width="40%"><img src="docs/screenshots/slack-legal.jpeg" width="100%" alt="Slack #legal"/><br/><em>Slack #legal — every reviewer escalation is posted here for the legal team, with the account, amount, contact and the escalated draft.</em></td>
+<td width="40%"><img src="docs/screenshots/schedule-digest.jpeg" width="100%" alt="Schedule — daily digest"/><br/><em>Schedule — the daily stats digest to Slack #daily-stats and Telegram. Pick what to send and when; send manually any time.</em></td>
+<td width="20%" align="center"><img src="docs/screenshots/telegram-notification.jpeg" width="180" alt="Telegram push notification"/><br/><em>Telegram push — the digest lands on the team's phones via the Collections Bot.</em></td>
+</tr>
+</table>
 
 - **Slack** (Lemma connector) — `#legal` escalations, `#daily-stats` digest, and a `#chat` surface routed to the concierge. Posts pin a fixed workspace account so scheduled/unattended sends work.
 - **Telegram** (Lemma surface) — DM the bot to chat with the pod; digest pushed via a bot token.
@@ -124,11 +124,12 @@ One `slack` connector powers the legal escalations and the daily digest; a Slack
 
 The `collections-concierge` agent answers questions over live pod data — on Slack `#chat`, on Telegram, or the docked in-app assistant (rendered as markdown, tool-call noise filtered out).
 
-![Concierge chat](docs/screenshots/concierge-chat.jpeg)
-*The Collections Concierge — ask "is any invoice escalated to legal?" and get a live, formatted answer straight from the tables.*
-
-![AI insights](docs/screenshots/ai-insights.jpeg)
-*AI insights — how the agent is deciding: auto vs held-for-review, confidence, template fallbacks, estimated tokens & cost, and a per-decision table. Connect Langfuse for exact traces.*
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/concierge-chat.jpeg" width="100%" alt="Concierge chat"/><br/><em>The Collections Concierge — ask "is any invoice escalated to legal?" and get a live, formatted answer straight from the tables.</em></td>
+<td width="50%"><img src="docs/screenshots/ai-insights.jpeg" width="100%" alt="AI insights"/><br/><em>AI insights — how the agent is deciding: auto vs held-for-review, confidence, template fallbacks, estimated tokens & cost, and a per-decision table. Connect Langfuse for exact traces.</em></td>
+</tr>
+</table>
 
 ---
 
@@ -170,19 +171,22 @@ followup_queue INSERT
 
 Everyday preferences live in Settings; the one-time technical wiring lives in the Setup guide, so the rest of the app stays clean.
 
-![Settings — sending rules](docs/screenshots/settings-sending.jpeg)
-*Settings — two clear sending rules (auto-send on/off, require approval for Stage 4 & Legal) and the email-delivery mode.*
-
-![Settings — integrations](docs/screenshots/settings-integrations.jpeg)
-*Settings — a read-only integration status board (Mailtrap, Gmail, Slack, Telegram).*
-
-![Setup guide](docs/screenshots/setup-guide.jpeg)
-*Setup guide — self-serve wiring for Google Sheets, Mailtrap, Gmail, Slack and Telegram, kept out of the everyday UI.*
+<table>
+<tr>
+<td width="33%"><img src="docs/screenshots/settings-sending.jpeg" width="100%" alt="Settings — sending rules"/><br/><em>Settings — two clear sending rules (auto-send on/off, require approval for Stage 4 & Legal) and the email-delivery mode.</em></td>
+<td width="33%"><img src="docs/screenshots/settings-integrations.jpeg" width="100%" alt="Settings — integrations"/><br/><em>Settings — a read-only integration status board (Mailtrap, Gmail, Slack, Telegram).</em></td>
+<td width="33%"><img src="docs/screenshots/setup-guide.jpeg" width="100%" alt="Setup guide"/><br/><em>Setup guide — self-serve wiring for Google Sheets, Mailtrap, Gmail, Slack and Telegram, kept out of the everyday UI.</em></td>
+</tr>
+</table>
 
 The UI also has modern loading states so long actions feel responsive:
 
-![Sending state](docs/screenshots/loading-send.jpeg) ![Scanning state](docs/screenshots/loading-scan.jpeg)
-*Contextual loading — "Sending follow-up…" while an email dispatches, "Scanning overdue invoices…" during a scan.*
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/loading-send.jpeg" width="100%" alt="Sending state"/><br/><em>Contextual loading — "Sending follow-up…" while an email dispatches.</em></td>
+<td width="50%"><img src="docs/screenshots/loading-scan.jpeg" width="100%" alt="Scanning state"/><br/><em>"Scanning overdue invoices…" during a pipeline scan run.</em></td>
+</tr>
+</table>
 
 ---
 
