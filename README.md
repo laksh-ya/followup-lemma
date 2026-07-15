@@ -114,7 +114,7 @@ One `slack` connector powers the legal escalations and the daily digest; a Slack
 
 - **Slack** (Lemma connector) — `#legal` escalations, `#daily-stats` digest, and a `#chat` surface routed to the concierge. Posts pin a fixed workspace account so scheduled/unattended sends work.
 - **Telegram** (Lemma surface) — DM the bot to chat with the pod; digest pushed via a bot token.
-- **Google Sheets** (Lemma connector) — import invoices from a sheet.
+- **Google Sheets** (Lemma connector) — two-way: import invoices from a sheet, and export invoices/drafts/the audit log back out to a sheet.
 - **Email** — `IN_APP` (record-only, safe default) · **Mailtrap sandbox** (SMTP — captures every email to any recipient in one test inbox) · **Gmail** (real delivery).
 - **Langfuse** (optional) — paste keys in AI Insights for full LLM traces.
 
@@ -138,11 +138,11 @@ The `collections-concierge` agent answers questions over live pod data — on Sl
 | Layer | In this pod |
 |---|---|
 | **Tables** | `clients`, `invoices`, `drafts`, `interactions` (audit log), `promises`, `followup_queue`, `stats_channels`, `pod_config` — RLS-shared team data, customer identity keyed by normalized email |
-| **Functions** (Python) | `classify_and_score` (stage + deterministic risk), `validate_draft` (anti-hallucination), `dispatch_followup` (send), `make_fallback_draft`, `app_action` (single write-entrypoint for the app), `handle_reply`, `ingest_invoices` / `ingest_from_sheet`, `stats_dispatch`, `seed_demo`, more |
+| **Functions** (Python) | `classify_and_score` (stage + deterministic risk), `validate_draft` (anti-hallucination), `dispatch_followup` (send), `make_fallback_draft`, `app_action` (single write-entrypoint for the app), `handle_reply`, `ingest_invoices` / `ingest_from_sheet` (read a sheet in), `export_to_sheet` (write invoices/drafts/audit log out), `stats_dispatch`, `seed_demo`, more |
 | **Agents** | `collections-drafter` (writes the stage-appropriate email), `reply-triager` (classifies inbound replies), `collections-concierge` (answers questions over live pod data — powers the chat surfaces + in-app Ask) |
 | **Workflow** | `collections-run` — a durable per-invoice state machine: classify → route (skip / escalate / draft) → draft → validate → auto-send **or** hold for review |
 | **Schedules** | `followup-dispatch` (DATASTORE event — runs the workflow per queued invoice), `daily-scan` (TIME), `stats-dispatch` (TIME `*/30` — the digest sweep), `heal` (retry stuck runs) |
-| **Connectors** | **Slack** (`chat_post_message` → #legal, #daily-stats), **Google Sheets** (invoice import), **Gmail** (optional real send) |
+| **Connectors** | **Slack** (`chat_post_message` → #legal, #daily-stats), **Google Sheets** (invoice import + invoices/drafts/audit-log export), **Gmail** (optional real send) |
 | **Surfaces** | **Slack** (#chat → concierge) and **Telegram** (DM the concierge) |
 | **App** | Single-file HTML operator UI deployed to the pod (`collections-app`) |
 

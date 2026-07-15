@@ -416,6 +416,7 @@
           '<button class="btn gold sm" onclick="doScan()">'+ic("scan")+' Run scan</button>'+
           '<div class="menu" id="datamenu"><button class="btn sm" onclick="document.getElementById(\'datamenu\').classList.toggle(\'open\')">'+ic("upload")+' Data '+ic("chevron")+'</button><div class="items">'+
             '<button onclick="closeMenu();importSheet()">'+ic("sheet")+' Import from Google Sheets</button>'+
+            '<button onclick="closeMenu();exportSheet()">'+ic("sheet")+' Export to Google Sheets</button>'+
             '<button onclick="closeMenu();pickCSV()">'+ic("upload")+' Import CSV / Excel</button>'+
             '<button onclick="closeMenu();exportCSV()">'+ic("download")+' Export CSV</button>'+
             '<button onclick="closeMenu();addInvoice()">'+ic("plus")+' Add invoice</button><hr>'+
@@ -846,7 +847,7 @@
           '<label class="fld"><span class="lbl">Spreadsheet link or id</span><input id="gs_id" placeholder="https://docs.google.com/spreadsheets/d/…"></label>'+
           '<label class="fld"><span class="lbl">Range (A1 notation)</span><input id="gs_range" value="A1:M500"></label>'+
           '<div style="margin-top:.6rem"><button class="btn gold" onclick="runSheetImport()">Read &amp; import</button></div>'+
-          '<details style="margin-top:1rem"><summary style="cursor:pointer;font-size:.82rem;color:var(--muted)">First time? Connect Google Sheets</summary><div class="guide">The pod reads the sheet on <b>your connected Google account</b> — no keys stored here.<ol><li><code>lemma connectors auth-configs create google_sheets --name workspace-sheets</code></li><li><code>lemma connectors connect-requests create google_sheets --auth-config-id &lt;id&gt;</code> → open the link, authorize Google.</li><li>Share the sheet with that Google account, then paste the link above.</li></ol></div></details>'+
+          '<details style="margin-top:1rem"><summary style="cursor:pointer;font-size:.82rem;color:var(--muted)">First time? Connect Google Sheets</summary><div class="guide">The pod reads the sheet on <b>your connected Google account</b> — no keys stored here.<ol><li><code>lemma connectors auth-configs create google_sheets</code></li><li><code>lemma connectors connect-requests create google_sheets --auth-config-id &lt;id&gt;</code> → open the link, authorize Google.</li><li>Share the sheet with that Google account, then paste the link above.</li></ol></div></details>'+
         '</div>';openDrawerEl();
       };
       window.runSheetImport=async function(){var idv=$("gs_id").value.trim(),rng=$("gs_range").value.trim()||"A1:M500";if(!idv)return toast("Paste the sheet link or id");setBusy(true,"Reading the sheet…");
@@ -860,12 +861,35 @@
         }catch(e){setBusy(false);toast("⚠ "+e.message)}
       };
 
+      // ---- Google Sheets export
+      window.exportSheet=function(){closeMenu();
+        $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Export</div><h1 style="font-size:1.3rem">Export to Google Sheets</h1></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db">'+
+          '<p class="muted" style="font-size:.82rem">Write pod data to a sheet on <b>your connected Google account</b>. Overwrite replaces the header + rows starting at the range; Append adds rows after the existing table (use for a growing log).</p>'+
+          '<label class="fld"><span class="lbl">Spreadsheet link or id</span><input id="es_id" placeholder="https://docs.google.com/spreadsheets/d/…"></label>'+
+          '<label class="fld"><span class="lbl">Source</span><select id="es_source"><option value="invoices">Invoices</option><option value="drafts">Drafts</option><option value="interactions">Interactions (audit log)</option></select></label>'+
+          '<label class="fld"><span class="lbl">Range (A1 notation)</span><input id="es_range" value="Sheet1!A1"></label>'+
+          '<label class="fld"><span class="lbl">Mode</span><select id="es_mode"><option value="overwrite">Overwrite (header + rows)</option><option value="append">Append (rows only)</option></select></label>'+
+          '<div style="margin-top:.6rem"><button class="btn gold" onclick="runSheetExport()">Write to sheet</button></div>'+
+          '<details style="margin-top:1rem"><summary style="cursor:pointer;font-size:.82rem;color:var(--muted)">First time? Connect Google Sheets</summary><div class="guide">Same connection as Import — see Data ▸ Import from Google Sheets, or Setup guide. The account needs <b>edit</b> access to the sheet.<ol><li><code>lemma connectors auth-configs create google_sheets</code></li><li><code>lemma connectors connect-requests create google_sheets --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Share the sheet with that Google account as an <b>editor</b>.</li></ol></div></details>'+
+        '</div>';openDrawerEl();
+      };
+      window.runSheetExport=async function(){
+        var idv=$("es_id").value.trim(),src=$("es_source").value,rng=$("es_range").value.trim()||"Sheet1!A1",mode=$("es_mode").value;
+        if(!idv)return toast("Paste the sheet link or id");
+        setBusy(true,"Writing "+src+" to the sheet…");
+        try{var o=await invokeFn("export_to_sheet",{spreadsheet_id:idv,source:src,sheet_range:rng,mode:mode});
+          setBusy(false);
+          if(!o||!o.ok){return toast("⚠ "+((o&&o.detail)||"couldn't write to the sheet"))}
+          closeDrawer();toast("✓ "+o.detail);
+        }catch(e){setBusy(false);toast("⚠ "+e.message)}
+      };
+
       // ---- master setup guide
       window.openSetupGuide=function(){closeMenu();
         function sec(icn,t,body){return '<details style="margin-bottom:.6rem;border:1px solid var(--line);border-radius:10px;padding:.7rem .85rem;background:var(--card)"><summary style="cursor:pointer;font-weight:600;font-size:.9rem;display:flex;align-items:center;gap:.5rem">'+ic(icn)+t+'</summary><div class="guide" style="margin-top:.5rem;border:none;background:none;padding:.2rem 0 0">'+body+'</div></details>'}
         $("drawer").innerHTML='<div class="dh"><div><div class="eyebrow">Setup</div><h1 style="font-size:1.3rem">Set everything up</h1></div><button class="x" onclick="closeDrawer()">'+ic("x")+'</button></div><div class="db">'+
           '<p class="muted" style="font-size:.82rem">The technical wiring lives here so the rest of the app stays clean. On this pod, Slack (#legal, #daily-stats, #chat) and Telegram chat are <b>already connected</b> — these steps are for reconnecting or setting up a fresh copy. Run them where the Lemma CLI is signed in.</p>'+
-          sec("sheet","Google Sheets — import invoices",'Load real data.<ol><li><code>lemma connectors auth-configs create google_sheets --name workspace-sheets</code></li><li><code>lemma connectors connect-requests create google_sheets --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Data menu ▸ <b>Import from Google Sheets</b>, paste the link.</li></ol>')+
+          sec("sheet","Google Sheets — import &amp; export",'Read invoices in, or write invoices/drafts/the audit log out — same connection both ways.<ol><li><code>lemma connectors auth-configs create google_sheets</code></li><li><code>lemma connectors connect-requests create google_sheets --auth-config-id &lt;id&gt;</code> → authorize Google.</li><li>Share the target sheet with that Google account (<b>editor</b> access if you plan to export).</li><li>Data menu ▸ <b>Import from Google Sheets</b> or <b>Export to Google Sheets</b>.</li></ol>')+
           sec("send","Mailtrap — email sandbox (recommended for demo)",'Captures every follow-up (to any recipient) in one test inbox — no domain, no real delivery. In Mailtrap ▸ <b>Email Sandbox</b> ▸ your inbox ▸ <b>SMTP Settings</b>, copy the username &amp; password, paste below:'+
             '<div style="margin-top:.6rem"><label class="fld"><span class="lbl">SMTP username</span><input id="cfg_mailtrap_user" value="'+esc(field(STATE.config,"mailtrap_user")||"")+'" placeholder="e.g. 1a2b3c4d5e6f7g"></label>'+
             '<label class="fld"><span class="lbl">SMTP password</span><input id="cfg_mailtrap_pass" value="'+esc(field(STATE.config,"mailtrap_pass")||"")+'" placeholder="paste the sandbox password"></label>'+

@@ -67,9 +67,11 @@ async def ingest_from_sheet(ctx: FunctionContext, data: SheetInput) -> SheetResu
         return SheetResult(ok=False, rows=[], total_rows=0, skipped=0, detail="Provide a spreadsheet id or URL.")
 
     try:
-        res = pod.connectors.execute("workspace-sheets", "spreadsheets_values_get",
+        res = pod.connectors.execute("google_sheets", "GOOGLESHEETS_VALUES_GET",
                                      {"spreadsheet_id": sid, "range": data.sheet_range}).to_dict()
-        values = (res.get("result") or {}).get("values") or []
+        result = res.get("result") or {}
+        payload = result.get("data") or result
+        values = payload.get("values") or []
     except Exception as exc:
         return SheetResult(ok=False, rows=[], total_rows=0, skipped=0,
                            detail="Couldn't read the sheet — connect a Google account first (Data ▸ setup guide). " + str(exc)[:200])
