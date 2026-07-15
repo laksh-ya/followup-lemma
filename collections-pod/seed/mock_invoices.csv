@@ -1,0 +1,25 @@
+invoice_no,client_name,client_email,amount,currency,due_date,payment_link,status,company,phone,vip,payment_behavior,notes
+INV-2026-101,Priya Nair,priya.nair@northwind.io,42500,INR,2026-07-13,https://pay.acme.example/inv/101,ACTIVE,Northwind Retail,+91-98200-11122,false,GOOD,First invoice this quarter
+INV-2026-102,Rahul Mehta,rahul.mehta@bluepeak.co,118000,INR,2026-07-10,https://pay.acme.example/inv/102,ACTIVE,BluePeak Logistics,+91-99870-22334,false,AVERAGE,
+INV-2026-103,Ananya Rao,ananya.rao@fernbridge.com,76500,INR,2026-07-09,,ACTIVE,Fernbridge Media,+91-90210-33445,true,GOOD,VIP account - direct line to finance lead
+INV-2026-104,David Chen,david.chen@harboranalytics.io,3200,USD,2026-07-08,https://pay.acme.example/inv/104,ACTIVE,Harbor Analytics,+1-415-555-0142,false,GOOD,
+INV-2026-105,Sara Kimathi,sara.kimathi@zenithworks.co,54000,INR,2026-07-05,https://pay.acme.example/inv/105,ACTIVE,Zenith Works,+91-98765-44556,false,AVERAGE,Requested extension once before
+INV-2026-106,Marco Silva,marco.silva@duneretail.com,2100,USD,2026-07-03,,ACTIVE,Dune Retail Co,+1-212-555-0198,false,AVERAGE,
+INV-2026-107,Ishaan Verma,ishaan.verma@crestlabs.io,215000,INR,2026-07-02,https://pay.acme.example/inv/107,ACTIVE,Crest Labs,+91-97654-55667,true,RISKY,VIP but slow payer - watch closely
+INV-2026-108,Lauren Fitzgerald,lauren.fitzgerald@oakstonegroup.com,4800,USD,2026-07-01,https://pay.acme.example/inv/108,ACTIVE,Oakstone Group,+1-312-555-0176,false,GOOD,
+INV-2026-109,Karan Bhatia,karan.bhatia@silverlinefreight.co,89000,INR,2026-06-29,,ACTIVE,Silverline Freight,+91-96543-66778,false,AVERAGE,
+INV-2026-110,Meera Iyer,meera.iyer@pinehillstudio.com,31500,INR,2026-06-27,https://pay.acme.example/inv/110,ACTIVE,Pine Hill Studio,+91-95432-77889,false,GOOD,
+INV-2026-111,Tom O'Brien,tom.obrien@westfieldsupply.com,6100,USD,2026-06-26,https://pay.acme.example/inv/111,ACTIVE,Westfield Supply,+1-617-555-0134,false,RISKY,Disputed a line item last quarter
+INV-2026-112,Neha Kapoor,neha.kapoor@brightloomtech.io,167500,INR,2026-06-24,,ACTIVE,Brightloom Tech,+91-94321-88990,true,GOOD,VIP - prepaid annual contract otherwise
+INV-2026-113,James Okafor,james.okafor@cliffstoneenergy.com,9800,USD,2026-06-22,https://pay.acme.example/inv/113,ACTIVE,Cliffstone Energy,+1-713-555-0156,false,RISKY,Two prior late payments
+INV-2026-114,Divya Menon,divya.menon@ashgrovepartners.co,58900,INR,2026-06-20,https://pay.acme.example/inv/114,ACTIVE,Ashgrove Partners,+91-93210-99001,false,AVERAGE,
+INV-2026-115,Chloe Bennett,chloe.bennett@redcedarlogistics.com,3400,USD,2026-06-18,,ACTIVE,Red Cedar Logistics,+1-206-555-0189,false,AVERAGE,
+INV-2026-116,Arjun Nambiar,arjun.nambiar@stonebridgeretail.io,247000,INR,2026-06-16,https://pay.acme.example/inv/116,ACTIVE,Stonebridge Retail,+91-92109-10112,true,RISKY,VIP - escalation candidate if unresolved
+INV-2026-117,Grace Lindqvist,grace.lindqvist@maplecourtdesign.com,7250,USD,2026-06-12,https://pay.acme.example/inv/117,ACTIVE,Maplecourt Design,+1-503-555-0163,false,RISKY,30+ days - repeated no-response
+INV-2026-118,Vikram Sethi,vikram.sethi@ironvalefinance.co,132000,INR,2026-06-08,,ACTIVE,Ironvale Finance,+91-91098-21123,false,RISKY,Legal escalation candidate
+INV-2026-119,Olivia Marsh,olivia.marsh@hollowaymanufacturing.com,15600,USD,2026-06-01,https://pay.acme.example/inv/119,ACTIVE,Holloway Manufacturing,+1-404-555-0121,false,RISKY,45 days overdue - no response to two follow-ups
+INV-2026-120,Sanjay Pillai,sanjay.pillai@garnetconsulting.io,63500,INR,2026-07-12,https://pay.acme.example/inv/120,PAID,Garnet Consulting,+91-90087-32234,false,GOOD,Paid on time via bank transfer
+INV-2026-121,Emily Foster,emily.foster@thistledownmedia.com,5200,USD,2026-07-06,https://pay.acme.example/inv/121,DISPUTED,Thistledown Media,+1-646-555-0147,false,AVERAGE,Client disputes a line item - hold dunning
+INV-2026-122,Aditya Raghunathan,aditya.r@copperlanetech.co,98700,INR,2026-06-30,https://pay.acme.example/inv/122,ACTIVE,Copperlane Tech,+91-89076-43345,false,AVERAGE,
+INV-2026-123,Hannah Wu,hannah.wu@brookfieldcapital.com,11400,USD,2026-06-14,https://pay.acme.example/inv/123,ACTIVE,Brookfield Capital,+1-312-555-0198,true,GOOD,VIP - usually pays within a week of reminder
+INV-2026-124,Farhan Ali,farhan.ali@granitepeakworks.io,45300,INR,2026-06-05,,ACTIVE,Granite Peak Works,+91-88065-54456,false,RISKY,Escalated once before, paid after legal notice
